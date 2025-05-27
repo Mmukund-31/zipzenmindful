@@ -168,3 +168,37 @@ export async function generateMemeText(memoryTitle: string, memoryCategory: stri
     return fallbacks[memoryCategory as keyof typeof fallbacks] || fallbacks.other;
   }
 }
+
+export async function generateDailyWellnessTip(): Promise<string> {
+  try {
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+    
+    const prompt = `Generate a personalized daily wellness tip for someone managing stress and overthinking. 
+    
+    Make it practical, actionable, and supportive. Focus on techniques like mindfulness, breathing, grounding, self-compassion, or gentle movement. 
+    Keep it to 1-2 sentences and make it feel personal and encouraging. Today is day ${dayOfYear} of the year.
+    
+    Return just the tip text, no extra formatting or quotation marks.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        {
+          role: "system",
+          content: "You are a compassionate mental health supporter who provides daily wellness tips. Be warm, understanding, and practical."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 150,
+    });
+
+    return response.choices[0].message.content?.trim() || "Take a moment today to practice deep breathing. Even three mindful breaths can help center your thoughts and reduce stress.";
+  } catch (error) {
+    console.error("Daily tip generation error:", error);
+    throw error;
+  }
+}

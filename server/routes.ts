@@ -255,6 +255,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate daily wellness tip
+  app.post("/api/wellness/daily-tip", async (req: any, res) => {
+    try {
+      const { generateDailyWellnessTip } = await import("./lib/openai");
+      const tip = await generateDailyWellnessTip();
+      res.json({ tip });
+    } catch (error) {
+      console.error("Daily tip generation error:", error);
+      res.status(500).json({ error: "Failed to generate daily tip" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

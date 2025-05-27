@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/navigation";
 import BreathingExercise from "@/components/breathing-exercise";
 import ThoughtInterruptor from "@/components/thought-interruptor";
-import VoiceAssistant from "@/components/voice-assistant";
+import DailyWellnessTip from "@/components/daily-wellness-tip";
 import { Brain, Heart, Mic, Wind, Zap, Star, CheckCircle } from "lucide-react";
 
 export default function Wellness() {
@@ -174,7 +174,7 @@ export default function Wellness() {
 
         {/* Interactive tools */}
         <Tabs defaultValue="breathing" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white border">
+          <TabsList className="grid w-full grid-cols-2 bg-white border">
             <TabsTrigger value="breathing" className="flex items-center space-x-2">
               <Wind className="w-4 h-4" />
               <span>Breathing</span>
@@ -182,10 +182,6 @@ export default function Wellness() {
             <TabsTrigger value="thoughts" className="flex items-center space-x-2">
               <Brain className="w-4 h-4" />
               <span>Thoughts</span>
-            </TabsTrigger>
-            <TabsTrigger value="voice" className="flex items-center space-x-2">
-              <Mic className="w-4 h-4" />
-              <span>Voice</span>
             </TabsTrigger>
           </TabsList>
 
@@ -198,12 +194,6 @@ export default function Wellness() {
           <TabsContent value="thoughts">
             <ThoughtInterruptor 
               onComplete={() => handleActivityComplete('thoughts')}
-            />
-          </TabsContent>
-
-          <TabsContent value="voice">
-            <VoiceAssistant 
-              currentMood={recentMood?.mood}
             />
           </TabsContent>
         </Tabs>
@@ -224,24 +214,8 @@ export default function Wellness() {
           </Card>
         )}
 
-        {/* Tips section */}
-        <Card className="mt-8 bg-amber-50 border-amber-200">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-amber-800">
-              <Zap className="w-5 h-5" />
-              <span>Pro Tips for Managing Overthinking</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-amber-700 space-y-3">
-            <ul className="space-y-2 text-sm">
-              <li>• <strong>Practice regularly:</strong> These techniques work best when used consistently, not just during crisis moments</li>
-              <li>• <strong>Start small:</strong> Even 2-3 minutes of breathing exercises can make a significant difference</li>
-              <li>• <strong>Be patient:</strong> It's normal for your mind to wander - gently redirect your attention without judgment</li>
-              <li>• <strong>Track patterns:</strong> Notice which techniques work best for different moods and situations</li>
-              <li>• <strong>Combine approaches:</strong> Use breathing + thought interruption, or voice assistance + breathing for enhanced benefits</li>
-            </ul>
-          </CardContent>
-        </Card>
+        {/* Daily AI-powered wellness tip */}
+        <DailyWellnessTip />
       </div>
     </div>
   );
