@@ -125,52 +125,7 @@ export default function Wellness() {
           </CardHeader>
         </Card>
 
-        {/* Tools overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {wellnessTools.map((tool) => (
-            <Card 
-              key={tool.id}
-              className={`border-2 transition-all duration-200 ${
-                recommendation.recommendedTool === tool.id 
-                  ? 'border-blue-400 shadow-lg scale-105' 
-                  : 'border-gray-200 hover:border-gray-300'
-              } ${
-                completedActivities.includes(tool.id) ? 'bg-green-50' : ''
-              }`}
-            >
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className={`p-3 rounded-full ${
-                    tool.color === 'blue' ? 'bg-blue-100 text-blue-600' :
-                    tool.color === 'purple' ? 'bg-purple-100 text-purple-600' :
-                    'bg-green-100 text-green-600'
-                  }`}>
-                    {tool.icon}
-                  </div>
-                  {completedActivities.includes(tool.id) && (
-                    <CheckCircle className="w-6 h-6 text-green-600" />
-                  )}
-                </div>
-                <CardTitle className="text-xl">{tool.title}</CardTitle>
-                <CardDescription>{tool.description}</CardDescription>
-                <Badge variant="outline">{tool.duration}</Badge>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-700">Benefits:</p>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    {tool.benefits.map((benefit, index) => (
-                      <li key={index} className="flex items-center space-x-2">
-                        <Heart className="w-3 h-3 text-red-400" />
-                        <span>{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+
 
         {/* Interactive tools */}
         <Tabs defaultValue="breathing" className="space-y-6">
