@@ -4,7 +4,7 @@ import multer from "multer";
 import path from "path";
 import { storage } from "./storage";
 import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema } from "@shared/schema";
-import { generateAIResponse, analyzeMoodFromText, generateMoodInsights } from "./lib/openai";
+import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText } from "./lib/openai";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 
 // Configure multer for file uploads
@@ -228,6 +228,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(analysis);
     } catch (error) {
       res.status(500).json({ error: "Failed to analyze mood" });
+    }
+  });
+
+  // Generate meme text
+  app.post("/api/meme/generate-text", isAuthenticated, async (req: any, res) => {
+    try {
+      const { memoryTitle, memoryCategory, style } = req.body;
+      
+      const memeText = await generateMemeText(memoryTitle, memoryCategory, style);
+      res.json(memeText);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate meme text" });
     }
   });
 

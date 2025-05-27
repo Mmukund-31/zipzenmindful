@@ -121,3 +121,50 @@ export async function generateMoodInsights(moodEntries: any[]): Promise<string[]
     ];
   }
 }
+
+export async function generateMemeText(memoryTitle: string, memoryCategory: string, style: string): Promise<{
+  topText: string;
+  bottomText: string;
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are a funny meme text generator for a wellness app. Create hilarious, positive, and uplifting meme text based on the memory details.
+          
+          Guidelines:
+          - Keep it funny but wholesome and supportive
+          - Use popular meme formats and internet humor
+          - Make it relate to mental wellness, happiness, or memories
+          - Keep text short and punchy (max 6 words per line)
+          - Use ALL CAPS for classic meme style
+          
+          Respond with JSON in this format: { "topText": "TOP LINE", "bottomText": "BOTTOM LINE" }`
+        },
+        { 
+          role: "user", 
+          content: `Memory: "${memoryTitle}" in category "${memoryCategory}". Style: ${style}` 
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    return {
+      topText: result.topText || "WHEN YOU SEE",
+      bottomText: result.bottomText || "THIS HAPPY MEMORY"
+    };
+  } catch (error) {
+    console.error("Meme text generation error:", error);
+    // Return fallback based on category
+    const fallbacks = {
+      family: { topText: "FAMILY TIME HITS", bottomText: "DIFFERENT WHEN HAPPY" },
+      friends: { topText: "SQUAD MAKING MEMORIES", bottomText: "INSTANT SEROTONIN BOOST" },
+      pets: { topText: "LOOKING AT PET PHOTOS", bottomText: "DEPRESSION WHO?" },
+      other: { topText: "GOOD MEMORIES BE LIKE", bottomText: "FREE THERAPY SESSION" }
+    };
+    return fallbacks[memoryCategory as keyof typeof fallbacks] || fallbacks.other;
+  }
+}

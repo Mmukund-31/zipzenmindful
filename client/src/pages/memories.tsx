@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import FileUpload from "@/components/file-upload";
+import MemoryVideoCreator from "@/components/memory-video-creator";
+import MemeGenerator from "@/components/meme-generator";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -253,27 +255,19 @@ export default function Memories() {
         </div>
       )}
 
-      {/* Memory Video Creator */}
+      {/* Creative Tools */}
       {memories.length > 0 && (
-        <Card className="mt-8">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
-                <Upload className="w-5 h-5 text-accent" />
-              </div>
-              <div>
-                <h3 className="font-medium text-foreground">Create Memory Video</h3>
-                <p className="text-sm text-muted-foreground">
-                  Turn your photos into a beautiful slideshow
-                </p>
-              </div>
-            </div>
-            <Button className="w-full bg-accent hover:bg-accent/90" disabled>
-              <Upload className="w-4 h-4 mr-2" />
-              Create Video (Coming Soon)
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="mt-8 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Creative Tools</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <MemoryVideoCreator memories={memories} />
+              <MemeGenerator memories={memories} />
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
