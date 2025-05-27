@@ -1,10 +1,10 @@
-import { 
-  users, 
-  moodEntries, 
-  memories, 
+import {
+  users,
+  moodEntries,
+  memories,
   chatMessages,
-  type User, 
-  type InsertUser,
+  type User,
+  type UpsertUser,
   type MoodEntry,
   type InsertMoodEntry,
   type Memory,
@@ -12,135 +12,134 @@ import {
   type ChatMessage,
   type InsertChatMessage
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
+// Interface for storage operations
 export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // User operations
+  // (IMPORTANT) these user operations are mandatory for Replit Auth.
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
   
   createMoodEntry(moodEntry: InsertMoodEntry): Promise<MoodEntry>;
-  getMoodEntriesByUser(userId: number): Promise<MoodEntry[]>;
-  getRecentMoodEntry(userId: number): Promise<MoodEntry | undefined>;
+  getMoodEntriesByUser(userId: string): Promise<MoodEntry[]>;
+  getRecentMoodEntry(userId: string): Promise<MoodEntry | undefined>;
   
   createMemory(memory: InsertMemory): Promise<Memory>;
-  getMemoriesByUser(userId: number): Promise<Memory[]>;
-  getMemoriesByCategory(userId: number, category: string): Promise<Memory[]>;
+  getMemoriesByUser(userId: string): Promise<Memory[]>;
+  getMemoriesByCategory(userId: string, category: string): Promise<Memory[]>;
   updateMemoryFavorite(id: number, isFavorite: boolean): Promise<Memory | undefined>;
   
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
-  getChatMessagesByUser(userId: number): Promise<ChatMessage[]>;
+  getChatMessagesByUser(userId: string): Promise<ChatMessage[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private moodEntries: Map<number, MoodEntry>;
-  private memories: Map<number, Memory>;
-  private chatMessages: Map<number, ChatMessage>;
-  private currentUserId: number;
-  private currentMoodId: number;
-  private currentMemoryId: number;
-  private currentChatId: number;
+export class DatabaseStorage implements IStorage {
+  // User operations
+  // (IMPORTANT) these user operations are mandatory for Replit Auth.
 
-  constructor() {
-    this.users = new Map();
-    this.moodEntries = new Map();
-    this.memories = new Map();
-    this.chatMessages = new Map();
-    this.currentUserId = 1;
-    this.currentMoodId = 1;
-    this.currentMemoryId = 1;
-    this.currentChatId = 1;
-
-    // Create a default user for demo purposes
-    this.createUser({ username: "sarah", password: "password" });
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
     return user;
   }
 
   async createMoodEntry(insertMoodEntry: InsertMoodEntry): Promise<MoodEntry> {
-    const id = this.currentMoodId++;
-    const moodEntry: MoodEntry = { 
-      ...insertMoodEntry, 
-      id, 
-      timestamp: new Date()
-    };
-    this.moodEntries.set(id, moodEntry);
+    const [moodEntry] = await db
+      .insert(moodEntries)
+      .values({
+        ...insertMoodEntry,
+        note: insertMoodEntry.note || null,
+      })
+      .returning();
     return moodEntry;
   }
 
-  async getMoodEntriesByUser(userId: number): Promise<MoodEntry[]> {
-    return Array.from(this.moodEntries.values())
-      .filter(entry => entry.userId === userId)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  async getMoodEntriesByUser(userId: string): Promise<MoodEntry[]> {
+    return await db
+      .select()
+      .from(moodEntries)
+      .where(eq(moodEntries.userId, userId))
+      .orderBy(moodEntries.timestamp);
   }
 
-  async getRecentMoodEntry(userId: number): Promise<MoodEntry | undefined> {
-    const entries = await this.getMoodEntriesByUser(userId);
-    return entries[0];
+  async getRecentMoodEntry(userId: string): Promise<MoodEntry | undefined> {
+    const [entry] = await db
+      .select()
+      .from(moodEntries)
+      .where(eq(moodEntries.userId, userId))
+      .orderBy(moodEntries.timestamp)
+      .limit(1);
+    return entry;
   }
 
   async createMemory(insertMemory: InsertMemory): Promise<Memory> {
-    const id = this.currentMemoryId++;
-    const memory: Memory = { 
-      ...insertMemory, 
-      id, 
-      timestamp: new Date()
-    };
-    this.memories.set(id, memory);
+    const [memory] = await db
+      .insert(memories)
+      .values({
+        ...insertMemory,
+        description: insertMemory.description || null,
+        isFavorite: insertMemory.isFavorite || false,
+      })
+      .returning();
     return memory;
   }
 
-  async getMemoriesByUser(userId: number): Promise<Memory[]> {
-    return Array.from(this.memories.values())
-      .filter(memory => memory.userId === userId)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  async getMemoriesByUser(userId: string): Promise<Memory[]> {
+    return await db
+      .select()
+      .from(memories)
+      .where(eq(memories.userId, userId))
+      .orderBy(memories.timestamp);
   }
 
-  async getMemoriesByCategory(userId: number, category: string): Promise<Memory[]> {
-    const userMemories = await this.getMemoriesByUser(userId);
-    return userMemories.filter(memory => memory.category === category);
+  async getMemoriesByCategory(userId: string, category: string): Promise<Memory[]> {
+    return await db
+      .select()
+      .from(memories)
+      .where(eq(memories.userId, userId))
+      .where(eq(memories.category, category))
+      .orderBy(memories.timestamp);
   }
 
   async updateMemoryFavorite(id: number, isFavorite: boolean): Promise<Memory | undefined> {
-    const memory = this.memories.get(id);
-    if (memory) {
-      const updatedMemory = { ...memory, isFavorite };
-      this.memories.set(id, updatedMemory);
-      return updatedMemory;
-    }
-    return undefined;
+    const [memory] = await db
+      .update(memories)
+      .set({ isFavorite })
+      .where(eq(memories.id, id))
+      .returning();
+    return memory;
   }
 
   async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
-    const id = this.currentChatId++;
-    const message: ChatMessage = { 
-      ...insertMessage, 
-      id, 
-      timestamp: new Date()
-    };
-    this.chatMessages.set(id, message);
+    const [message] = await db
+      .insert(chatMessages)
+      .values(insertMessage)
+      .returning();
     return message;
   }
 
-  async getChatMessagesByUser(userId: number): Promise<ChatMessage[]> {
-    return Array.from(this.chatMessages.values())
-      .filter(message => message.userId === userId)
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  async getChatMessagesByUser(userId: string): Promise<ChatMessage[]> {
+    return await db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.userId, userId))
+      .orderBy(chatMessages.timestamp);
   }
 }
 

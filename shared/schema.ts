@@ -1,16 +1,44 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  varchar,
+  timestamp,
+  jsonb,
+  index,
+  serial,
+  integer,
+  boolean,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const moodEntries = pgTable("mood_entries", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   mood: text("mood").notNull(), // 'happy', 'sad', 'anxious', 'calm', 'excited'
   emoji: text("emoji").notNull(),
   note: text("note"),
@@ -20,7 +48,7 @@ export const moodEntries = pgTable("mood_entries", {
 
 export const memories = pgTable("memories", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   title: text("title").notNull(),
   description: text("description"),
   imageUrl: text("image_url").notNull(),
@@ -31,14 +59,10 @@ export const memories = pgTable("memories", {
 
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   message: text("message").notNull(),
   isFromUser: boolean("is_from_user").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
 });
 
 export const insertMoodEntrySchema = createInsertSchema(moodEntries).omit({
@@ -56,7 +80,7 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   timestamp: true,
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertMoodEntry = z.infer<typeof insertMoodEntrySchema>;
 export type MoodEntry = typeof moodEntries.$inferSelect;
