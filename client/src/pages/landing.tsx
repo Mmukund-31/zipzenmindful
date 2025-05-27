@@ -87,16 +87,39 @@ export default function Landing() {
         </div>
 
         {/* CTA */}
-        <div className="text-center">
+        <div className="text-center space-y-4">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-foreground mb-2">Ready to get started?</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              For this demo, we'll create a temporary account to explore all features
+            </p>
+          </div>
+          
           <Button 
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => {
+              // For demo purposes, create a temporary session
+              localStorage.setItem('demo_user', JSON.stringify({
+                id: 'demo_user_' + Date.now(),
+                email: 'demo@mindease.app',
+                firstName: 'Demo',
+                lastName: 'User',
+                profileImageUrl: null
+              }));
+              window.location.reload();
+            }}
             className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
           >
             Start Your Wellness Journey
           </Button>
-          <p className="text-xs text-muted-foreground mt-4">
-            Secure login powered by your trusted account
-          </p>
+          
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Demo mode - All your data will be saved locally
+            </p>
+            <p className="text-xs text-muted-foreground">
+              In production, you'd sign in with Google, phone number, or email
+            </p>
+          </div>
         </div>
       </div>
     </div>

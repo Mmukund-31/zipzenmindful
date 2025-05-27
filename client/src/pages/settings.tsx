@@ -28,8 +28,15 @@ export default function Settings() {
     select: (data) => data?.length || 0,
   });
 
+  const { isDemoMode } = useAuth();
+
   const handleLogout = () => {
-    window.location.href = '/api/logout';
+    if (isDemoMode) {
+      localStorage.removeItem('demo_user');
+      window.location.reload();
+    } else {
+      window.location.href = '/api/logout';
+    }
   };
 
   const getUserInitials = (user: any) => {
