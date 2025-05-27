@@ -1,0 +1,214 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import multer from "multer";
+import path from "path";
+import { storage } from "./storage";
+import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema } from "@shared/schema";
+import { generateAIResponse, analyzeMoodFromText, generateMoodInsights } from "./lib/openai";
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  const currentUserId = 1; // For demo purposes, using fixed user ID
+
+  // Mood tracking endpoints
+  app.post("/api/mood", async (req, res) => {
+    try {
+      const moodData = insertMoodEntrySchema.parse({ ...req.body, userId: currentUserId });
+      const moodEntry = await storage.createMoodEntry(moodData);
+      res.json(moodEntry);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid mood data" });
+    }
+  });
+
+  app.get("/api/mood", async (req, res) => {
+    try {
+      const entries = await storage.getMoodEntriesByUser(currentUserId);
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch mood entries" });
+    }
+  });
+
+  app.get("/api/mood/recent", async (req, res) => {
+    try {
+      const entry = await storage.getRecentMoodEntry(currentUserId);
+      res.json(entry || null);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch recent mood" });
+    }
+  });
+
+  // Chat endpoints
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Save user message
+      await storage.createChatMessage({
+        userId: currentUserId,
+        message,
+        isFromUser: true
+      });
+
+      // Get current mood for context
+      const currentMood = await storage.getRecentMoodEntry(currentUserId);
+      
+      // Generate AI response
+      const aiResponse = await generateAIResponse(message, currentMood?.mood);
+      
+      // Save AI response
+      const aiMessage = await storage.createChatMessage({
+        userId: currentUserId,
+        message: aiResponse,
+        isFromUser: false
+      });
+
+      res.json({ response: aiResponse, messageId: aiMessage.id });
+    } catch (error) {
+      console.error("Chat error:", error);
+      res.status(500).json({ error: "Failed to process chat message" });
+    }
+  });
+
+  app.get("/api/chat", async (req, res) => {
+    try {
+      const messages = await storage.getChatMessagesByUser(currentUserId);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch chat messages" });
+    }
+  });
+
+  // Memory endpoints
+  app.post("/api/memories", upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Image file is required" });
+      }
+
+      const { title, description, category } = req.body;
+      
+      // Convert image to base64 for storage (in a real app, you'd upload to cloud storage)
+      const imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+      const memoryData = insertMemorySchema.parse({
+        userId: currentUserId,
+        title: title || 'Untitled Memory',
+        description: description || '',
+        imageUrl,
+        category: category || 'other',
+        isFavorite: false
+      });
+
+      const memory = await storage.createMemory(memoryData);
+      res.json(memory);
+    } catch (error) {
+      console.error("Memory creation error:", error);
+      res.status(500).json({ error: "Failed to create memory" });
+    }
+  });
+
+  app.get("/api/memories", async (req, res) => {
+    try {
+      const { category } = req.query;
+      let memories;
+      
+      if (category && typeof category === 'string') {
+        memories = await storage.getMemoriesByCategory(currentUserId, category);
+      } else {
+        memories = await storage.getMemoriesByUser(currentUserId);
+      }
+      
+      res.json(memories);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch memories" });
+    }
+  });
+
+  app.patch("/api/memories/:id/favorite", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isFavorite } = req.body;
+      
+      const memory = await storage.updateMemoryFavorite(parseInt(id), isFavorite);
+      if (!memory) {
+        return res.status(404).json({ error: "Memory not found" });
+      }
+      
+      res.json(memory);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update memory" });
+    }
+  });
+
+  // Insights endpoint
+  app.get("/api/insights", async (req, res) => {
+    try {
+      const moodEntries = await storage.getMoodEntriesByUser(currentUserId);
+      const insights = await generateMoodInsights(moodEntries);
+      
+      // Calculate mood distribution
+      const moodCounts = moodEntries.reduce((acc, entry) => {
+        acc[entry.mood] = (acc[entry.mood] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const total = moodEntries.length || 1;
+      const moodDistribution = Object.entries(moodCounts).map(([mood, count]) => ({
+        mood,
+        percentage: Math.round((count / total) * 100)
+      }));
+
+      res.json({
+        insights,
+        moodDistribution,
+        totalEntries: moodEntries.length,
+        weeklyData: moodEntries.slice(0, 7).reverse()
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate insights" });
+    }
+  });
+
+  // Analyze mood from text
+  app.post("/api/mood/analyze", async (req, res) => {
+    try {
+      const { text } = req.body;
+      
+      if (!text || typeof text !== 'string') {
+        return res.status(400).json({ error: "Text is required" });
+      }
+
+      const analysis = await analyzeMoodFromText(text);
+      res.json(analysis);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to analyze mood" });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
