@@ -13,7 +13,7 @@ import {
   type InsertChatMessage
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -112,8 +112,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(memories)
-      .where(eq(memories.userId, userId))
-      .where(eq(memories.category, category))
+      .where(and(eq(memories.userId, userId), eq(memories.category, category)))
       .orderBy(memories.timestamp);
   }
 
@@ -143,4 +142,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
