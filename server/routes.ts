@@ -27,14 +27,26 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // Simple demo auth middleware - just use a fixed user ID for now
+  const getCurrentUserId = () => "demo_user_1";
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const userId = getCurrentUserId();
+      let user = await storage.getUser(userId);
+      
+      // Create demo user if doesn't exist
+      if (!user) {
+        user = await storage.upsertUser({
+          id: userId,
+          email: "demo@mindease.app",
+          firstName: "Demo",
+          lastName: "User",
+          profileImageUrl: null
+        });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -43,9 +55,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mood tracking endpoints
-  app.post("/api/mood", isAuthenticated, async (req: any, res) => {
+  app.post("/api/mood", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getCurrentUserId();
       const moodData = insertMoodEntrySchema.parse({ ...req.body, userId });
       const moodEntry = await storage.createMoodEntry(moodData);
       res.json(moodEntry);
@@ -54,9 +66,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/mood", isAuthenticated, async (req: any, res) => {
+  app.get("/api/mood", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getCurrentUserId();
       const entries = await storage.getMoodEntriesByUser(userId);
       res.json(entries);
     } catch (error) {
@@ -64,9 +76,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/mood/recent", isAuthenticated, async (req: any, res) => {
+  app.get("/api/mood/recent", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getCurrentUserId();
       const entry = await storage.getRecentMoodEntry(userId);
       res.json(entry || null);
     } catch (error) {
@@ -75,9 +87,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat endpoints
-  app.post("/api/chat", isAuthenticated, async (req: any, res) => {
+  app.post("/api/chat", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getCurrentUserId();
       const { message } = req.body;
       
       if (!message || typeof message !== 'string') {
@@ -111,9 +123,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/chat", isAuthenticated, async (req: any, res) => {
+  app.get("/api/chat", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getCurrentUserId();
       const messages = await storage.getChatMessagesByUser(userId);
       res.json(messages);
     } catch (error) {
@@ -122,9 +134,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Memory endpoints
-  app.post("/api/memories", isAuthenticated, upload.single('image'), async (req: any, res) => {
+  app.post("/api/memories", upload.single('image'), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getCurrentUserId();
       if (!req.file) {
         return res.status(400).json({ error: "Image file is required" });
       }
@@ -151,9 +163,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/memories", isAuthenticated, async (req: any, res) => {
+  app.get("/api/memories", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getCurrentUserId();
       const { category } = req.query;
       let memories;
       
@@ -169,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/memories/:id/favorite", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/memories/:id/favorite", async (req: any, res) => {
     try {
       const { id } = req.params;
       const { isFavorite } = req.body;
@@ -186,9 +198,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Insights endpoint
-  app.get("/api/insights", isAuthenticated, async (req: any, res) => {
+  app.get("/api/insights", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getCurrentUserId();
       const moodEntries = await storage.getMoodEntriesByUser(userId);
       const insights = await generateMoodInsights(moodEntries);
       
