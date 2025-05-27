@@ -27,10 +27,10 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Simple demo auth middleware - just use a fixed user ID for now
+  // Simple demo auth - use fixed user ID for now
   const getCurrentUserId = () => "demo_user_1";
 
-  // Auth routes
+  // Auth routes  
   app.get('/api/auth/user', async (req: any, res) => {
     try {
       const userId = getCurrentUserId();
