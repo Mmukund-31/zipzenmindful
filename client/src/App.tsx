@@ -9,6 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import Chat from "@/pages/chat";
 import Memories from "@/pages/memories";
 import Insights from "@/pages/insights";
+import Wellness from "@/pages/wellness";
 import Settings from "@/pages/settings";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
@@ -27,6 +28,7 @@ function Router() {
             <Route path="/chat" component={Chat} />
             <Route path="/memories" component={Memories} />
             <Route path="/insights" component={Insights} />
+            <Route path="/wellness" component={Wellness} />
             <Route path="/settings" component={Settings} />
           </>
         )}
