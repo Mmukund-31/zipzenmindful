@@ -9,7 +9,8 @@ import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
 if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+  process.env.REPLIT_DOMAINS = `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+  console.log(`Using default domain: ${process.env.REPLIT_DOMAINS}`);
 }
 
 const getOidcConfig = memoize(
@@ -31,8 +32,11 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  if (!process.env.SESSION_SECRET) {
+    console.error('SESSION_SECRET is not set. Authentication will not work properly.');
+  }
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || 'default-unsafe-secret',
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
