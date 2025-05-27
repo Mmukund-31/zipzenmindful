@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, MessageCircle, Heart, TrendingUp } from "lucide-react";
+import { Home, MessageCircle, Heart, TrendingUp, Settings } from "lucide-react";
 
 const tabs = [
   { id: "dashboard", label: "Home", icon: Home, path: "/" },
   { id: "chat", label: "Chat", icon: MessageCircle, path: "/chat" },
   { id: "memories", label: "Memories", icon: Heart, path: "/memories" },
   { id: "insights", label: "Insights", icon: TrendingUp, path: "/insights" },
+  { id: "settings", label: "Settings", icon: Settings, path: "/settings" },
 ];
 
 export default function Navigation() {
