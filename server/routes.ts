@@ -5,7 +5,7 @@ import path from "path";
 import { storage } from "./storage";
 import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema } from "@shared/schema";
 import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText } from "./lib/openai";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+// Removed complex auth - using simple demo auth instead
 
 // Configure multer for file uploads
 const upload = multer({
