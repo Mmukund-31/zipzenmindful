@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Send, Mic, Bot, User } from "lucide-react";
+import { Send, Mic, MicOff, Volume2, VolumeX, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,24 +18,39 @@ const quickResponses = [
 export default function Chat() {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const synthesisRef = useRef<SpeechSynthesis | null>(null);
   const { toast } = useToast();
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ["/api/chat"],
   });
 
+  const { data: recentMood } = useQuery({
+    queryKey: ["/api/mood/recent"],
+  });
+
   const chatMutation = useMutation({
     mutationFn: async (userMessage: string) => {
-      return apiRequest("POST", "/api/chat", { message: userMessage });
+      const response = await apiRequest("POST", "/api/chat", { message: userMessage });
+      return response.json();
     },
     onMutate: () => {
       setIsTyping(true);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
       setMessage("");
       setIsTyping(false);
+      
+      // Speak the AI response if voice is enabled
+      if (voiceEnabled && data.response && synthesisRef.current) {
+        speakResponse(data.response);
+      }
     },
     onError: () => {
       toast({
@@ -47,9 +62,118 @@ export default function Chat() {
     },
   });
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
-    chatMutation.mutate(message);
+  // Initialize speech recognition and synthesis
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event: any) => {
+        const speechToText = event.results[0][0].transcript;
+        setMessage(speechToText);
+        // Auto-send voice messages
+        handleSendMessage(speechToText);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        toast({
+          title: "Voice Error",
+          description: "Could not recognize speech. Please try again.",
+          variant: "destructive",
+        });
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+
+    if ('speechSynthesis' in window) {
+      synthesisRef.current = window.speechSynthesis;
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+      if (synthesisRef.current) {
+        synthesisRef.current.cancel();
+      }
+    };
+  }, []);
+
+  const speakResponse = (text: string) => {
+    if (!synthesisRef.current || !voiceEnabled) return;
+
+    // Cancel any ongoing speech
+    synthesisRef.current.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Adjust voice based on current mood
+    const currentMood = (recentMood as any)?.mood;
+    if (currentMood) {
+      switch (currentMood.toLowerCase()) {
+        case 'anxious':
+        case 'stressed':
+          utterance.rate = 0.8; // Slower, calming pace
+          utterance.pitch = 0.8; // Lower, soothing pitch
+          break;
+        case 'excited':
+        case 'happy':
+          utterance.rate = 1.1; // Slightly faster
+          utterance.pitch = 1.1; // Higher, more energetic
+          break;
+        case 'sad':
+        case 'lonely':
+          utterance.rate = 0.9; // Gentle pace
+          utterance.pitch = 0.9; // Warm, comforting tone
+          break;
+        default:
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+      }
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    synthesisRef.current.speak(utterance);
+  };
+
+  const startListening = () => {
+    if (recognitionRef.current && !isListening && !isTyping) {
+      setMessage("");
+      setIsListening(true);
+      recognitionRef.current.start();
+    }
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  const toggleVoice = () => {
+    setVoiceEnabled(!voiceEnabled);
+    if (!voiceEnabled && synthesisRef.current) {
+      synthesisRef.current.cancel();
+      setIsSpeaking(false);
+    }
+  };
+
+  const handleSendMessage = (messageText?: string) => {
+    const textToSend = messageText || message;
+    if (!textToSend.trim()) return;
+    chatMutation.mutate(textToSend);
   };
 
   const handleQuickResponse = (response: string) => {
@@ -159,26 +283,67 @@ export default function Chat() {
 
       {/* Chat Input */}
       <div className="bg-white border-t border-border p-4">
+        {/* Voice Status Indicator */}
+        {(isListening || isSpeaking) && (
+          <div className="mb-3 text-center">
+            <div className={`inline-flex items-center space-x-2 px-3 py-2 rounded-full text-sm ${
+              isListening ? 'bg-red-50 text-red-700 border border-red-200' :
+              'bg-blue-50 text-blue-700 border border-blue-200'
+            }`}>
+              {isListening ? (
+                <>
+                  <Mic className="w-4 h-4 animate-pulse" />
+                  <span>Listening...</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-4 h-4 animate-pulse" />
+                  <span>Speaking...</span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center space-x-3 mb-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-10 h-10 rounded-full p-0"
-            disabled
-          >
-            <Mic className="w-4 h-4" />
-          </Button>
+          {/* Voice Controls */}
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={isListening ? stopListening : startListening}
+              disabled={chatMutation.isPending || isSpeaking}
+              variant={isListening ? "destructive" : "outline"}
+              size="sm"
+              className={`w-10 h-10 rounded-full p-0 transition-all ${
+                isListening ? 'animate-pulse' : ''
+              }`}
+              title={isListening ? 'Stop listening' : 'Start voice input'}
+            >
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </Button>
+            
+            <Button
+              onClick={toggleVoice}
+              variant="ghost"
+              size="sm"
+              className="w-8 h-8 rounded-full p-0"
+              title={voiceEnabled ? 'Disable voice responses' : 'Enable voice responses'}
+            >
+              {voiceEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+            </Button>
+          </div>
+
           <div className="flex-1 relative">
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
+              placeholder={isListening ? "Listening for your voice..." : "Type or speak your message..."}
               className="pr-12 rounded-full"
+              disabled={isListening}
             />
             <Button
-              onClick={handleSendMessage}
-              disabled={!message.trim() || chatMutation.isPending}
+              onClick={() => handleSendMessage()}
+              disabled={!message.trim() || chatMutation.isPending || isListening}
               size="sm"
               className="absolute right-1 top-1/2 transform -translate-y-1/2 w-8 h-8 rounded-full p-0"
             >
