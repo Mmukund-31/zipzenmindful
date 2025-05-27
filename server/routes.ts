@@ -228,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analyze mood from text
-  app.post("/api/mood/analyze", isAuthenticated, async (req: any, res) => {
+  app.post("/api/mood/analyze", async (req: any, res) => {
     try {
       const { text } = req.body;
       
@@ -244,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate meme text
-  app.post("/api/meme/generate-text", isAuthenticated, async (req: any, res) => {
+  app.post("/api/meme/generate-text", async (req: any, res) => {
     try {
       const { memoryTitle, memoryCategory, style } = req.body;
       
