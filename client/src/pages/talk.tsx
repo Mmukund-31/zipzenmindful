@@ -199,7 +199,7 @@ export default function Talk() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">Voice Assistant</CardTitle>
             <p className="text-blue-100">
-              Your personal AI wellness companion - just like having Siri for your mental health
+              For your support any time
             </p>
             {currentMood && (
               <Badge className={`mx-auto w-fit ${getMoodColor(currentMood)}`}>
