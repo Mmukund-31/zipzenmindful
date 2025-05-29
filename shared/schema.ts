@@ -91,10 +91,11 @@ export const challenges = pgTable("challenges", {
 
 export const challengeProgress = pgTable("challenge_progress", {
   id: serial("id").primaryKey(),
-  challengeId: integer("challenge_id").references(() => challenges.id),
+  challengeId: varchar("challenge_id").notNull(),
   userId: varchar("user_id").notNull(),
-  date: timestamp("date").notNull(),
-  completed: boolean("completed").default(false),
+  completed: integer("completed").default(0),
+  startDate: timestamp("start_date").defaultNow(),
+  lastActivityDate: timestamp("last_activity_date"),
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
