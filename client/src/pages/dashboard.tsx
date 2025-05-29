@@ -83,17 +83,10 @@ export default function Dashboard() {
               <Smile className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold">Hello, Sarah</h1>
+              <h1 className="text-lg font-semibold">Hello, Mukund</h1>
               <p className="text-sm opacity-90">How are you feeling today?</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 p-0"
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
         </div>
 
         <MoodSelector onMoodSelect={handleMoodSelect} selectedMood={recentMood?.mood} />
