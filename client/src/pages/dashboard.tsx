@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Settings, Bot, Camera, Smile, MessageCircle } from "lucide-react";
+import { Settings, Bot, Camera, Smile, MessageCircle, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -120,15 +120,27 @@ export default function Dashboard() {
           </Card>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <Link href="/chat">
               <Card className="hover:shadow-md transition-all cursor-pointer h-full">
                 <CardContent className="p-4 text-center">
                   <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3 mx-auto">
-                    <Bot className="w-5 h-5 text-primary" />
+                    <MessageCircle className="w-5 h-5 text-primary" />
                   </div>
-                  <h4 className="font-medium text-sm text-foreground">Talk to AI</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Get support anytime</p>
+                  <h4 className="font-medium text-sm text-foreground">Chat</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Text conversation</p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href="/talk">
+              <Card className="hover:shadow-md transition-all cursor-pointer h-full">
+                <CardContent className="p-4 text-center">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-3 mx-auto">
+                    <Mic className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h4 className="font-medium text-sm text-foreground">Talk</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Voice assistant</p>
                 </CardContent>
               </Card>
             </Link>
@@ -139,7 +151,7 @@ export default function Dashboard() {
                   <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center mb-3 mx-auto">
                     <Camera className="w-5 h-5 text-accent" />
                   </div>
-                  <h4 className="font-medium text-sm text-foreground">Add Memory</h4>
+                  <h4 className="font-medium text-sm text-foreground">Memory</h4>
                   <p className="text-xs text-muted-foreground mt-1">Capture moments</p>
                 </CardContent>
               </Card>
