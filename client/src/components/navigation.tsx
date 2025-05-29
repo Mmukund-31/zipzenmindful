@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, MessageCircle, Heart, TrendingUp, Settings, Brain } from "lucide-react";
+import { Home, MessageCircle, Heart, TrendingUp, Settings, Brain, BookHeart, Trophy } from "lucide-react";
 
 const tabs = [
   { id: "dashboard", label: "Home", icon: Home, path: "/" },
   { id: "chat", label: "Chat", icon: MessageCircle, path: "/chat" },
   { id: "memories", label: "Memories", icon: Heart, path: "/memories" },
+  { id: "gratitude", label: "Gratitude", icon: BookHeart, path: "/gratitude" },
+  { id: "challenges", label: "Challenges", icon: Trophy, path: "/challenges" },
   { id: "insights", label: "Insights", icon: TrendingUp, path: "/insights" },
   { id: "wellness", label: "Wellness", icon: Brain, path: "/wellness" },
   { id: "settings", label: "Settings", icon: Settings, path: "/settings" },

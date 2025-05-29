@@ -65,6 +65,39 @@ export const chatMessages = pgTable("chat_messages", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+export const gratitudeEntries = pgTable("gratitude_entries", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  content: text("content").notNull(),
+  date: timestamp("date").defaultNow(),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+export const challenges = pgTable("challenges", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  challengeId: varchar("challenge_id").notNull(),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  duration: integer("duration").notNull(),
+  type: varchar("type").notNull(),
+  difficulty: varchar("difficulty").notNull(),
+  points: integer("points").notNull(),
+  icon: varchar("icon"),
+  startDate: timestamp("start_date").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  isActive: boolean("is_active").default(true),
+});
+
+export const challengeProgress = pgTable("challenge_progress", {
+  id: serial("id").primaryKey(),
+  challengeId: integer("challenge_id").references(() => challenges.id),
+  userId: varchar("user_id").notNull(),
+  date: timestamp("date").notNull(),
+  completed: boolean("completed").default(false),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
 export const insertMoodEntrySchema = createInsertSchema(moodEntries).omit({
   id: true,
   timestamp: true,
@@ -80,6 +113,21 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   timestamp: true,
 });
 
+export const insertGratitudeEntrySchema = createInsertSchema(gratitudeEntries).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertChallengeSchema = createInsertSchema(challenges).omit({
+  id: true,
+  startDate: true,
+});
+
+export const insertChallengeProgressSchema = createInsertSchema(challengeProgress).omit({
+  id: true,
+  timestamp: true,
+});
+
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertMoodEntry = z.infer<typeof insertMoodEntrySchema>;
@@ -88,3 +136,9 @@ export type InsertMemory = z.infer<typeof insertMemorySchema>;
 export type Memory = typeof memories.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertGratitudeEntry = z.infer<typeof insertGratitudeEntrySchema>;
+export type GratitudeEntry = typeof gratitudeEntries.$inferSelect;
+export type InsertChallenge = z.infer<typeof insertChallengeSchema>;
+export type Challenge = typeof challenges.$inferSelect;
+export type InsertChallengeProgress = z.infer<typeof insertChallengeProgressSchema>;
+export type ChallengeProgress = typeof challengeProgress.$inferSelect;

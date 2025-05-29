@@ -12,6 +12,8 @@ import Talk from "@/pages/talk";
 import Memories from "@/pages/memories";
 import Insights from "@/pages/insights";
 import Wellness from "@/pages/wellness";
+import Gratitude from "@/pages/gratitude";
+import Challenges from "@/pages/challenges";
 import Settings from "@/pages/settings";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
@@ -32,6 +34,8 @@ function Router() {
             <Route path="/memories" component={Memories} />
             <Route path="/insights" component={Insights} />
             <Route path="/wellness" component={Wellness} />
+            <Route path="/gratitude" component={Gratitude} />
+            <Route path="/challenges" component={Challenges} />
             <Route path="/settings" component={Settings} />
           </>
         )}
