@@ -48,6 +48,32 @@ export default function Challenges() {
     },
   });
 
+  const completeChallengeeMutation = useMutation({
+    mutationFn: async (challengeId: string) => {
+      const response = await apiRequest("POST", "/api/challenges/progress", {
+        challengeId,
+        completed: true,
+        date: new Date().toISOString()
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/challenges/active'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/challenges/completed'] });
+      toast({
+        title: "Great job!",
+        description: "You've completed today's challenge!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to mark as complete",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateProgressMutation = useMutation({
     mutationFn: async ({ challengeId, completed }: { challengeId: string; completed: boolean }) => {
       const response = await apiRequest("POST", "/api/challenges/progress", { 
@@ -236,21 +262,30 @@ export default function Challenges() {
                     <Progress value={getProgressPercentage(challenge)} className="h-2" />
                   </div>
 
-                  <div className="flex justify-between items-center mt-3">
-                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                      <Star className="w-4 h-4" />
-                      <span>{challenge.points} points</span>
+                  <div className="space-y-3 mt-3">
+                    {(challenge.progress?.completed || 0) > 0 && (
+                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                        <p className="text-sm text-green-800 dark:text-green-200 flex items-center gap-2">
+                          <Flame className="w-4 h-4" />
+                          Current streak: {challenge.progress?.completed || 0} day{(challenge.progress?.completed || 0) !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <Star className="w-4 h-4" />
+                        <span>{challenge.points} points</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => completeChallengeeMutation.mutate(challenge.challengeId)}
+                        disabled={completeChallengeeMutation.isPending}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {completeChallengeeMutation.isPending ? "Completing..." : "Complete Today"}
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => updateProgressMutation.mutate({ 
-                        challengeId: challenge.id, 
-                        completed: true 
-                      })}
-                      disabled={updateProgressMutation.isPending}
-                    >
-                      Mark Today Complete
-                    </Button>
                   </div>
                 </div>
               ))}
