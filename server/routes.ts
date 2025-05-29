@@ -326,6 +326,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Challenges routes
+  app.get("/api/challenges/active", async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const activeChallenges = await storage.getActiveChallengesByUser(userId);
+      res.json(activeChallenges);
+    } catch (error) {
+      console.error("Active challenges fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch active challenges" });
+    }
+  });
+
+  app.get("/api/challenges/available", async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const availableChallenges = await storage.getAvailableChallenges(userId);
+      res.json(availableChallenges);
+    } catch (error) {
+      console.error("Available challenges fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch available challenges" });
+    }
+  });
+
+  app.get("/api/challenges/completed", async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const completedChallenges = await storage.getCompletedChallengesByUser(userId);
+      res.json(completedChallenges);
+    } catch (error) {
+      console.error("Completed challenges fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch completed challenges" });
+    }
+  });
+
+  app.post("/api/challenges/join", async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const { challengeId } = req.body;
+      
+      if (!challengeId) {
+        return res.status(400).json({ error: "Challenge ID is required" });
+      }
+
+      const challenge = await storage.joinChallenge(userId, challengeId);
+      res.json(challenge);
+    } catch (error) {
+      console.error("Challenge join error:", error);
+      res.status(500).json({ error: "Failed to join challenge" });
+    }
+  });
+
+  app.post("/api/challenges/progress", async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const { challengeId, completed, date } = req.body;
+      
+      if (!challengeId || typeof completed !== 'boolean') {
+        return res.status(400).json({ error: "Challenge ID and completed status are required" });
+      }
+
+      const progress = await storage.updateChallengeProgress(userId, challengeId, completed, date);
+      res.json(progress);
+    } catch (error) {
+      console.error("Challenge progress error:", error);
+      res.status(500).json({ error: "Failed to update challenge progress" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

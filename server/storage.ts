@@ -4,6 +4,8 @@ import {
   memories,
   chatMessages,
   gratitudeEntries,
+  challenges,
+  challengeProgress,
   type User,
   type UpsertUser,
   type MoodEntry,
@@ -13,7 +15,9 @@ import {
   type ChatMessage,
   type InsertChatMessage,
   type GratitudeEntry,
-  type InsertGratitudeEntry
+  type InsertGratitudeEntry,
+  type Challenge,
+  type ChallengeProgress
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -39,6 +43,12 @@ export interface IStorage {
   
   createGratitudeEntry(entry: InsertGratitudeEntry): Promise<GratitudeEntry>;
   getGratitudeEntriesByUser(userId: string): Promise<GratitudeEntry[]>;
+  
+  getActiveChallengesByUser(userId: string): Promise<Challenge[]>;
+  getAvailableChallenges(userId: string): Promise<Challenge[]>;
+  getCompletedChallengesByUser(userId: string): Promise<Challenge[]>;
+  joinChallenge(userId: string, challengeId: string): Promise<ChallengeProgress>;
+  updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<ChallengeProgress>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -161,6 +171,65 @@ export class DatabaseStorage implements IStorage {
       .from(gratitudeEntries)
       .where(eq(gratitudeEntries.userId, userId))
       .orderBy(gratitudeEntries.date);
+  }
+
+  async getActiveChallengesByUser(userId: string): Promise<Challenge[]> {
+    // Return empty array for now - challenges are managed client-side with predefined data
+    return [];
+  }
+
+  async getAvailableChallenges(userId: string): Promise<Challenge[]> {
+    // Return empty array for now - challenges are managed client-side with predefined data
+    return [];
+  }
+
+  async getCompletedChallengesByUser(userId: string): Promise<Challenge[]> {
+    // Return empty array for now - challenges are managed client-side with predefined data
+    return [];
+  }
+
+  async joinChallenge(userId: string, challengeId: string): Promise<ChallengeProgress> {
+    // Simple implementation that creates a progress entry
+    const [progress] = await db
+      .insert(challengeProgress)
+      .values({
+        userId,
+        challengeId,
+        completed: 0,
+        startDate: new Date(),
+      })
+      .returning();
+    return progress;
+  }
+
+  async updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<ChallengeProgress> {
+    // Update progress by incrementing completed count
+    const [progress] = await db
+      .select()
+      .from(challengeProgress)
+      .where(and(
+        eq(challengeProgress.userId, userId),
+        eq(challengeProgress.challengeId, challengeId)
+      ))
+      .limit(1);
+
+    if (progress) {
+      const [updated] = await db
+        .update(challengeProgress)
+        .set({
+          completed: completed ? progress.completed + 1 : progress.completed,
+          lastActivityDate: new Date(date || new Date()),
+        })
+        .where(and(
+          eq(challengeProgress.userId, userId),
+          eq(challengeProgress.challengeId, challengeId)
+        ))
+        .returning();
+      return updated;
+    } else {
+      // Create new progress entry if none exists
+      return this.joinChallenge(userId, challengeId);
+    }
   }
 }
 
