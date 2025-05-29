@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Settings, Bot, Camera, Smile, MessageCircle, Mic } from "lucide-react";
+import { Settings, Bot, Camera, Smile, MessageCircle, Mic, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -87,6 +87,15 @@ export default function Dashboard() {
               <p className="text-sm opacity-90">How are you feeling today?</p>
             </div>
           </div>
+          <Link href="/insights">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 p-0"
+            >
+              <BarChart3 className="w-4 h-4" />
+            </Button>
+          </Link>
         </div>
 
         <MoodSelector onMoodSelect={handleMoodSelect} selectedMood={recentMood?.mood} />
