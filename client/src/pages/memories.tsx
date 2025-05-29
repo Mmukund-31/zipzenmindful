@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Heart, Filter, Upload } from "lucide-react";
+import { Plus, Heart, Filter, Upload, Play, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import FileUpload from "@/components/file-upload";
 import MemoryVideoCreator from "@/components/memory-video-creator";
 import MemeGenerator from "@/components/meme-generator";
+import MemoryGallery from "@/components/memory-gallery";
+import AutoMemoryCreator from "@/components/auto-memory-creator";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,6 +27,8 @@ const categories = [
 export default function Memories() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedGallery, setSelectedGallery] = useState<{photos: any[], title: string} | null>(null);
+  const [autoCreatedMemories, setAutoCreatedMemories] = useState<Array<{id: string, photos: any[], title: string, createdAt: string}>>([]);
   const [uploadData, setUploadData] = useState({
     title: "",
     description: "",
@@ -95,6 +99,21 @@ export default function Memories() {
 
   const toggleFavorite = (memory: any) => {
     favoriteMutation.mutate({ id: memory.id, isFavorite: !memory.isFavorite });
+  };
+
+  const handleCreateAutoMemory = (photos: any[], title: string) => {
+    const newMemory = {
+      id: Date.now().toString(),
+      photos,
+      title,
+      createdAt: new Date().toISOString()
+    };
+    setAutoCreatedMemories(prev => [newMemory, ...prev]);
+    setSelectedGallery({ photos, title });
+    toast({
+      title: "Memory Created!",
+      description: `"${title}" gallery is ready to view`,
+    });
   };
 
   if (isLoading) {
@@ -208,7 +227,60 @@ export default function Memories() {
         ))}
       </div>
 
-      {/* Memory Grid */}
+      {/* Auto Memory Creator */}
+      {memories.length > 0 && (
+        <div className="mb-6">
+          <AutoMemoryCreator 
+            memories={memories} 
+            onCreateMemory={handleCreateAutoMemory}
+          />
+        </div>
+      )}
+
+      {/* Auto-Created Memory Galleries */}
+      {autoCreatedMemories.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-purple-500" />
+            Memory Collections
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {autoCreatedMemories.map((autoMemory) => (
+              <Card 
+                key={autoMemory.id} 
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setSelectedGallery({ photos: autoMemory.photos, title: autoMemory.title })}
+              >
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-4 gap-1 mb-3">
+                    {autoMemory.photos.slice(0, 4).map((photo, index) => (
+                      <img
+                        key={index}
+                        src={photo.imageUrl}
+                        alt={photo.title}
+                        className="w-full h-16 object-cover rounded"
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold">{autoMemory.title}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {autoMemory.photos.length} photos
+                      </p>
+                    </div>
+                    <Button size="sm" variant="ghost">
+                      <Play className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Individual Photos Grid */}
       {memories.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
@@ -222,7 +294,11 @@ export default function Memories() {
       ) : (
         <div className="grid grid-cols-2 gap-4">
           {memories.map((memory: any) => (
-            <div key={memory.id} className="relative group cursor-pointer">
+            <div 
+              key={memory.id} 
+              className="relative group cursor-pointer"
+              onClick={() => setSelectedGallery({ photos: [memory], title: memory.title })}
+            >
               <img
                 src={memory.imageUrl}
                 alt={memory.title}
