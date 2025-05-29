@@ -4,8 +4,6 @@ import { Home, MessageCircle, Heart, TrendingUp, Settings, Brain, BookHeart, Tro
 
 const tabs = [
   { id: "dashboard", label: "Home", icon: Home, path: "/" },
-  { id: "chat", label: "Chat", icon: MessageCircle, path: "/chat" },
-  { id: "memories", label: "Memories", icon: Heart, path: "/memories" },
   { id: "gratitude", label: "Gratitude", icon: BookHeart, path: "/gratitude" },
   { id: "challenges", label: "Challenges", icon: Trophy, path: "/challenges" },
   { id: "insights", label: "Insights", icon: TrendingUp, path: "/insights" },
