@@ -132,17 +132,17 @@ export default function Wellness() {
           <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-2 shadow-lg">
             <TabsTrigger 
               value="breathing" 
-              className="flex items-center space-x-2 py-4 px-6 rounded-lg font-semibold text-blue-700 hover:bg-blue-100 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
+              className="flex items-center justify-center space-x-2 py-4 px-6 rounded-lg font-semibold text-blue-700 hover:bg-blue-100 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 min-h-[3rem]"
             >
-              <Wind className="w-5 h-5" />
-              <span className="text-sm font-medium">Breathing</span>
+              <Wind className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium whitespace-nowrap">Breathing</span>
             </TabsTrigger>
             <TabsTrigger 
               value="thoughts" 
-              className="flex items-center space-x-2 py-4 px-6 rounded-lg font-semibold text-purple-700 hover:bg-purple-100 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
+              className="flex items-center justify-center space-x-2 py-4 px-6 rounded-lg font-semibold text-purple-700 hover:bg-purple-100 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 min-h-[3rem]"
             >
-              <Brain className="w-5 h-5" />
-              <span className="text-sm font-medium">Thoughts</span>
+              <Brain className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium whitespace-nowrap">Thoughts</span>
             </TabsTrigger>
           </TabsList>
 

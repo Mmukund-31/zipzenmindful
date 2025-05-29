@@ -89,11 +89,12 @@ export default function Dashboard() {
           </div>
           <Link href="/insights">
             <Button
-              variant="ghost"
+              variant="default"
               size="sm"
-              className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 p-0"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg border-0 px-4 py-2 rounded-full font-medium transition-all duration-200 hover:shadow-xl"
             >
-              <BarChart3 className="w-4 h-4" />
+              <BarChart3 className="w-4 h-4 mr-2" />
+              <span className="text-sm">Insights</span>
             </Button>
           </Link>
         </div>
