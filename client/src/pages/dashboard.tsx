@@ -169,7 +169,10 @@ export default function Dashboard() {
           <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activities</h2>
           <div className="space-y-3">
             {moodHistory.length > 0 ? (
-              moodHistory.slice(0, 5).map((activity: any, index: number) => (
+              [...moodHistory]
+                .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                .slice(0, 5)
+                .map((activity: any, index: number) => (
                 <Card key={activity.id || index}>
                   <CardContent className="p-4">
                     <div className="flex items-center space-x-3">
@@ -181,7 +184,16 @@ export default function Dashboard() {
                           Mood logged: {activity.mood}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(activity.timestamp).toLocaleDateString()}
+                          {new Date(activity.timestamp).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric'
+                          })} at {new Date(activity.timestamp).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
                         </p>
                       </div>
                     </div>
