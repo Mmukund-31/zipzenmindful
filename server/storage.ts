@@ -231,16 +231,17 @@ export class DatabaseStorage implements IStorage {
 
   async joinChallenge(userId: string, challengeId: string): Promise<ChallengeProgress> {
     try {
-      // Use raw SQL to handle the database structure mismatch
-      const result = await db.execute(sql`
-        INSERT INTO challenge_progress (challenge_id, user_id, date, completed)
-        VALUES (${challengeId}, ${userId}, ${new Date()}, false)
-        ON CONFLICT DO NOTHING
-        RETURNING *
-      `);
+      // Execute direct SQL insertion to handle the schema properly
+      await db.execute(
+        sql.raw(`
+          INSERT INTO challenge_progress (challenge_id, user_id, date, completed)
+          VALUES ('${challengeId}', '${userId}', NOW(), false)
+          ON CONFLICT DO NOTHING
+        `)
+      );
       
       return {
-        id: Math.floor(Math.random() * 1000),
+        id: Date.now(),
         challengeId,
         userId,
         completed: 0,
@@ -250,15 +251,7 @@ export class DatabaseStorage implements IStorage {
       };
     } catch (error) {
       console.error("Error joining challenge:", error);
-      return {
-        id: Math.floor(Math.random() * 1000),
-        challengeId,
-        userId,
-        completed: 0,
-        startDate: new Date(),
-        lastActivityDate: null,
-        timestamp: new Date(),
-      };
+      throw error;
     }
   }
 
