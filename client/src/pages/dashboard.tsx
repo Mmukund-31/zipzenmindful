@@ -18,7 +18,8 @@ export default function Dashboard() {
 
   const { data: moodHistory = [] } = useQuery({
     queryKey: ["/api/mood"],
-    refetchInterval: 30000, // Refresh every 30 seconds for real-time updates
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
+    refetchOnWindowFocus: true, // Refresh when user returns to tab
   });
 
   const moodMutation = useMutation({
@@ -26,8 +27,12 @@ export default function Dashboard() {
       return apiRequest("POST", "/api/mood", moodData);
     },
     onSuccess: () => {
+      // Force immediate refresh of mood data for real-time updates
       queryClient.invalidateQueries({ queryKey: ["/api/mood"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mood/recent"] });
+      queryClient.refetchQueries({ queryKey: ["/api/mood"] });
+      queryClient.refetchQueries({ queryKey: ["/api/mood/recent"] });
+      
       toast({
         title: "Mood logged successfully!",
         description: "Your mood has been recorded.",
