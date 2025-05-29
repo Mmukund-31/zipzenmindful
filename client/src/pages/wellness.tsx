@@ -129,20 +129,14 @@ export default function Wellness() {
 
         {/* Interactive tools */}
         <Tabs defaultValue="breathing" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-1 shadow-lg">
-            <TabsTrigger 
-              value="breathing" 
-              className="flex flex-col items-center justify-center py-2 px-4 rounded-lg font-medium text-blue-700 hover:bg-blue-100 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 h-12"
-            >
-              <Wind className="w-4 h-4 mb-1" />
-              <span className="text-xs font-medium">Breathing</span>
+          <TabsList className="grid w-full grid-cols-2 bg-white border">
+            <TabsTrigger value="breathing" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white">
+              <Wind className="w-4 h-4" />
+              <span>Breathing</span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="thoughts" 
-              className="flex flex-col items-center justify-center py-2 px-4 rounded-lg font-medium text-purple-700 hover:bg-purple-100 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200 h-12"
-            >
-              <Brain className="w-4 h-4 mb-1" />
-              <span className="text-xs font-medium">Thoughts</span>
+            <TabsTrigger value="thoughts" className="flex items-center space-x-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white">
+              <Brain className="w-4 h-4" />
+              <span>Thoughts</span>
             </TabsTrigger>
           </TabsList>
 
