@@ -345,6 +345,15 @@ export default function Memories() {
           </Card>
         </div>
       )}
+
+      {/* Memory Gallery Viewer */}
+      {selectedGallery && (
+        <MemoryGallery
+          photos={selectedGallery.photos}
+          title={selectedGallery.title}
+          onClose={() => setSelectedGallery(null)}
+        />
+      )}
     </div>
   );
 }
