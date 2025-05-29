@@ -173,45 +173,186 @@ export class DatabaseStorage implements IStorage {
       .orderBy(gratitudeEntries.date);
   }
 
-  async getActiveChallengesByUser(userId: string): Promise<Challenge[]> {
-    // Return empty array for now - challenges are managed client-side with predefined data
-    return [];
+  async getActiveChallengesByUser(userId: string): Promise<any[]> {
+    try {
+      const progress = await db
+        .select()
+        .from(challengeProgress)
+        .where(eq(challengeProgress.userId, userId));
+      
+      // Return progress data with predefined challenge info
+      return progress.map(p => ({
+        id: p.challengeId,
+        challengeId: p.challengeId,
+        progress: { completed: p.completed || 0 },
+        ...this.getPredefinedChallengeInfo(p.challengeId)
+      }));
+    } catch (error) {
+      console.error("Error fetching active challenges:", error);
+      return [];
+    }
   }
 
-  async getAvailableChallenges(userId: string): Promise<Challenge[]> {
-    // Return empty array for now - challenges are managed client-side with predefined data
-    return [];
+  async getAvailableChallenges(userId: string): Promise<any[]> {
+    // Return predefined challenges that user hasn't started
+    const userProgress = await db
+      .select()
+      .from(challengeProgress)
+      .where(eq(challengeProgress.userId, userId));
+    
+    const startedChallengeIds = userProgress.map(p => p.challengeId);
+    const predefinedChallenges = this.getAllPredefinedChallenges();
+    
+    return predefinedChallenges.filter(c => !startedChallengeIds.includes(c.id));
   }
 
-  async getCompletedChallengesByUser(userId: string): Promise<Challenge[]> {
-    // Return empty array for now - challenges are managed client-side with predefined data
-    return [];
+  async getCompletedChallengesByUser(userId: string): Promise<any[]> {
+    try {
+      const progress = await db
+        .select()
+        .from(challengeProgress)
+        .where(eq(challengeProgress.userId, userId));
+      
+      // Return completed challenges (those with sufficient progress)
+      return progress
+        .filter(p => {
+          const challengeInfo = this.getPredefinedChallengeInfo(p.challengeId);
+          return (p.completed || 0) >= challengeInfo.duration;
+        })
+        .map(p => ({
+          ...this.getPredefinedChallengeInfo(p.challengeId),
+          completedAt: p.lastActivityDate,
+          progress: { completed: p.completed }
+        }));
+    } catch (error) {
+      console.error("Error fetching completed challenges:", error);
+      return [];
+    }
   }
 
   async joinChallenge(userId: string, challengeId: string): Promise<ChallengeProgress> {
-    // Create a mock progress entry for now
-    return {
-      id: Math.floor(Math.random() * 1000),
-      challengeId,
-      userId,
-      completed: 0,
-      startDate: new Date(),
-      lastActivityDate: null,
-      timestamp: new Date(),
-    };
+    try {
+      // Check if already exists
+      const existing = await db
+        .select()
+        .from(challengeProgress)
+        .where(and(
+          eq(challengeProgress.userId, userId),
+          eq(challengeProgress.challengeId, challengeId)
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        return existing[0];
+      }
+
+      // Create new progress entry
+      const [progress] = await db
+        .insert(challengeProgress)
+        .values({
+          userId,
+          challengeId,
+          completed: 0,
+          startDate: new Date(),
+        })
+        .returning();
+      
+      return progress;
+    } catch (error) {
+      console.error("Error joining challenge:", error);
+      throw error;
+    }
   }
 
   async updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<ChallengeProgress> {
-    // Return a mock updated progress entry
-    return {
-      id: Math.floor(Math.random() * 1000),
-      challengeId,
-      userId,
-      completed: completed ? 1 : 0,
-      startDate: new Date(),
-      lastActivityDate: new Date(date || new Date()),
-      timestamp: new Date(),
+    try {
+      const existing = await db
+        .select()
+        .from(challengeProgress)
+        .where(and(
+          eq(challengeProgress.userId, userId),
+          eq(challengeProgress.challengeId, challengeId)
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        const currentCompleted = existing[0].completed || 0;
+        const [updated] = await db
+          .update(challengeProgress)
+          .set({
+            completed: completed ? currentCompleted + 1 : currentCompleted,
+            lastActivityDate: new Date(date || new Date()),
+          })
+          .where(and(
+            eq(challengeProgress.userId, userId),
+            eq(challengeProgress.challengeId, challengeId)
+          ))
+          .returning();
+        
+        return updated;
+      } else {
+        return this.joinChallenge(userId, challengeId);
+      }
+    } catch (error) {
+      console.error("Error updating challenge progress:", error);
+      throw error;
+    }
+  }
+
+  private getPredefinedChallengeInfo(challengeId: string) {
+    const challenges = this.getAllPredefinedChallenges();
+    return challenges.find(c => c.id === challengeId) || { 
+      id: challengeId, 
+      title: "Unknown Challenge", 
+      duration: 7,
+      points: 50,
+      icon: "🎯"
     };
+  }
+
+  private getAllPredefinedChallenges() {
+    return [
+      {
+        id: "mindful-week",
+        title: "7-Day Mindfulness Challenge",
+        description: "Practice 5 minutes of mindful breathing daily for one week",
+        duration: 7,
+        type: "breathing",
+        difficulty: "Beginner",
+        points: 50,
+        icon: "🧘‍♀️"
+      },
+      {
+        id: "gratitude-streak", 
+        title: "14-Day Gratitude Streak",
+        description: "Write 3 things you're grateful for every day for 2 weeks",
+        duration: 14,
+        type: "gratitude", 
+        difficulty: "Easy",
+        points: 70,
+        icon: "🙏"
+      },
+      {
+        id: "mood-tracker",
+        title: "21-Day Mood Awareness", 
+        description: "Log your mood twice daily and reflect on patterns",
+        duration: 21,
+        type: "mood",
+        difficulty: "Easy", 
+        points: 80,
+        icon: "😊"
+      },
+      {
+        id: "stress-buster",
+        title: "10-Day Stress Relief",
+        description: "Use stress management tools daily when feeling overwhelmed", 
+        duration: 10,
+        type: "wellness",
+        difficulty: "Intermediate",
+        points: 60,
+        icon: "🌟"
+      }
+    ];
   }
 }
 
