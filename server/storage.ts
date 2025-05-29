@@ -33,6 +33,9 @@ export interface IStorage {
   
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatMessagesByUser(userId: string): Promise<ChatMessage[]>;
+  
+  createGratitudeEntry(entry: InsertGratitudeEntry): Promise<GratitudeEntry>;
+  getGratitudeEntriesByUser(userId: string): Promise<GratitudeEntry[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -139,6 +142,22 @@ export class DatabaseStorage implements IStorage {
       .from(chatMessages)
       .where(eq(chatMessages.userId, userId))
       .orderBy(chatMessages.timestamp);
+  }
+
+  async createGratitudeEntry(insertEntry: InsertGratitudeEntry): Promise<GratitudeEntry> {
+    const [entry] = await db
+      .insert(gratitudeEntries)
+      .values(insertEntry)
+      .returning();
+    return entry;
+  }
+
+  async getGratitudeEntriesByUser(userId: string): Promise<GratitudeEntry[]> {
+    return await db
+      .select()
+      .from(gratitudeEntries)
+      .where(eq(gratitudeEntries.userId, userId))
+      .orderBy(desc(gratitudeEntries.date));
   }
 }
 

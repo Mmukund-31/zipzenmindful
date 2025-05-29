@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import { storage } from "./storage";
-import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema } from "@shared/schema";
+import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema } from "@shared/schema";
 import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText } from "./lib/openai";
 // Removed complex auth - using simple demo auth instead
 
@@ -264,6 +264,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Daily tip generation error:", error);
       res.status(500).json({ error: "Failed to generate daily tip" });
+    }
+  });
+
+  // Gratitude entries routes
+  app.post("/api/gratitude", async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const { content, date } = req.body;
+      
+      if (!content || typeof content !== 'string') {
+        return res.status(400).json({ error: "Content is required" });
+      }
+
+      const gratitudeData = insertGratitudeEntrySchema.parse({
+        userId,
+        content: content.trim(),
+        date: date ? new Date(date) : new Date()
+      });
+
+      const gratitudeEntry = await storage.createGratitudeEntry(gratitudeData);
+      res.json(gratitudeEntry);
+    } catch (error) {
+      console.error("Gratitude entry creation error:", error);
+      res.status(500).json({ error: "Failed to create gratitude entry" });
+    }
+  });
+
+  app.get("/api/gratitude", async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const gratitudeEntries = await storage.getGratitudeEntriesByUser(userId);
+      res.json(gratitudeEntries);
+    } catch (error) {
+      console.error("Gratitude entries fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch gratitude entries" });
+    }
+  });
+
+  app.get("/api/gratitude/insights", async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId();
+      const gratitudeEntries = await storage.getGratitudeEntriesByUser(userId);
+      
+      if (gratitudeEntries.length === 0) {
+        return res.json({ patterns: [] });
+      }
+
+      // Simple insights without AI for now
+      const insights = {
+        patterns: [
+          `You've recorded ${gratitudeEntries.length} gratitude entries`,
+          "Keep tracking your gratitude to discover patterns in what brings you joy"
+        ]
+      };
+      
+      res.json(insights);
+    } catch (error) {
+      console.error("Gratitude insights error:", error);
+      res.status(500).json({ error: "Failed to generate gratitude insights" });
     }
   });
 
