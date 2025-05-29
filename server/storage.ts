@@ -175,17 +175,34 @@ export class DatabaseStorage implements IStorage {
 
   async getActiveChallengesByUser(userId: string): Promise<any[]> {
     try {
-      const progress = await db
-        .select()
-        .from(challengeProgress)
-        .where(eq(challengeProgress.userId, userId));
+      // Use raw SQL to query the actual database structure
+      const result = await db.execute(
+        sql.raw(`SELECT * FROM challenge_progress WHERE user_id = '${userId}'`)
+      );
       
-      // Return progress data with predefined challenge info
-      return progress.map(p => ({
-        challengeId: p.challengeId,
-        progress: { completed: p.completed ? 1 : 0 },
-        ...this.getPredefinedChallengeInfo(p.challengeId)
-      }));
+      // Return progress data with predefined challenge info and daily streak count
+      const challengesWithProgress = await Promise.all(
+        (result.rows || []).map(async (p: any) => {
+          // Get daily completion count for streak tracking
+          const streakResult = await db.execute(
+            sql.raw(`
+              SELECT COUNT(*) as total_days
+              FROM challenge_daily_progress 
+              WHERE user_id = '${userId}' AND challenge_id = '${p.challenge_id}' AND completed = true
+            `)
+          );
+          
+          const totalDays = (streakResult.rows && streakResult.rows[0]) ? Number((streakResult.rows[0] as any).total_days) : 0;
+          
+          return {
+            challengeId: p.challenge_id,
+            progress: { completed: totalDays },
+            ...this.getPredefinedChallengeInfo(p.challenge_id)
+          };
+        })
+      );
+      
+      return challengesWithProgress;
     } catch (error) {
       console.error("Error fetching active challenges:", error);
       return [];
@@ -193,36 +210,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAvailableChallenges(userId: string): Promise<any[]> {
-    // Return predefined challenges that user hasn't started
-    const userProgress = await db
-      .select()
-      .from(challengeProgress)
-      .where(eq(challengeProgress.userId, userId));
-    
-    const startedChallengeIds = userProgress.map(p => p.challengeId);
-    const predefinedChallenges = this.getAllPredefinedChallenges();
-    
-    return predefinedChallenges.filter(c => !startedChallengeIds.includes(c.id));
+    try {
+      // Get user's started challenges using raw SQL
+      const result = await db.execute(
+        sql.raw(`SELECT challenge_id FROM challenge_progress WHERE user_id = '${userId}'`)
+      );
+      
+      const startedChallengeIds = (result.rows || []).map((row: any) => row.challenge_id);
+      const predefinedChallenges = this.getAllPredefinedChallenges();
+      
+      return predefinedChallenges.filter(c => !startedChallengeIds.includes(c.id));
+    } catch (error) {
+      console.error("Error fetching available challenges:", error);
+      return this.getAllPredefinedChallenges();
+    }
   }
 
   async getCompletedChallengesByUser(userId: string): Promise<any[]> {
     try {
-      const progress = await db
-        .select()
-        .from(challengeProgress)
-        .where(eq(challengeProgress.userId, userId));
+      // Get completed challenges using raw SQL
+      const result = await db.execute(
+        sql.raw(`
+          SELECT challenge_id, date, completed 
+          FROM challenge_progress 
+          WHERE user_id = '${userId}' AND completed = true
+        `)
+      );
       
-      // Return completed challenges (those with sufficient progress)
-      return progress
-        .filter(p => {
-          const challengeInfo = this.getPredefinedChallengeInfo(p.challengeId);
-          return (p.completed || 0) >= challengeInfo.duration;
-        })
-        .map(p => ({
-          ...this.getPredefinedChallengeInfo(p.challengeId),
-          completedAt: p.lastActivityDate,
-          progress: { completed: p.completed }
-        }));
+      // Return completed challenges with proper info
+      return (result.rows || []).map((p: any) => ({
+        ...this.getPredefinedChallengeInfo(p.challenge_id),
+        completedAt: p.date,
+        progress: { completed: 1 }
+      }));
     } catch (error) {
       console.error("Error fetching completed challenges:", error);
       return [];
@@ -257,33 +277,49 @@ export class DatabaseStorage implements IStorage {
 
   async updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<ChallengeProgress> {
     try {
-      const existing = await db
-        .select()
-        .from(challengeProgress)
-        .where(and(
-          eq(challengeProgress.userId, userId),
-          eq(challengeProgress.challengeId, challengeId)
-        ))
-        .limit(1);
-
-      if (existing.length > 0) {
-        const currentCompleted = existing[0].completed || 0;
-        const [updated] = await db
-          .update(challengeProgress)
-          .set({
-            completed: completed ? currentCompleted + 1 : currentCompleted,
-            lastActivityDate: new Date(date || new Date()),
-          })
-          .where(and(
-            eq(challengeProgress.userId, userId),
-            eq(challengeProgress.challengeId, challengeId)
-          ))
-          .returning();
+      const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      
+      if (completed) {
+        // Record daily progress
+        await db.execute(
+          sql.raw(`
+            INSERT INTO challenge_daily_progress (challenge_id, user_id, date, completed)
+            VALUES ('${challengeId}', '${userId}', '${targetDate}', true)
+            ON CONFLICT (challenge_id, user_id, date) 
+            DO UPDATE SET completed = true
+          `)
+        );
         
-        return updated;
-      } else {
-        return this.joinChallenge(userId, challengeId);
+        // Update main progress table
+        await db.execute(
+          sql.raw(`
+            UPDATE challenge_progress 
+            SET completed = true, date = NOW() 
+            WHERE user_id = '${userId}' AND challenge_id = '${challengeId}'
+          `)
+        );
       }
+      
+      // Get current streak and completion count
+      const streakResult = await db.execute(
+        sql.raw(`
+          SELECT COUNT(*) as total_days
+          FROM challenge_daily_progress 
+          WHERE user_id = '${userId}' AND challenge_id = '${challengeId}' AND completed = true
+        `)
+      );
+      
+      const totalDays = (streakResult.rows && streakResult.rows[0]) ? Number((streakResult.rows[0] as any).total_days) : 0;
+      
+      return {
+        id: Date.now(),
+        challengeId,
+        userId,
+        completed: totalDays,
+        startDate: new Date(),
+        lastActivityDate: new Date(),
+        timestamp: new Date(),
+      };
     } catch (error) {
       console.error("Error updating challenge progress:", error);
       throw error;
