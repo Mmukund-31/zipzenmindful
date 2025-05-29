@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/navigation";
 import Dashboard from "@/pages/dashboard";
 import Chat from "@/pages/chat";
+import Talk from "@/pages/talk";
 import Memories from "@/pages/memories";
 import Insights from "@/pages/insights";
 import Wellness from "@/pages/wellness";
@@ -27,6 +28,7 @@ function Router() {
           <>
             <Route path="/" component={Dashboard} />
             <Route path="/chat" component={Chat} />
+            <Route path="/talk" component={Talk} />
             <Route path="/memories" component={Memories} />
             <Route path="/insights" component={Insights} />
             <Route path="/wellness" component={Wellness} />

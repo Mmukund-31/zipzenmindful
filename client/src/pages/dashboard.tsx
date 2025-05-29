@@ -16,9 +16,9 @@ export default function Dashboard() {
     queryKey: ["/api/mood/recent"],
   });
 
-  const { data: recentActivities = [] } = useQuery({
+  const { data: moodHistory = [] } = useQuery({
     queryKey: ["/api/mood"],
-    select: (data) => data?.slice(0, 5) || [],
+    refetchInterval: 30000, // Refresh every 30 seconds for real-time updates
   });
 
   const moodMutation = useMutation({
@@ -163,8 +163,8 @@ export default function Dashboard() {
         <section>
           <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activities</h2>
           <div className="space-y-3">
-            {recentActivities.length > 0 ? (
-              recentActivities.map((activity: any, index: number) => (
+            {moodHistory.length > 0 ? (
+              moodHistory.slice(0, 5).map((activity: any, index: number) => (
                 <Card key={activity.id || index}>
                   <CardContent className="p-4">
                     <div className="flex items-center space-x-3">
