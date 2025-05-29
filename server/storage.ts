@@ -3,6 +3,7 @@ import {
   moodEntries,
   memories,
   chatMessages,
+  gratitudeEntries,
   type User,
   type UpsertUser,
   type MoodEntry,
@@ -10,10 +11,12 @@ import {
   type Memory,
   type InsertMemory,
   type ChatMessage,
-  type InsertChatMessage
+  type InsertChatMessage,
+  type GratitudeEntry,
+  type InsertGratitudeEntry
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -157,7 +160,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(gratitudeEntries)
       .where(eq(gratitudeEntries.userId, userId))
-      .orderBy(desc(gratitudeEntries.date));
+      .orderBy(gratitudeEntries.date);
   }
 }
 
