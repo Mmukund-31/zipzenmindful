@@ -5,8 +5,6 @@ import path from "path";
 import { storage } from "./storage";
 import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema } from "@shared/schema";
 import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText } from "./lib/openai";
-import { setupAuth, isAuthenticated } from "./replitAuth";
-
 // Local wellness response function
 function generateLocalWellnessResponse(message: string, mood?: string): string {
   const lowerMessage = message.toLowerCase();
@@ -126,29 +124,8 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-
-  // Helper function to get current user ID
-  const getCurrentUserId = (req: any) => {
-    if (req.user?.claims?.sub) {
-      return req.user.claims.sub;
-    }
-    // Fallback for development
-    return "demo_user_1";
-  };
-
-  // Auth routes  
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = getCurrentUserId(req);
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  // Simple demo auth - use fixed user ID for now
+  const getCurrentUserId = () => "demo_user_1";
 
   // Mood tracking endpoints
   app.post("/api/mood", async (req: any, res) => {
