@@ -1,63 +1,110 @@
-import {
-  type User,
-  type UpsertUser,
-  type MoodEntry,
-  type InsertMoodEntry,
-  type Memory,
-  type InsertMemory,
-  type ChatMessage,
-  type InsertChatMessage,
-  type GratitudeEntry,
-  type InsertGratitudeEntry,
-  type Challenge,
-  type ChallengeProgress
-} from "@shared/schema";
+// Simple in-memory storage for demo purposes
+interface DemoUser {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-// Interface for storage operations
+interface DemoMoodEntry {
+  id: number;
+  userId: string;
+  mood: string;
+  emoji: string;
+  note: string | null;
+  rating: number;
+  timestamp: Date;
+}
+
+interface DemoMemory {
+  id: number;
+  userId: string;
+  title: string;
+  description: string | null;
+  imageUrl: string;
+  category: string;
+  isFavorite: boolean;
+  timestamp: Date;
+}
+
+interface DemoChatMessage {
+  id: number;
+  userId: string;
+  message: string;
+  isFromUser: boolean;
+  timestamp: Date;
+}
+
+interface DemoGratitudeEntry {
+  id: number;
+  userId: string;
+  content: string;
+  date: Date;
+  timestamp: Date;
+}
+
+interface DemoChallengeProgress {
+  id: number;
+  userId: string;
+  challengeId: string;
+  progress: number;
+  completed: boolean;
+  streak: number;
+  startDate: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IStorage {
-  // User operations (simplified for demo)
-  getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  getUser(id: string): Promise<DemoUser | undefined>;
+  upsertUser(user: any): Promise<DemoUser>;
   
-  createMoodEntry(moodEntry: InsertMoodEntry): Promise<MoodEntry>;
-  getMoodEntriesByUser(userId: string): Promise<MoodEntry[]>;
-  getRecentMoodEntry(userId: string): Promise<MoodEntry | undefined>;
+  createMoodEntry(moodEntry: any): Promise<DemoMoodEntry>;
+  getMoodEntriesByUser(userId: string): Promise<DemoMoodEntry[]>;
+  getRecentMoodEntry(userId: string): Promise<DemoMoodEntry | undefined>;
   
-  createMemory(memory: InsertMemory): Promise<Memory>;
-  getMemoriesByUser(userId: string): Promise<Memory[]>;
-  getMemoriesByCategory(userId: string, category: string): Promise<Memory[]>;
-  updateMemoryFavorite(id: number, isFavorite: boolean): Promise<Memory | undefined>;
+  createMemory(memory: any): Promise<DemoMemory>;
+  getMemoriesByUser(userId: string): Promise<DemoMemory[]>;
+  getMemoriesByCategory(userId: string, category: string): Promise<DemoMemory[]>;
+  updateMemoryFavorite(id: number, isFavorite: boolean): Promise<DemoMemory | undefined>;
   
-  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
-  getChatMessagesByUser(userId: string): Promise<ChatMessage[]>;
+  createChatMessage(message: any): Promise<DemoChatMessage>;
+  getChatMessagesByUser(userId: string): Promise<DemoChatMessage[]>;
   
-  createGratitudeEntry(entry: InsertGratitudeEntry): Promise<GratitudeEntry>;
-  getGratitudeEntriesByUser(userId: string): Promise<GratitudeEntry[]>;
+  createGratitudeEntry(entry: any): Promise<DemoGratitudeEntry>;
+  getGratitudeEntriesByUser(userId: string): Promise<DemoGratitudeEntry[]>;
   
-  getActiveChallengesByUser(userId: string): Promise<Challenge[]>;
-  getAvailableChallenges(userId: string): Promise<Challenge[]>;
-  getCompletedChallengesByUser(userId: string): Promise<Challenge[]>;
-  joinChallenge(userId: string, challengeId: string): Promise<ChallengeProgress>;
-  updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<ChallengeProgress>;
+  getActiveChallengesByUser(userId: string): Promise<any[]>;
+  getAvailableChallenges(userId: string): Promise<any[]>;
+  getCompletedChallengesByUser(userId: string): Promise<any[]>;
+  joinChallenge(userId: string, challengeId: string): Promise<DemoChallengeProgress>;
+  updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<DemoChallengeProgress>;
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<string, User> = new Map();
-  private moodEntries: MoodEntry[] = [];
-  private memories: Memory[] = [];
-  private chatMessages: ChatMessage[] = [];
-  private gratitudeEntries: GratitudeEntry[] = [];
-  private challengeProgress: ChallengeProgress[] = [];
+  private users: Map<string, DemoUser> = new Map();
+  private moodEntries: DemoMoodEntry[] = [];
+  private memories: DemoMemory[] = [];
+  private chatMessages: DemoChatMessage[] = [];
+  private gratitudeEntries: DemoGratitudeEntry[] = [];
+  private challengeProgress: DemoChallengeProgress[] = [];
   private nextId = 1;
 
-  async getUser(id: string): Promise<User | undefined> {
+  async getUser(id: string): Promise<DemoUser | undefined> {
     return this.users.get(id);
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
+  async upsertUser(userData: any): Promise<DemoUser> {
     const existingUser = this.users.get(userData.id);
-    const user: User = {
-      ...userData,
+    const user: DemoUser = {
+      id: userData.id,
+      email: userData.email || null,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
+      profileImageUrl: userData.profileImageUrl || null,
       createdAt: existingUser?.createdAt || new Date(),
       updatedAt: new Date(),
     };
@@ -65,51 +112,59 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  async createMoodEntry(insertMoodEntry: InsertMoodEntry): Promise<MoodEntry> {
-    const moodEntry: MoodEntry = {
+  async createMoodEntry(insertMoodEntry: any): Promise<DemoMoodEntry> {
+    const moodEntry: DemoMoodEntry = {
       id: this.nextId++,
-      ...insertMoodEntry,
-      createdAt: new Date(),
+      userId: insertMoodEntry.userId,
+      mood: insertMoodEntry.mood,
+      emoji: insertMoodEntry.emoji,
+      note: insertMoodEntry.notes || null,
+      rating: insertMoodEntry.rating || 3,
+      timestamp: new Date(),
     };
     this.moodEntries.push(moodEntry);
     return moodEntry;
   }
 
-  async getMoodEntriesByUser(userId: string): Promise<MoodEntry[]> {
+  async getMoodEntriesByUser(userId: string): Promise<DemoMoodEntry[]> {
     return this.moodEntries
       .filter(entry => entry.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
-  async getRecentMoodEntry(userId: string): Promise<MoodEntry | undefined> {
+  async getRecentMoodEntry(userId: string): Promise<DemoMoodEntry | undefined> {
     const entries = await this.getMoodEntriesByUser(userId);
     return entries[0];
   }
 
-  async createMemory(insertMemory: InsertMemory): Promise<Memory> {
-    const memory: Memory = {
+  async createMemory(insertMemory: any): Promise<DemoMemory> {
+    const memory: DemoMemory = {
       id: this.nextId++,
-      ...insertMemory,
+      userId: insertMemory.userId,
+      title: insertMemory.title,
+      description: insertMemory.description || null,
+      imageUrl: insertMemory.imageUrl,
+      category: insertMemory.category,
       isFavorite: false,
-      createdAt: new Date(),
+      timestamp: new Date(),
     };
     this.memories.push(memory);
     return memory;
   }
 
-  async getMemoriesByUser(userId: string): Promise<Memory[]> {
+  async getMemoriesByUser(userId: string): Promise<DemoMemory[]> {
     return this.memories
       .filter(memory => memory.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
-  async getMemoriesByCategory(userId: string, category: string): Promise<Memory[]> {
+  async getMemoriesByCategory(userId: string, category: string): Promise<DemoMemory[]> {
     return this.memories
       .filter(memory => memory.userId === userId && memory.category === category)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
-  async updateMemoryFavorite(id: number, isFavorite: boolean): Promise<Memory | undefined> {
+  async updateMemoryFavorite(id: number, isFavorite: boolean): Promise<DemoMemory | undefined> {
     const memory = this.memories.find(m => m.id === id);
     if (memory) {
       memory.isFavorite = isFavorite;
@@ -117,36 +172,40 @@ export class MemStorage implements IStorage {
     return memory;
   }
 
-  async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
-    const message: ChatMessage = {
+  async createChatMessage(insertMessage: any): Promise<DemoChatMessage> {
+    const message: DemoChatMessage = {
       id: this.nextId++,
-      ...insertMessage,
-      createdAt: new Date(),
+      userId: insertMessage.userId,
+      message: insertMessage.message,
+      isFromUser: insertMessage.isUser || false,
+      timestamp: new Date(),
     };
     this.chatMessages.push(message);
     return message;
   }
 
-  async getChatMessagesByUser(userId: string): Promise<ChatMessage[]> {
+  async getChatMessagesByUser(userId: string): Promise<DemoChatMessage[]> {
     return this.chatMessages
       .filter(message => message.userId === userId)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   }
 
-  async createGratitudeEntry(insertEntry: InsertGratitudeEntry): Promise<GratitudeEntry> {
-    const entry: GratitudeEntry = {
+  async createGratitudeEntry(insertEntry: any): Promise<DemoGratitudeEntry> {
+    const entry: DemoGratitudeEntry = {
       id: this.nextId++,
-      ...insertEntry,
-      createdAt: new Date(),
+      userId: insertEntry.userId,
+      content: insertEntry.content,
+      date: insertEntry.date ? new Date(insertEntry.date) : new Date(),
+      timestamp: new Date(),
     };
     this.gratitudeEntries.push(entry);
     return entry;
   }
 
-  async getGratitudeEntriesByUser(userId: string): Promise<GratitudeEntry[]> {
+  async getGratitudeEntriesByUser(userId: string): Promise<DemoGratitudeEntry[]> {
     return this.gratitudeEntries
       .filter(entry => entry.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
   async getActiveChallengesByUser(userId: string): Promise<any[]> {
@@ -177,8 +236,8 @@ export class MemStorage implements IStorage {
     }));
   }
 
-  async joinChallenge(userId: string, challengeId: string): Promise<ChallengeProgress> {
-    const progress: ChallengeProgress = {
+  async joinChallenge(userId: string, challengeId: string): Promise<DemoChallengeProgress> {
+    const progress: DemoChallengeProgress = {
       id: this.nextId++,
       userId,
       challengeId,
@@ -193,7 +252,7 @@ export class MemStorage implements IStorage {
     return progress;
   }
 
-  async updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<ChallengeProgress> {
+  async updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<DemoChallengeProgress> {
     let progress = this.challengeProgress.find(p => p.userId === userId && p.challengeId === challengeId);
     
     if (!progress) {
@@ -210,8 +269,8 @@ export class MemStorage implements IStorage {
     return progress;
   }
 
-  private getPredefinedChallengeInfo(challengeId: string) {
-    const challenges = {
+  private getPredefinedChallengeInfo(challengeId: string): any {
+    const challenges: Record<string, any> = {
       'gratitude-week': {
         id: 'gratitude-week',
         title: 'Daily Gratitude',
