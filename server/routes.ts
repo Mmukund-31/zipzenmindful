@@ -75,6 +75,34 @@ function generateLocalWellnessResponse(message: string, mood?: string): string {
   
   return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
 }
+
+// Local wellness tip generator
+function generateLocalWellnessTip(): string {
+  const tips = [
+    "Start your day with three deep breaths. This simple practice can help center your mind and reduce anxiety.",
+    "Practice the 5-4-3-2-1 grounding technique: name 5 things you see, 4 you can touch, 3 you hear, 2 you smell, and 1 you taste.",
+    "Take a 5-minute walk, even if it's just around your home. Movement can significantly boost your mood and energy.",
+    "Write down three things you're grateful for today. Gratitude practice has been shown to improve mental well-being.",
+    "Set a gentle boundary today. It's okay to say no to things that drain your energy.",
+    "Connect with someone you care about, even if it's just a quick text message. Social connection is vital for mental health.",
+    "Practice progressive muscle relaxation: tense and then relax each muscle group from your toes to your head.",
+    "Spend a few minutes in nature, whether it's looking out a window or stepping outside. Nature has calming effects.",
+    "Try the 4-7-8 breathing technique: breathe in for 4, hold for 7, exhale for 8. This can help reduce stress.",
+    "Practice self-compassion today. Speak to yourself with the same kindness you'd show a good friend.",
+    "Create a small ritual that brings you joy, like making your favorite tea or listening to a meaningful song.",
+    "Remember that it's okay to have difficult emotions. They're temporary and part of the human experience.",
+    "Take breaks from screens and social media. Give your mind time to rest and process.",
+    "Focus on one task at a time rather than multitasking. This can reduce overwhelm and improve focus.",
+    "Practice mindful eating with one meal today. Pay attention to the flavors, textures, and experience.",
+    "Set a realistic goal for today and celebrate when you achieve it, no matter how small.",
+    "Try gentle stretching or yoga. Physical movement can help release emotional tension.",
+    "Create a calming bedtime routine to improve sleep quality. Good sleep is crucial for mental health.",
+    "Practice saying 'I am enough' to yourself. Self-acceptance is a foundation of mental wellness.",
+    "Remember that seeking help is a sign of strength, not weakness. You don't have to face challenges alone."
+  ];
+  
+  return tips[Math.floor(Math.random() * tips.length)];
+}
 // Removed complex auth - using simple demo auth instead
 
 // Configure multer for file uploads
@@ -328,8 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate daily wellness tip
   app.post("/api/wellness/daily-tip", async (req: any, res) => {
     try {
-      const { generateDailyWellnessTip } = await import("./lib/openai");
-      const tip = await generateDailyWellnessTip();
+      const tip = generateLocalWellnessTip();
       res.json({ tip });
     } catch (error) {
       console.error("Daily tip generation error:", error);
