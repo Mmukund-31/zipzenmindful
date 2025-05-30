@@ -116,11 +116,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }),
         });
 
+        console.log('Chatbase response status:', chatbaseResponse.status);
+        const responseText = await chatbaseResponse.text();
+        console.log('Chatbase response body:', responseText);
+
         if (!chatbaseResponse.ok) {
-          throw new Error('Chatbase API request failed');
+          throw new Error(`Chatbase API request failed with status ${chatbaseResponse.status}: ${responseText}`);
         }
 
-        const chatbaseData = await chatbaseResponse.json();
+        const chatbaseData = JSON.parse(responseText);
         const aiResponse = chatbaseData.text || chatbaseData.message || "I'm here to help you with your wellness journey.";
 
         // Save AI response
