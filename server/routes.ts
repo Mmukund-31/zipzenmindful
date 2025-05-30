@@ -109,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.CHATBASE_API_KEY}`,
+            'X-API-Key': process.env.CHATBASE_API_KEY,
           },
           body: JSON.stringify({
             chatbotId: 'ZBNqABCU1-xQLC7KAsugv',
