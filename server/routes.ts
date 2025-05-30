@@ -5,105 +5,6 @@ import path from "path";
 import { storage } from "./storage";
 import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema } from "@shared/schema";
 import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText } from "./lib/openai";
-import { setupAuth, isAuthenticated } from "./replitAuth";
-
-// Local wellness response function
-function generateLocalWellnessResponse(message: string, mood?: string): string {
-  const lowerMessage = message.toLowerCase();
-  
-  // Mood-based responses
-  if (mood) {
-    switch (mood.toLowerCase()) {
-      case 'anxious':
-      case 'stressed':
-        if (lowerMessage.includes('help') || lowerMessage.includes('anxious')) {
-          return "I understand you're feeling anxious. Try taking three deep breaths with me: breathe in for 4 counts, hold for 4, and breathe out for 4. Remember, this feeling is temporary and you have the strength to get through this.";
-        }
-        break;
-      case 'sad':
-      case 'lonely':
-        if (lowerMessage.includes('sad') || lowerMessage.includes('lonely')) {
-          return "I hear that you're going through a difficult time. It's okay to feel sad - your emotions are valid. Consider reaching out to someone you trust, or try doing one small thing that usually brings you comfort.";
-        }
-        break;
-      case 'excited':
-      case 'happy':
-        return "I love hearing the positive energy in your message! This is a wonderful moment to appreciate. What's bringing you the most joy right now?";
-    }
-  }
-  
-  // Keyword-based responses
-  if (lowerMessage.includes('anxious') || lowerMessage.includes('anxiety')) {
-    return "Anxiety can feel overwhelming, but you're not alone. Try the 5-4-3-2-1 grounding technique: name 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell, and 1 you can taste.";
-  }
-  
-  if (lowerMessage.includes('sad') || lowerMessage.includes('depressed')) {
-    return "I'm sorry you're feeling this way. Your feelings are important and valid. Small steps can make a big difference - maybe try going for a short walk, listening to music you enjoy, or calling someone who cares about you.";
-  }
-  
-  if (lowerMessage.includes('motivation') || lowerMessage.includes('motivated')) {
-    return "You're already taking a positive step by reaching out! Remember that progress isn't always linear. Set one small, achievable goal for today and celebrate when you complete it.";
-  }
-  
-  if (lowerMessage.includes('stress') || lowerMessage.includes('overwhelmed')) {
-    return "When feeling overwhelmed, try breaking things down into smaller, manageable pieces. Focus on just the next step you need to take, not the entire mountain you're climbing.";
-  }
-  
-  if (lowerMessage.includes('sleep') || lowerMessage.includes('tired')) {
-    return "Good sleep is crucial for mental wellness. Try creating a calming bedtime routine: dim the lights, put devices away, and consider some gentle stretching or meditation before bed.";
-  }
-  
-  if (lowerMessage.includes('grateful') || lowerMessage.includes('thankful')) {
-    return "Gratitude is such a powerful practice! It's wonderful that you're focusing on the positive aspects of your life. This mindset can really help improve overall well-being.";
-  }
-  
-  if (lowerMessage.includes('joke') || lowerMessage.includes('funny')) {
-    return "Here's a gentle smile for you: Why don't scientists trust atoms? Because they make up everything! Laughter really can be good medicine for the soul.";
-  }
-  
-  if (lowerMessage.includes('relax') || lowerMessage.includes('calm')) {
-    return "Let's find some calm together. Try this: sit comfortably, close your eyes, and imagine a peaceful place where you feel safe and relaxed. Take slow, deep breaths and stay in that peaceful space for a few moments.";
-  }
-  
-  // Default supportive responses
-  const defaultResponses = [
-    "I'm here to support you on your wellness journey. How are you feeling right now?",
-    "Thank you for sharing with me. Your mental wellness matters, and taking time to check in with yourself is important.",
-    "I'm listening. Sometimes just expressing what's on your mind can be helpful. What would you like to talk about?",
-    "Every step you take toward better mental health is meaningful. How can I support you today?",
-    "It's great that you're being mindful of your mental wellness. What's been on your mind lately?"
-  ];
-  
-  return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
-}
-
-// Local wellness tip generator
-function generateLocalWellnessTip(): string {
-  const tips = [
-    "Start your day with three deep breaths. This simple practice can help center your mind and reduce anxiety.",
-    "Practice the 5-4-3-2-1 grounding technique: name 5 things you see, 4 you can touch, 3 you hear, 2 you smell, and 1 you taste.",
-    "Take a 5-minute walk, even if it's just around your home. Movement can significantly boost your mood and energy.",
-    "Write down three things you're grateful for today. Gratitude practice has been shown to improve mental well-being.",
-    "Set a gentle boundary today. It's okay to say no to things that drain your energy.",
-    "Connect with someone you care about, even if it's just a quick text message. Social connection is vital for mental health.",
-    "Practice progressive muscle relaxation: tense and then relax each muscle group from your toes to your head.",
-    "Spend a few minutes in nature, whether it's looking out a window or stepping outside. Nature has calming effects.",
-    "Try the 4-7-8 breathing technique: breathe in for 4, hold for 7, exhale for 8. This can help reduce stress.",
-    "Practice self-compassion today. Speak to yourself with the same kindness you'd show a good friend.",
-    "Create a small ritual that brings you joy, like making your favorite tea or listening to a meaningful song.",
-    "Remember that it's okay to have difficult emotions. They're temporary and part of the human experience.",
-    "Take breaks from screens and social media. Give your mind time to rest and process.",
-    "Focus on one task at a time rather than multitasking. This can reduce overwhelm and improve focus.",
-    "Practice mindful eating with one meal today. Pay attention to the flavors, textures, and experience.",
-    "Set a realistic goal for today and celebrate when you achieve it, no matter how small.",
-    "Try gentle stretching or yoga. Physical movement can help release emotional tension.",
-    "Create a calming bedtime routine to improve sleep quality. Good sleep is crucial for mental health.",
-    "Practice saying 'I am enough' to yourself. Self-acceptance is a foundation of mental wellness.",
-    "Remember that seeking help is a sign of strength, not weakness. You don't have to face challenges alone."
-  ];
-  
-  return tips[Math.floor(Math.random() * tips.length)];
-}
 // Removed complex auth - using simple demo auth instead
 
 // Configure multer for file uploads
@@ -126,23 +27,26 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-
-  // Helper function to get current user ID
-  const getCurrentUserId = (req: any) => {
-    if (req.user?.claims?.sub) {
-      return req.user.claims.sub;
-    }
-    // Fallback for development
-    return "demo_user_1";
-  };
+  // Simple demo auth - use fixed user ID for now
+  const getCurrentUserId = () => "demo_user_1";
 
   // Auth routes  
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = getCurrentUserId(req);
-      const user = await storage.getUser(userId);
+      const userId = getCurrentUserId();
+      let user = await storage.getUser(userId);
+      
+      // Create demo user if doesn't exist
+      if (!user) {
+        user = await storage.upsertUser({
+          id: userId,
+          email: "demo@mindease.app",
+          firstName: "Demo",
+          lastName: "User",
+          profileImageUrl: null
+        });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -202,8 +106,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get current mood for context
       const currentMood = await storage.getRecentMoodEntry(userId);
       
-      // Generate local wellness response
-      const aiResponse = generateLocalWellnessResponse(message, currentMood?.mood);
+      // Generate AI response
+      const aiResponse = await generateAIResponse(message, currentMood?.mood);
       
       // Save AI response
       const aiMessage = await storage.createChatMessage({
@@ -354,7 +258,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate daily wellness tip
   app.post("/api/wellness/daily-tip", async (req: any, res) => {
     try {
-      const tip = generateLocalWellnessTip();
+      const { generateDailyWellnessTip } = await import("./lib/openai");
+      const tip = await generateDailyWellnessTip();
       res.json({ tip });
     } catch (error) {
       console.error("Daily tip generation error:", error);
