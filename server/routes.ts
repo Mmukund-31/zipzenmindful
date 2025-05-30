@@ -5,6 +5,7 @@ import path from "path";
 import { storage } from "./storage";
 import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema } from "@shared/schema";
 import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText } from "./lib/openai";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 // Local wellness response function
 function generateLocalWellnessResponse(message: string, mood?: string): string {
@@ -125,26 +126,23 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Simple demo auth - use fixed user ID for now
-  const getCurrentUserId = () => "demo_user_1";
+  // Auth middleware
+  await setupAuth(app);
+
+  // Helper function to get current user ID
+  const getCurrentUserId = (req: any) => {
+    if (req.user?.claims?.sub) {
+      return req.user.claims.sub;
+    }
+    // Fallback for development
+    return "demo_user_1";
+  };
 
   // Auth routes  
-  app.get('/api/auth/user', async (req: any, res) => {
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
-      let user = await storage.getUser(userId);
-      
-      // Create demo user if doesn't exist
-      if (!user) {
-        user = await storage.upsertUser({
-          id: userId,
-          email: "demo@mindease.app",
-          firstName: "Demo",
-          lastName: "User",
-          profileImageUrl: null
-        });
-      }
-      
+      const userId = getCurrentUserId(req);
+      const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
