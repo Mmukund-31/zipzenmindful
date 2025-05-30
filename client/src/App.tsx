@@ -19,21 +19,29 @@ import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
 function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   return (
     <div className="max-w-md mx-auto bg-white shadow-2xl min-h-screen relative overflow-hidden">
       <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/chat" component={Chat} />
-        <Route path="/talk" component={Talk} />
-        <Route path="/memories" component={Memories} />
-        <Route path="/insights" component={Insights} />
-        <Route path="/wellness" component={Wellness} />
-        <Route path="/gratitude" component={Gratitude} />
-        <Route path="/challenges" component={Challenges} />
-        <Route path="/settings" component={Settings} />
+        {isLoading || !isAuthenticated ? (
+          <Route path="/" component={Landing} />
+        ) : (
+          <>
+            <Route path="/" component={Dashboard} />
+            <Route path="/chat" component={Chat} />
+            <Route path="/talk" component={Talk} />
+            <Route path="/memories" component={Memories} />
+            <Route path="/insights" component={Insights} />
+            <Route path="/wellness" component={Wellness} />
+            <Route path="/gratitude" component={Gratitude} />
+            <Route path="/challenges" component={Challenges} />
+            <Route path="/settings" component={Settings} />
+          </>
+        )}
         <Route component={NotFound} />
       </Switch>
-      <Navigation />
+      {isAuthenticated && <Navigation />}
     </div>
   );
 }
