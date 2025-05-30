@@ -156,19 +156,19 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
     switch (currentMood.toLowerCase()) {
       case 'anxious':
       case 'stressed':
-        return "I can sense you might be feeling anxious. Let's take this moment to breathe together and find some calm.";
+        return "I can sense you might be feeling anxious. Let's take this moment to breathe together and find some calm. Try speaking what's on your mind.";
       case 'sad':
       case 'lonely':
-        return "I'm here with you during this difficult moment. You're not alone, and your feelings are completely valid.";
+        return "I'm here with you during this difficult moment. You're not alone, and your feelings are completely valid. Feel free to share what you're experiencing.";
       case 'angry':
       case 'frustrated':
-        return "I understand you're feeling frustrated. Let's work through this together and find a way to release this tension.";
+        return "I understand you're feeling frustrated. Let's work through this together and find a way to release this tension. What's troubling you?";
       case 'excited':
       case 'happy':
-        return "I love hearing the joy in your energy! Let's celebrate this positive moment and make the most of it.";
+        return "I love hearing the joy in your energy! Let's celebrate this positive moment and make the most of it. What's bringing you happiness?";
       case 'tired':
       case 'exhausted':
-        return "It sounds like you need some gentle care right now. Let's focus on what will help you feel more restored.";
+        return "It sounds like you need some gentle care right now. Let's focus on what will help you feel more restored. Tell me what's weighing on you.";
       default:
         return "I'm here to listen and support you. What's on your mind today?";
     }

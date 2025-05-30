@@ -52,20 +52,20 @@ export default function Chat() {
         speakResponse(data.response);
       }
     },
-    onError: () => {
+    onError: (error) => {
+      setIsTyping(false);
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
         variant: "destructive",
       });
-      setIsTyping(false);
     },
   });
 
   // Initialize speech recognition and synthesis
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
@@ -74,8 +74,6 @@ export default function Chat() {
       recognitionRef.current.onresult = (event: any) => {
         const speechToText = event.results[0][0].transcript;
         setMessage(speechToText);
-        // Auto-send voice messages
-        handleSendMessage(speechToText);
       };
 
       recognitionRef.current.onerror = (event: any) => {
@@ -107,6 +105,11 @@ export default function Chat() {
     };
   }, []);
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
   const speakResponse = (text: string) => {
     if (!synthesisRef.current || !voiceEnabled) return;
 
@@ -115,10 +118,13 @@ export default function Chat() {
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Adjust voice based on current mood
-    const currentMood = (recentMood as any)?.mood;
-    if (currentMood) {
-      switch (currentMood.toLowerCase()) {
+    // Choose voice based on mood
+    const voices = synthesisRef.current.getVoices();
+    let selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
+    
+    if (recentMood?.mood) {
+      // Adjust voice characteristics based on mood
+      switch (recentMood.mood.toLowerCase()) {
         case 'anxious':
         case 'stressed':
           utterance.rate = 0.8; // Slower, calming pace
@@ -140,6 +146,10 @@ export default function Chat() {
       }
     }
 
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
@@ -147,52 +157,38 @@ export default function Chat() {
     synthesisRef.current.speak(utterance);
   };
 
-  const startListening = () => {
-    if (recognitionRef.current && !isListening && !isTyping) {
-      setMessage("");
-      setIsListening(true);
-      recognitionRef.current.start();
-    }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
       setIsListening(false);
+    } else {
+      if (recognitionRef.current) {
+        setIsListening(true);
+        recognitionRef.current.start();
+      }
     }
   };
 
-  const toggleVoice = () => {
-    setVoiceEnabled(!voiceEnabled);
-    if (!voiceEnabled && synthesisRef.current) {
-      synthesisRef.current.cancel();
-      setIsSpeaking(false);
+  const handleSendMessage = (messageText: string) => {
+    if (messageText.trim() && !chatMutation.isPending) {
+      chatMutation.mutate(messageText.trim());
     }
-  };
-
-  const handleSendMessage = (messageText?: string) => {
-    const textToSend = messageText || message;
-    if (!textToSend.trim()) return;
-    chatMutation.mutate(textToSend);
-  };
-
-  const handleQuickResponse = (response: string) => {
-    setMessage(response);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSendMessage();
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(message);
     }
   };
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  const handleQuickResponse = (response: string) => {
+    handleSendMessage(response);
+  };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
@@ -201,21 +197,28 @@ export default function Chat() {
   return (
     <div className="h-screen flex flex-col pb-20">
       {/* Chat Header */}
-      <div className="bg-white border-b border-border p-4 flex items-center space-x-3">
+      <div className="bg-white dark:bg-gray-800 border-b border-border p-4 flex items-center space-x-3">
         <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
           <Bot className="w-5 h-5 text-white" />
         </div>
         <div>
           <h3 className="font-medium text-foreground">MindEase Assistant</h3>
           <div className="flex items-center text-xs text-green-600">
-            <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse-gentle"></span>
+            <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse"></span>
             Online
           </div>
         </div>
+        {recentMood && (
+          <div className="ml-auto">
+            <Badge variant="secondary" className="text-xs">
+              {recentMood.mood} {recentMood.emoji}
+            </Badge>
+          </div>
+        )}
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted chat-scroll">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted">
         {messages.length === 0 && (
           <div className="text-center py-8">
             <Bot className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -228,10 +231,10 @@ export default function Chat() {
           </div>
         )}
 
-        {messages.map((msg: any) => (
+        {(messages as any[]).map((msg: any) => (
           <div
             key={msg.id}
-            className={`flex items-start space-x-3 chat-bubble ${
+            className={`flex items-start space-x-3 ${
               msg.isFromUser ? "justify-end" : ""
             }`}
           >
@@ -254,7 +257,7 @@ export default function Chat() {
             </Card>
 
             {msg.isFromUser && (
-              <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center flex-shrink-0">
                 <User className="w-4 h-4 text-white" />
               </div>
             )}
@@ -262,7 +265,7 @@ export default function Chat() {
         ))}
 
         {isTyping && (
-          <div className="flex items-start space-x-3 chat-bubble">
+          <div className="flex items-start space-x-3">
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
               <Bot className="w-4 h-4 text-white" />
             </div>
@@ -277,93 +280,63 @@ export default function Chat() {
             </Card>
           </div>
         )}
-
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Quick Response Buttons */}
+      <div className="px-4 py-2 bg-background border-t border-border">
+        <div className="flex flex-wrap gap-2 mb-2">
+          {quickResponses.map((response) => (
+            <Button
+              key={response}
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickResponse(response)}
+              className="text-xs"
+            >
+              {response}
+            </Button>
+          ))}
+        </div>
+      </div>
+
       {/* Chat Input */}
-      <div className="bg-white border-t border-border p-4">
-        {/* Voice Status Indicator */}
-        {(isListening || isSpeaking) && (
-          <div className="mb-3 text-center">
-            <div className={`inline-flex items-center space-x-2 px-3 py-2 rounded-full text-sm ${
-              isListening ? 'bg-red-50 text-red-700 border border-red-200' :
-              'bg-blue-50 text-blue-700 border border-blue-200'
-            }`}>
-              {isListening ? (
-                <>
-                  <Mic className="w-4 h-4 animate-pulse" />
-                  <span>Listening...</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="w-4 h-4 animate-pulse" />
-                  <span>Speaking...</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center space-x-3 mb-3">
-          {/* Voice Controls */}
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={isListening ? stopListening : startListening}
-              disabled={chatMutation.isPending || isSpeaking}
-              variant={isListening ? "destructive" : "outline"}
-              size="sm"
-              className={`w-10 h-10 rounded-full p-0 transition-all ${
-                isListening ? 'animate-pulse' : ''
-              }`}
-              title={isListening ? 'Stop listening' : 'Start voice input'}
-            >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </Button>
-            
-            <Button
-              onClick={toggleVoice}
-              variant="ghost"
-              size="sm"
-              className="w-8 h-8 rounded-full p-0"
-              title={voiceEnabled ? 'Disable voice responses' : 'Enable voice responses'}
-            >
-              {voiceEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
-            </Button>
-          </div>
-
-          <div className="flex-1 relative">
+      <div className="p-4 bg-background border-t border-border">
+        <div className="flex space-x-2">
+          <div className="flex-1">
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type your message..."
               onKeyPress={handleKeyPress}
-              placeholder={isListening ? "Listening for your voice..." : "Type or speak your message..."}
-              className="pr-12 rounded-full"
-              disabled={isListening}
+              className="w-full"
             />
-            <Button
-              onClick={() => handleSendMessage()}
-              disabled={!message.trim() || chatMutation.isPending || isListening}
-              size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 w-8 h-8 rounded-full p-0"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
           </div>
-        </div>
+          
+          <Button
+            onClick={toggleListening}
+            variant={isListening ? "default" : "outline"}
+            size="icon"
+            className={isListening ? "bg-red-500 hover:bg-red-600" : ""}
+          >
+            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
+          
+          <Button
+            onClick={() => setVoiceEnabled(!voiceEnabled)}
+            variant={voiceEnabled ? "default" : "outline"}
+            size="icon"
+          >
+            {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+          </Button>
 
-        {/* Quick Responses */}
-        <div className="flex space-x-2 overflow-x-auto pb-1 scrollbar-hide">
-          {quickResponses.map((response, index) => (
-            <Badge
-              key={index}
-              variant="secondary"
-              className="cursor-pointer hover:bg-secondary/80 transition-colors flex-shrink-0"
-              onClick={() => handleQuickResponse(response)}
-            >
-              {response}
-            </Badge>
-          ))}
+          <Button
+            onClick={() => handleSendMessage(message)}
+            disabled={!message.trim() || chatMutation.isPending}
+            size="icon"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
