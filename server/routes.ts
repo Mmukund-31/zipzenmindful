@@ -103,20 +103,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isFromUser: true
       });
 
-      // Get current mood for context
-      const currentMood = await storage.getRecentMoodEntry(userId);
-      
-      // Generate AI response
-      const aiResponse = await generateAIResponse(message, currentMood?.mood);
-      
-      // Save AI response
-      const aiMessage = await storage.createChatMessage({
-        userId,
-        message: aiResponse,
-        isFromUser: false
-      });
+      // Call Chatbase API
+      try {
+        const chatbaseResponse = await fetch('https://www.chatbase.co/api/v1/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chatbotId: 'ZBNqABCU1-xQLC7KAsugv',
+            message: message,
+          }),
+        });
 
-      res.json({ response: aiResponse, messageId: aiMessage.id });
+        if (!chatbaseResponse.ok) {
+          throw new Error('Chatbase API request failed');
+        }
+
+        const chatbaseData = await chatbaseResponse.json();
+        const aiResponse = chatbaseData.text || chatbaseData.message || "I'm here to help you with your wellness journey.";
+
+        // Save AI response
+        const aiMessage = await storage.createChatMessage({
+          userId,
+          message: aiResponse,
+          isFromUser: false
+        });
+
+        res.json({ response: aiResponse, messageId: aiMessage.id });
+      } catch (chatbaseError) {
+        console.error("Chatbase API error:", chatbaseError);
+        
+        // Fallback response
+        const fallbackResponse = "I'm here to help you with your wellness journey. How are you feeling today?";
+        const aiMessage = await storage.createChatMessage({
+          userId,
+          message: fallbackResponse,
+          isFromUser: false
+        });
+
+        res.json({ response: fallbackResponse, messageId: aiMessage.id });
+      }
     } catch (error) {
       console.error("Chat error:", error);
       res.status(500).json({ error: "Failed to process chat message" });
