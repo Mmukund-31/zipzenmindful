@@ -1,12 +1,11 @@
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function generateAIResponse(userMessage: string, currentMood?: string): Promise<string> {
   try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
     const systemPrompt = `You are MindEase Assistant, a compassionate AI companion focused on mental wellness and emotional support. 
     ${currentMood ? `The user's current mood is: ${currentMood}. Tailor your response to be supportive and appropriate for their emotional state.` : ''}
     
@@ -19,19 +18,14 @@ export async function generateAIResponse(userMessage: string, currentMood?: stri
     - If the user seems distressed, gently suggest professional help
     - Encourage positive activities like connecting with loved ones or viewing happy memories`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage }
-      ],
-      max_tokens: 300,
-      temperature: 0.7,
-    });
-
-    return response.choices[0].message.content || "I'm here to support you. Could you tell me more about how you're feeling?";
+    const prompt = `${systemPrompt}\n\nUser message: ${userMessage}`;
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    
+    return response.text() || "I'm here to support you. Could you tell me more about how you're feeling?";
   } catch (error) {
-    console.error("OpenAI API error:", error);
+    console.error("Gemini API error:", error);
     return "I'm having trouble connecting right now, but I'm here for you. How can I help support your wellness today?";
   }
 }
@@ -43,32 +37,34 @@ export async function analyzeMoodFromText(text: string): Promise<{
   confidence: number;
 }> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `Analyze the emotional tone of the text and determine the primary mood. 
-          Respond with JSON in this exact format: 
-          { 
-            "mood": "one of: happy, sad, anxious, calm, excited", 
-            "emoji": "appropriate emoji for the mood",
-            "rating": "number from 1-5 representing mood intensity",
-            "confidence": "confidence score between 0 and 1"
-          }`
-        },
-        { role: "user", content: text }
-      ],
-      response_format: { type: "json_object" },
-    });
-
-    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const prompt = `Analyze the emotional tone of the text and determine the primary mood. 
+    Respond with JSON in this exact format: 
+    { 
+      "mood": "one of: happy, sad, anxious, calm, excited", 
+      "emoji": "appropriate emoji for the mood",
+      "rating": "number from 1-5 representing mood intensity",
+      "confidence": "confidence score between 0 and 1"
+    }
+    
+    Text to analyze: ${text}`;
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const resultText = response.text();
+    
+    // Parse JSON from response
+    const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+    
+    const parsed = JSON.parse(jsonMatch[0]);
     
     return {
-      mood: result.mood || "calm",
-      emoji: result.emoji || "😌",
-      rating: Math.max(1, Math.min(5, Math.round(result.rating || 3))),
-      confidence: Math.max(0, Math.min(1, result.confidence || 0.5)),
+      mood: parsed.mood || "calm",
+      emoji: parsed.emoji || "😌",
+      rating: Math.max(1, Math.min(5, Math.round(parsed.rating || 3))),
+      confidence: Math.max(0, Math.min(1, parsed.confidence || 0.5)),
     };
   } catch (error) {
     console.error("Mood analysis error:", error);
@@ -83,31 +79,30 @@ export async function analyzeMoodFromText(text: string): Promise<{
 
 export async function generateMoodInsights(moodEntries: any[]): Promise<string[]> {
   try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
     const moodData = moodEntries.map(entry => ({
       mood: entry.mood,
       rating: entry.rating,
       date: entry.timestamp
     }));
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `Analyze the mood data and provide 2-3 supportive insights about patterns and recommendations. 
-          Respond with JSON in this format: { "insights": ["insight1", "insight2", "insight3"] }
-          Keep insights positive, actionable, and encouraging.`
-        },
-        { 
-          role: "user", 
-          content: `Mood data: ${JSON.stringify(moodData)}` 
-        }
-      ],
-      response_format: { type: "json_object" },
-    });
-
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-    return result.insights || [
+    const prompt = `Analyze the mood data and provide 2-3 supportive insights about patterns and recommendations. 
+    Respond with JSON in this format: { "insights": ["insight1", "insight2", "insight3"] }
+    Keep insights positive, actionable, and encouraging.
+    
+    Mood data: ${JSON.stringify(moodData)}`;
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const resultText = response.text();
+    
+    // Parse JSON from response
+    const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    return parsed.insights || [
       "Keep tracking your mood to understand patterns better",
       "Remember that it's normal for moods to fluctuate",
       "Consider what activities help improve your mood"
@@ -127,34 +122,33 @@ export async function generateMemeText(memoryTitle: string, memoryCategory: stri
   bottomText: string;
 }> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are a funny meme text generator for a wellness app. Create hilarious, positive, and uplifting meme text based on the memory details.
-          
-          Guidelines:
-          - Keep it funny but wholesome and supportive
-          - Use popular meme formats and internet humor
-          - Make it relate to mental wellness, happiness, or memories
-          - Keep text short and punchy (max 6 words per line)
-          - Use ALL CAPS for classic meme style
-          
-          Respond with JSON in this format: { "topText": "TOP LINE", "bottomText": "BOTTOM LINE" }`
-        },
-        { 
-          role: "user", 
-          content: `Memory: "${memoryTitle}" in category "${memoryCategory}". Style: ${style}` 
-        }
-      ],
-      response_format: { type: "json_object" },
-    });
-
-    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const prompt = `You are a funny meme text generator for a wellness app. Create hilarious, positive, and uplifting meme text based on the memory details.
+    
+    Guidelines:
+    - Keep it funny but wholesome and supportive
+    - Use popular meme formats and internet humor
+    - Make it relate to mental wellness, happiness, or memories
+    - Keep text short and punchy (max 6 words per line)
+    - Use ALL CAPS for classic meme style
+    
+    Respond with JSON in this format: { "topText": "TOP LINE", "bottomText": "BOTTOM LINE" }
+    
+    Memory: "${memoryTitle}" in category "${memoryCategory}". Style: ${style}`;
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const resultText = response.text();
+    
+    // Parse JSON from response
+    const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+    
+    const parsed = JSON.parse(jsonMatch[0]);
     return {
-      topText: result.topText || "WHEN YOU SEE",
-      bottomText: result.bottomText || "THIS HAPPY MEMORY"
+      topText: parsed.topText || "WHEN YOU SEE",
+      bottomText: parsed.bottomText || "THIS HAPPY MEMORY"
     };
   } catch (error) {
     console.error("Meme text generation error:", error);
@@ -171,6 +165,8 @@ export async function generateMemeText(memoryTitle: string, memoryCategory: stri
 
 export async function generateDailyWellnessTip(): Promise<string> {
   try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
     
     const prompt = `Generate a personalized daily wellness tip for someone managing stress and overthinking. 
@@ -180,23 +176,10 @@ export async function generateDailyWellnessTip(): Promise<string> {
     
     Return just the tip text, no extra formatting or quotation marks.`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      messages: [
-        {
-          role: "system",
-          content: "You are a compassionate mental health supporter who provides daily wellness tips. Be warm, understanding, and practical."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 150,
-    });
-
-    return response.choices[0].message.content?.trim() || "Take a moment today to practice deep breathing. Even three mindful breaths can help center your thoughts and reduce stress.";
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    
+    return response.text().trim() || "Take a moment today to practice deep breathing. Even three mindful breaths can help center your thoughts and reduce stress.";
   } catch (error) {
     console.error("Daily tip generation error:", error);
     throw error;
