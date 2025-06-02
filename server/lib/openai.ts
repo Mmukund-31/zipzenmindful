@@ -2,6 +2,85 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
+export async function analyzeImageAndGenerateMeme(imageBuffer: Buffer, style: string): Promise<{
+  topText: string;
+  bottomText: string;
+  description: string;
+}> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const imagePart = {
+      inlineData: {
+        data: imageBuffer.toString('base64'),
+        mimeType: 'image/jpeg'
+      }
+    };
+
+    const stylePrompts = {
+      classic: "Create classic internet meme text that's universally funny and relatable",
+      modern: "Generate witty, contemporary humor with current internet culture references", 
+      funny: "Make it extremely hilarious with maximum comedic impact and absurd humor",
+      wholesome: "Create positive, uplifting, and heartwarming meme text that spreads joy"
+    };
+
+    const selectedStyle = stylePrompts[style as keyof typeof stylePrompts] || stylePrompts.funny;
+
+    const prompt = `Analyze this image and create hilarious meme text for it. ${selectedStyle}.
+
+Rules:
+1. Generate TWO pieces of text: TOP text and BOTTOM text
+2. Text should be SHORT (max 6 words each)
+3. Use ALL CAPS format like classic memes
+4. Make it funny based on what you see in the image
+5. The humor should relate to the image content, facial expressions, situations, or objects
+6. Be creative and use popular meme formats when appropriate
+
+Also provide a brief description of what you see in the image.
+
+Return your response in this exact JSON format:
+{
+  "topText": "YOUR TOP TEXT HERE",
+  "bottomText": "YOUR BOTTOM TEXT HERE", 
+  "description": "Brief description of the image"
+}`;
+
+    const result = await model.generateContent([prompt, imagePart]);
+    const response = await result.response;
+    const text = response.text();
+
+    try {
+      // Try to parse JSON response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          topText: parsed.topText || "WHEN YOU SEE THIS",
+          bottomText: parsed.bottomText || "INSTANT MEME MATERIAL",
+          description: parsed.description || "An interesting image"
+        };
+      }
+    } catch (parseError) {
+      console.log("JSON parsing failed, using text extraction");
+    }
+
+    // Fallback text extraction
+    return {
+      topText: "WHEN YOU UPLOAD A PICTURE",
+      bottomText: "AND AI MAKES IT FUNNY",
+      description: "A user-uploaded image ready for meme transformation"
+    };
+
+  } catch (error) {
+    console.error("Gemini vision API error:", error);
+    return {
+      topText: "AI MEME GENERATOR",
+      bottomText: "MAKING EVERYTHING FUNNY",
+      description: "Image analysis unavailable"
+    };
+  }
+}
+
 export async function generateAIResponse(userMessage: string, currentMood?: string): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });

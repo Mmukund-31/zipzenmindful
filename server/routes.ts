@@ -5,7 +5,7 @@ import path from "path";
 import session from "express-session";
 import { storage } from "./storage";
 import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema } from "@shared/schema";
-import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText, analyzeImageForMemory, generateMemoryGalleryTitle } from "./lib/openai";
+import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText, analyzeImageForMemory, generateMemoryGalleryTitle, analyzeImageAndGenerateMeme } from "./lib/openai";
 // Authentication middleware
 const getCurrentUserId = (req: any): string => {
   // Get user ID from session or JWT token
@@ -498,6 +498,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(memory);
     } catch (error) {
       res.status(500).json({ error: "Failed to update memory" });
+    }
+  });
+
+  // AI-powered meme generator endpoint
+  app.post("/api/meme/analyze-and-generate", upload.single('image'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Image file is required" });
+      }
+
+      const { style = 'funny' } = req.body;
+      
+      // Analyze image and generate funny meme text using AI
+      const memeData = await analyzeImageAndGenerateMeme(req.file.buffer, style);
+      
+      res.json(memeData);
+    } catch (error) {
+      console.error("Meme generation error:", error);
+      res.status(500).json({ error: "Failed to generate meme. Please try again." });
     }
   });
 
