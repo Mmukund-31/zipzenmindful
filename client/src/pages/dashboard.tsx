@@ -12,11 +12,14 @@ import { Link } from "wouter";
 export default function Dashboard() {
   const { toast } = useToast();
   
-  const { data: recentMood } = useQuery({
+  // Get user profile from onboarding
+  const userProfile = JSON.parse(localStorage.getItem('wellness_user_profile') || '{"name": "User"}');
+  
+  const { data: recentMood } = useQuery<any>({
     queryKey: ["/api/mood/recent"],
   });
 
-  const { data: moodHistory = [] } = useQuery({
+  const { data: moodHistory = [] } = useQuery<any[]>({
     queryKey: ["/api/mood"],
     refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
     refetchOnWindowFocus: true, // Refresh when user returns to tab
@@ -83,7 +86,7 @@ export default function Dashboard() {
               <Smile className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold">Hello, Mukund</h1>
+              <h1 className="text-lg font-semibold">Hello, {userProfile.name || 'Friend'}</h1>
               <p className="text-sm opacity-90">How are you feeling today?</p>
             </div>
           </div>

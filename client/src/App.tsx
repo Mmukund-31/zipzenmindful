@@ -26,7 +26,7 @@ function Router() {
   const hasCompletedOnboarding = localStorage.getItem('wellness_onboarding_complete') === 'true';
 
   return (
-    <div className="max-w-md mx-auto bg-white shadow-2xl min-h-screen relative overflow-hidden">
+    <>
       <Switch>
         {!hasCompletedOnboarding ? (
           <>
@@ -50,7 +50,7 @@ function Router() {
         )}
       </Switch>
       {hasCompletedOnboarding && <Navigation />}
-    </div>
+    </>
   );
 }
 
@@ -59,7 +59,7 @@ function App() {
     <ThemeProvider defaultTheme="light" storageKey="mindease-ui-theme">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <div className="min-h-screen bg-background transition-colors">
+          <div className="max-w-md mx-auto bg-white shadow-2xl min-h-screen relative overflow-hidden">
             <Toaster />
             <Router />
           </div>

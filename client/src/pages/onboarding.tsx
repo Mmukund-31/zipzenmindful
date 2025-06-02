@@ -101,7 +101,7 @@ export default function Onboarding() {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
-              Welcome to MindfulAI
+              Welcome to MindEase
             </CardTitle>
             <CardDescription className="text-gray-600 dark:text-gray-300">
               Let's personalize your wellness journey
