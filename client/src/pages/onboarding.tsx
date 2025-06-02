@@ -58,7 +58,8 @@ export default function Onboarding() {
     localStorage.setItem('wellness_user_profile', JSON.stringify(userData));
     localStorage.setItem('wellness_onboarding_complete', 'true');
     
-    setLocation('/');
+    // Force immediate page reload to ensure proper state update
+    window.location.href = '/';
   };
 
   const nextStep = () => setStep(step + 1);
@@ -72,7 +73,7 @@ export default function Onboarding() {
   const totalSteps = 4;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 flex items-center justify-center p-4">
+    <div className="flex items-center justify-center p-4 min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="w-full max-w-lg">
         {/* Progress indicator */}
         <div className="mb-6">

@@ -25,31 +25,26 @@ function Router() {
   // Check if user has completed onboarding
   const hasCompletedOnboarding = localStorage.getItem('wellness_onboarding_complete') === 'true';
 
+  if (!hasCompletedOnboarding) {
+    return <Onboarding />;
+  }
+
   return (
-    <>
+    <div className="min-h-screen bg-background">
       <Switch>
-        {!hasCompletedOnboarding ? (
-          <>
-            <Route path="/" component={Onboarding} />
-            <Route component={Onboarding} />
-          </>
-        ) : (
-          <>
-            <Route path="/" component={Dashboard} />
-            <Route path="/chat" component={Chat} />
-            <Route path="/talk" component={Talk} />
-            <Route path="/memories" component={Memories} />
-            <Route path="/insights" component={Insights} />
-            <Route path="/wellness" component={Wellness} />
-            <Route path="/gratitude" component={Gratitude} />
-            <Route path="/challenges" component={Challenges} />
-            <Route path="/settings" component={Settings} />
-            <Route path="/onboarding" component={Onboarding} />
-          </>
-        )}
+        <Route path="/" component={Dashboard} />
+        <Route path="/chat" component={Chat} />
+        <Route path="/talk" component={Talk} />
+        <Route path="/memories" component={Memories} />
+        <Route path="/insights" component={Insights} />
+        <Route path="/wellness" component={Wellness} />
+        <Route path="/gratitude" component={Gratitude} />
+        <Route path="/challenges" component={Challenges} />
+        <Route path="/settings" component={Settings} />
+        <Route path="/onboarding" component={Onboarding} />
       </Switch>
-      {hasCompletedOnboarding && <Navigation />}
-    </>
+      <Navigation />
+    </div>
   );
 }
 
