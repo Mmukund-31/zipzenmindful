@@ -68,6 +68,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return req.userId || req.session?.userId;
   };
 
+  // Onboarding data endpoint
+  app.post('/api/onboarding/complete', async (req: any, res) => {
+    try {
+      const { name, age, wellnessGoals, preferredTime, motivation } = req.body;
+      const userId = req.headers['x-user-id'] || getCurrentUserId(req);
+      
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+      
+      // Create or update user with onboarding data
+      const user = await storage.upsertUser({
+        id: userId,
+        name,
+        age,
+        wellnessGoals: JSON.stringify(wellnessGoals),
+        preferredTime,
+        motivation
+      });
+      
+      res.json({ success: true, user });
+    } catch (error) {
+      console.error('Onboarding completion error:', error);
+      res.status(500).json({ error: 'Failed to save onboarding data' });
+    }
+  });
+
   // Firebase authentication sync endpoint
   app.post('/api/auth/sync', async (req: any, res) => {
     try {

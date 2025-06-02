@@ -33,6 +33,11 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  name: varchar("name"), // Full name from onboarding
+  age: varchar("age"), // Age from onboarding
+  wellnessGoals: text("wellness_goals"), // JSON string of selected goals
+  preferredTime: varchar("preferred_time"), // When they prefer wellness activities
+  motivation: text("motivation"), // Their wellness motivation
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -43,23 +43,65 @@ export default function Onboarding() {
     );
   };
 
-  const handleComplete = () => {
-    // Save comprehensive onboarding data
-    const userData = {
-      name,
-      age,
-      wellnessGoals: selectedGoals,
-      preferredTime,
-      motivation,
-      onboardingDate: new Date().toISOString(),
-      userId: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-    };
-    
-    localStorage.setItem('wellness_user_profile', JSON.stringify(userData));
-    localStorage.setItem('wellness_onboarding_complete', 'true');
-    
-    // Force immediate page reload to ensure proper state update
-    window.location.href = '/';
+  const handleComplete = async () => {
+    try {
+      // Generate a unique user ID for this session
+      const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      
+      // Save comprehensive onboarding data to database
+      const userData = {
+        name,
+        age,
+        wellnessGoals: selectedGoals,
+        preferredTime,
+        motivation
+      };
+      
+      // Save to database
+      const response = await fetch('/api/onboarding/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-ID': userId // Pass user ID in header since we don't have auth
+        },
+        body: JSON.stringify(userData)
+      });
+      
+      if (response.ok) {
+        // Also save locally for backup and quick access
+        const fullUserData = {
+          ...userData,
+          onboardingDate: new Date().toISOString(),
+          userId
+        };
+        
+        localStorage.setItem('wellness_user_profile', JSON.stringify(fullUserData));
+        localStorage.setItem('wellness_onboarding_complete', 'true');
+        localStorage.setItem('wellness_user_id', userId);
+        
+        // Force immediate page reload to ensure proper state update
+        window.location.href = '/';
+      } else {
+        throw new Error('Failed to save onboarding data');
+      }
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      // Fallback to localStorage only if database save fails
+      const userData = {
+        name,
+        age,
+        wellnessGoals: selectedGoals,
+        preferredTime,
+        motivation,
+        onboardingDate: new Date().toISOString(),
+        userId: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+      };
+      
+      localStorage.setItem('wellness_user_profile', JSON.stringify(userData));
+      localStorage.setItem('wellness_onboarding_complete', 'true');
+      
+      window.location.href = '/';
+    }
   };
 
   const nextStep = () => setStep(step + 1);
