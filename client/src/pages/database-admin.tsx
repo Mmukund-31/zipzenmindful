@@ -25,7 +25,19 @@ export default function DatabaseAdmin() {
   // Helper function to get user name by ID from onboarding data
   const getUserName = (userId: string) => {
     const userData = users.find((u: any) => u.user?.id === userId);
-    return userData?.user?.name || userData?.user?.firstName || userData?.user?.email || 'Anonymous User';
+    if (userData?.user) {
+      // Debug: Check what fields are available
+      console.log('User data for', userId, ':', userData.user);
+      
+      // Check for name from onboarding in various possible fields
+      if (userData.user.name) return userData.user.name;
+      if (userData.user.firstName) {
+        const lastName = userData.user.lastName ? ` ${userData.user.lastName}` : '';
+        return `${userData.user.firstName}${lastName}`;
+      }
+      if (userData.user.email) return userData.user.email.split('@')[0];
+    }
+    return 'Anonymous User';
   };
 
   // Toggle motivation text expansion
