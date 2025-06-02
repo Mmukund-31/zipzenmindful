@@ -29,7 +29,7 @@ export default function Insights() {
     );
   }
 
-  const { insights = [], moodDistribution = [], weeklyData = [] } = insightsData || {};
+  const { insights = [], moodDistribution = [], weeklyData = [] } = (insightsData as any) || {};
 
   const getOverallMood = () => {
     if (moodDistribution.length === 0) return { emoji: "😌", label: "No data yet" };
@@ -145,9 +145,9 @@ export default function Insights() {
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
               <p className="text-sm text-muted-foreground mt-2">Analyzing your wellness patterns...</p>
             </div>
-          ) : personalizedInsights?.insights?.length > 0 ? (
+          ) : (personalizedInsights as any)?.insights?.length > 0 ? (
             <div className="space-y-3">
-              {personalizedInsights.insights.map((insight: string, index: number) => (
+              {(personalizedInsights as any).insights.map((insight: string, index: number) => (
                 <Card key={index} className="bg-white/80 dark:bg-gray-800/80 border-blue-100 dark:border-blue-800">
                   <CardContent className="p-4">
                     <p className="text-sm text-foreground leading-relaxed">{insight}</p>
