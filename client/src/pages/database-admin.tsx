@@ -13,8 +13,8 @@ export default function DatabaseAdmin() {
   
   const { data: dbData, isLoading, refetch } = useQuery<any>({
     queryKey: ["/api/admin/database"],
-    staleTime: 0,
-    refetchInterval: 5000,
+    staleTime: 30000, // 30 seconds
+    refetchInterval: 30000, // Refresh every 30 seconds instead of 5
   });
 
   const refreshData = () => {
@@ -26,16 +26,22 @@ export default function DatabaseAdmin() {
   const getUserName = (userId: string) => {
     const userData = users.find((u: any) => u.user?.id === userId);
     if (userData?.user) {
-      // Debug: Check what fields are available
-      console.log('User data for', userId, ':', userData.user);
+      // First check for full name from onboarding
+      if (userData.user.name && userData.user.name.trim()) {
+        return userData.user.name;
+      }
       
-      // Check for name from onboarding in various possible fields
-      if (userData.user.name) return userData.user.name;
-      if (userData.user.firstName) {
-        const lastName = userData.user.lastName ? ` ${userData.user.lastName}` : '';
+      // Then check for firstName/lastName combination
+      if (userData.user.firstName && userData.user.firstName.trim()) {
+        const lastName = userData.user.lastName && userData.user.lastName.trim() ? 
+          ` ${userData.user.lastName}` : '';
         return `${userData.user.firstName}${lastName}`;
       }
-      if (userData.user.email) return userData.user.email.split('@')[0];
+      
+      // Fall back to email username if available
+      if (userData.user.email && userData.user.email.includes('@')) {
+        return userData.user.email.split('@')[0];
+      }
     }
     return 'Anonymous User';
   };
