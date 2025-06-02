@@ -2,10 +2,19 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
+import session from "express-session";
 import { storage } from "./storage";
 import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema } from "@shared/schema";
 import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText, analyzeImageForMemory, generateMemoryGalleryTitle } from "./lib/openai";
-// Removed complex auth - using simple demo auth instead
+// Authentication middleware
+const getCurrentUserId = (req: any): string => {
+  // Get user ID from session or JWT token
+  const userId = req.session?.userId || req.headers['x-user-id'];
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
+  return userId;
+};
 
 // Configure multer for file uploads
 const upload = multer({
@@ -26,14 +35,149 @@ const upload = multer({
   }
 });
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Simple demo auth - use fixed user ID for now
-  const getCurrentUserId = () => "demo_user_1";
+// Store OTP codes temporarily (in production, use Redis or database)
+const otpStore = new Map<string, { code: string; expires: number; userId?: string }>();
 
-  // Auth routes  
-  app.get('/api/auth/user', async (req: any, res) => {
+// Generate 6-digit OTP
+const generateOTP = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication middleware
+  const requireAuth = (req: any, res: any, next: any) => {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    req.userId = userId;
+    next();
+  };
+
+  const getCurrentUserId = (req: any): string => {
+    return req.userId || req.session?.userId;
+  };
+
+  // Authentication routes
+  app.post('/api/auth/email-login', async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const { email, password, isSignUp } = req.body;
+      
+      if (isSignUp) {
+        // Create new user
+        const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const user = await storage.upsertUser({
+          id: userId,
+          email,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        req.session.userId = userId;
+        res.json({ success: true, user });
+      } else {
+        // Find existing user by email
+        const existingUser = await storage.getUserByEmail(email);
+        if (!existingUser) {
+          return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        req.session.userId = existingUser.id;
+        res.json({ success: true, user: existingUser });
+      }
+    } catch (error) {
+      console.error('Email auth error:', error);
+      res.status(500).json({ error: 'Authentication failed' });
+    }
+  });
+
+  app.post('/api/auth/phone-send-otp', async (req: any, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      const otp = generateOTP();
+      const expires = Date.now() + 5 * 60 * 1000; // 5 minutes
+      
+      otpStore.set(phoneNumber, { code: otp, expires });
+      
+      // In production, send actual SMS here
+      console.log(`OTP for ${phoneNumber}: ${otp}`);
+      
+      res.json({ success: true, message: 'OTP sent successfully' });
+    } catch (error) {
+      console.error('OTP send error:', error);
+      res.status(500).json({ error: 'Failed to send OTP' });
+    }
+  });
+
+  app.post('/api/auth/phone-verify-otp', async (req: any, res) => {
+    try {
+      const { phoneNumber, otp } = req.body;
+      const stored = otpStore.get(phoneNumber);
+      
+      if (!stored || stored.expires < Date.now()) {
+        return res.status(401).json({ error: 'OTP expired or invalid' });
+      }
+      
+      if (stored.code !== otp) {
+        return res.status(401).json({ error: 'Invalid OTP' });
+      }
+      
+      // Create or find user
+      let user = await storage.getUserByPhone(phoneNumber);
+      if (!user) {
+        const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        user = await storage.upsertUser({
+          id: userId,
+          phoneNumber,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+      
+      req.session.userId = user.id;
+      otpStore.delete(phoneNumber);
+      
+      res.json({ success: true, user });
+    } catch (error) {
+      console.error('OTP verify error:', error);
+      res.status(500).json({ error: 'OTP verification failed' });
+    }
+  });
+
+  app.post('/api/auth/google-login', async (req: any, res) => {
+    try {
+      const { googleToken, profile } = req.body;
+      
+      // In production, verify the Google token here
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const user = await storage.upsertUser({
+        id: userId,
+        email: profile.email,
+        firstName: profile.given_name,
+        lastName: profile.family_name,
+        profileImageUrl: profile.picture,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      req.session.userId = userId;
+      res.json({ success: true, user });
+    } catch (error) {
+      console.error('Google auth error:', error);
+      res.status(500).json({ error: 'Google authentication failed' });
+    }
+  });
+
+  app.post('/api/auth/logout', async (req: any, res) => {
+    req.session.destroy((err: any) => {
+      if (err) {
+        return res.status(500).json({ error: 'Logout failed' });
+      }
+      res.json({ success: true });
+    });
+  });
+
+  app.get('/api/auth/user', requireAuth, async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId(req);
       let user = await storage.getUser(userId);
       
       // Create demo user if doesn't exist
