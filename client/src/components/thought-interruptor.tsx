@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Zap, RefreshCw, Brain, Heart, Star } from "lucide-react";
+import { Zap, RefreshCw, Brain, Heart, Star, Sparkles } from "lucide-react";
 
 interface ThoughtInterruptorProps {
   onComplete?: () => void;
@@ -85,6 +86,25 @@ export default function ThoughtInterruptor({ onComplete }: ThoughtInterruptorPro
   const [selectedTechnique, setSelectedTechnique] = useState<typeof interruptionTechniques[0] | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [isActive, setIsActive] = useState(false);
+  const [useAITechniques, setUseAITechniques] = useState(false);
+
+  // Fetch AI-powered techniques every 3 days
+  const { data: aiTechniques, refetch: refetchTechniques } = useQuery({
+    queryKey: ["/api/wellness/thought-interruption"],
+    staleTime: 3 * 24 * 60 * 60 * 1000, // 3 days
+    enabled: useAITechniques,
+  });
+
+  // Check if we should refresh AI techniques (every 3 days)
+  useEffect(() => {
+    const lastRefresh = localStorage.getItem('thoughtTechniquesLastRefresh');
+    const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+    
+    if (!lastRefresh || parseInt(lastRefresh) < threeDaysAgo) {
+      setUseAITechniques(true);
+      localStorage.setItem('thoughtTechniquesLastRefresh', Date.now().toString());
+    }
+  }, []);
 
   const startTechnique = (technique: typeof interruptionTechniques[0]) => {
     setSelectedTechnique(technique);
@@ -112,6 +132,33 @@ export default function ThoughtInterruptor({ onComplete }: ThoughtInterruptorPro
     setSelectedTechnique(null);
     setCurrentStep(0);
   };
+
+  const refreshTechniques = () => {
+    // Reset to show available techniques
+    setSelectedTechnique(null);
+    setIsActive(false);
+    setCurrentStep(0);
+    
+    // Refresh AI techniques if enabled
+    if (useAITechniques) {
+      refetchTechniques();
+      localStorage.setItem('thoughtTechniquesLastRefresh', Date.now().toString());
+    }
+  };
+
+  // Combine static and AI techniques
+  const aiTechniquesList = useAITechniques && aiTechniques ? (aiTechniques as { techniques: string[] }).techniques : [];
+  const allTechniques = [
+    ...interruptionTechniques,
+    ...aiTechniquesList.map((tech: string, index: number) => ({
+      id: `ai-${index}`,
+      title: `AI Technique ${index + 1}`,
+      icon: <Sparkles className="w-5 h-5" />,
+      description: tech,
+      action: 'Try This',
+      steps: [tech]
+    }))
+  ];
 
   if (isActive && selectedTechnique) {
     return (
@@ -177,8 +224,31 @@ export default function ThoughtInterruptor({ onComplete }: ThoughtInterruptorPro
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Available Techniques</h3>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setUseAITechniques(!useAITechniques)}
+              className="flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              {useAITechniques ? 'Use Standard' : 'Use AI'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshTechniques}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </Button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {interruptionTechniques.map((technique) => (
+          {allTechniques.map((technique) => (
             <Card 
               key={technique.id}
               className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-blue-300"
