@@ -19,6 +19,7 @@ interface AutoMemoryCreatorProps {
 
 export default function AutoMemoryCreator({ memories, onCreateMemory }: AutoMemoryCreatorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
 
   const shuffleArray = <T,>(array: T[]): T[] => {
     const shuffled = [...array];
@@ -29,30 +30,78 @@ export default function AutoMemoryCreator({ memories, onCreateMemory }: AutoMemo
     return shuffled;
   };
 
-  const createRandomMemory = () => {
-    if (memories.length < 3) return;
+  const createSmartMemory = async () => {
+    if (memories.length < 3) {
+      toast({
+        title: "Need more photos",
+        description: "Upload at least 3 photos to create AI-powered galleries",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsGenerating(true);
     
-    setTimeout(() => {
-      const shuffledMemories = shuffleArray(memories);
-      const selectedPhotos = shuffledMemories.slice(0, Math.min(8, memories.length));
+    try {
+      // Group memories by category for intelligent selection
+      const categoryGroups = memories.reduce((acc, memory) => {
+        const cat = memory.category || 'other';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(memory);
+        return acc;
+      }, {} as Record<string, typeof memories>);
+
+      // Find best category or use random selection
+      const populatedCategories = Object.entries(categoryGroups).filter(([_, mems]) => mems.length >= 2);
       
-      const memoryTitles = [
-        "Cherished Moments",
-        "Beautiful Memories",
-        "Happy Times",
-        "Special Moments",
-        "Wonderful Days",
-        "Precious Times",
-        "Golden Memories",
-        "Sweet Moments"
-      ];
+      let selectedPhotos;
+      if (populatedCategories.length > 0) {
+        // Pick category with most photos for better gallery
+        const [bestCategory, categoryMemories] = populatedCategories.reduce((a, b) => 
+          a[1].length > b[1].length ? a : b
+        );
+        const shuffled = shuffleArray(categoryMemories);
+        selectedPhotos = shuffled.slice(0, Math.min(6, categoryMemories.length));
+      } else {
+        const shuffled = shuffleArray(memories);
+        selectedPhotos = shuffled.slice(0, Math.min(6, memories.length));
+      }
       
-      const randomTitle = memoryTitles[Math.floor(Math.random() * memoryTitles.length)];
-      onCreateMemory(selectedPhotos, randomTitle);
+      // Use AI to generate meaningful gallery title
+      const response = await fetch('/api/memories/gallery-title', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memories: selectedPhotos })
+      });
+      
+      const titleData = await response.json();
+      const galleryTitle = titleData.title || "Beautiful Memories";
+      onCreateMemory(selectedPhotos, galleryTitle);
+      
+      toast({
+        title: "Smart gallery created!",
+        description: `"${galleryTitle}" with ${selectedPhotos.length} photos using AI analysis`
+      });
+      
+    } catch (error) {
+      console.error('Error creating smart memory:', error);
+      
+      // Fallback to simple random selection
+      const shuffled = shuffleArray(memories);
+      const selectedPhotos = shuffled.slice(0, Math.min(6, memories.length));
+      
+      const fallbackTitles = ['Beautiful Memories', 'Special Moments', 'Happy Times', 'Life Highlights'];
+      const galleryTitle = fallbackTitles[Math.floor(Math.random() * fallbackTitles.length)];
+      
+      onCreateMemory(selectedPhotos, galleryTitle);
+      
+      toast({
+        title: "Gallery created",
+        description: `"${galleryTitle}" with ${selectedPhotos.length} photos`
+      });
+    } finally {
       setIsGenerating(false);
-    }, 1000);
+    }
   };
 
   const createCategoryMemory = (category: string) => {
@@ -127,16 +176,20 @@ export default function AutoMemoryCreator({ memories, onCreateMemory }: AutoMemo
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Button
-            onClick={createRandomMemory}
+            onClick={createSmartMemory}
             disabled={isGenerating || memories.length < 3}
-            className="h-auto p-4 flex flex-col items-center gap-2"
+            className="h-auto p-4 flex flex-col items-center gap-2 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-purple-200 dark:border-purple-800 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900 dark:hover:to-pink-900"
             variant="outline"
           >
-            <Sparkles className="w-5 h-5" />
+            {isGenerating ? (
+              <Brain className="w-5 h-5 animate-spin text-purple-500" />
+            ) : (
+              <Brain className="w-5 h-5 text-purple-500" />
+            )}
             <div className="text-center">
-              <div className="font-medium">Random Mix</div>
+              <div className="font-medium">AI Smart Gallery</div>
               <div className="text-xs text-muted-foreground">
-                {Math.min(8, memories.length)} photos
+                {isGenerating ? "Analyzing..." : "AI-powered selection"}
               </div>
             </div>
           </Button>
