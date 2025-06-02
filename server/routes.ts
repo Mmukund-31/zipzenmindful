@@ -385,9 +385,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Insights endpoint
-  app.get("/api/insights", async (req: any, res) => {
+  app.get("/api/insights", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const moodEntries = await storage.getMoodEntriesByUser(userId);
       const insights = await generateMoodInsights(moodEntries);
       
@@ -455,9 +455,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Gratitude entries routes
-  app.post("/api/gratitude", async (req: any, res) => {
+  app.post("/api/gratitude", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const { content, date } = req.body;
       
       if (!content || typeof content !== 'string') {
@@ -478,9 +478,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/gratitude", async (req: any, res) => {
+  app.get("/api/gratitude", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const gratitudeEntries = await storage.getGratitudeEntriesByUser(userId);
       res.json(gratitudeEntries);
     } catch (error) {
@@ -489,9 +489,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/gratitude/insights", async (req: any, res) => {
+  app.get("/api/gratitude/insights", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const gratitudeEntries = await storage.getGratitudeEntriesByUser(userId);
       
       if (gratitudeEntries.length === 0) {
@@ -514,9 +514,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Challenges routes
-  app.get("/api/challenges/active", async (req: any, res) => {
+  app.get("/api/challenges/active", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const activeChallenges = await storage.getActiveChallengesByUser(userId);
       res.json(activeChallenges);
     } catch (error) {
@@ -525,9 +525,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/challenges/available", async (req: any, res) => {
+  app.get("/api/challenges/available", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const availableChallenges = await storage.getAvailableChallenges(userId);
       res.json(availableChallenges);
     } catch (error) {
@@ -536,9 +536,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/challenges/completed", async (req: any, res) => {
+  app.get("/api/challenges/completed", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const completedChallenges = await storage.getCompletedChallengesByUser(userId);
       res.json(completedChallenges);
     } catch (error) {
@@ -547,9 +547,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/challenges/join", async (req: any, res) => {
+  app.post("/api/challenges/join", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const { challengeId } = req.body;
       
       if (!challengeId) {
