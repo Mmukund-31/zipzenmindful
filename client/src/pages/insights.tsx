@@ -16,6 +16,11 @@ export default function Insights() {
     queryKey: ["/api/insights"],
   });
 
+  const { data: personalizedInsights, isLoading: isLoadingPersonalized } = useQuery({
+    queryKey: ["/api/insights/personalized"],
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -29,7 +34,7 @@ export default function Insights() {
   const getOverallMood = () => {
     if (moodDistribution.length === 0) return { emoji: "😌", label: "No data yet" };
     
-    const dominant = moodDistribution.reduce((prev, current) => 
+    const dominant = moodDistribution.reduce((prev: any, current: any) => 
       prev.percentage > current.percentage ? prev : current
     );
     
@@ -124,14 +129,50 @@ export default function Insights() {
         </CardContent>
       </Card>
 
-      {/* AI Insights */}
+      {/* Personalized AI Insights */}
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 dark:from-blue-950 dark:to-purple-950 dark:border-blue-800">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+              <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <span>Personalized Insights</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingPersonalized ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-sm text-muted-foreground mt-2">Analyzing your wellness patterns...</p>
+            </div>
+          ) : personalizedInsights?.insights?.length > 0 ? (
+            <div className="space-y-3">
+              {personalizedInsights.insights.map((insight: string, index: number) => (
+                <Card key={index} className="bg-white/80 dark:bg-gray-800/80 border-blue-100 dark:border-blue-800">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-foreground leading-relaxed">{insight}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-4">
+              <Lightbulb className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm">Personal insights will appear as you use the app features</p>
+              <p className="text-xs mt-1">Track moods, capture memories, and practice gratitude to unlock personalized guidance</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Standard AI Insights */}
       <Card className="bg-gradient-to-r from-secondary/10 to-primary/10 border-secondary/20">
         <CardHeader>
           <CardTitle className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-secondary/20 rounded-full flex items-center justify-center">
-              <Lightbulb className="w-5 h-5 text-secondary" />
+              <TrendingUp className="w-5 h-5 text-secondary" />
             </div>
-            <span>AI Insights</span>
+            <span>Pattern Analysis</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -147,8 +188,8 @@ export default function Insights() {
             </div>
           ) : (
             <div className="text-center text-muted-foreground py-4">
-              <Lightbulb className="w-8 h-8 mx-auto mb-2" />
-              <p className="text-sm">Insights will appear as you track your mood over time</p>
+              <TrendingUp className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm">Pattern insights will appear as you track your mood over time</p>
             </div>
           )}
         </CardContent>

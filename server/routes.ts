@@ -905,12 +905,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI-powered thought interruption techniques
   app.get("/api/wellness/thought-interruption", requireAuth, async (req: any, res) => {
     try {
-      const { generateThoughtInterruptionTechniques } = await import("./lib/openai");
-      const techniques = await generateThoughtInterruptionTechniques();
+      const userId = getCurrentUserId(req);
+      const user = await storage.getUser(userId);
+      const recentMoods = await storage.getMoodEntriesByUser(userId);
+      
+      const { generatePersonalizedThoughtInterruption } = await import("./lib/openai");
+      const techniques = await generatePersonalizedThoughtInterruption(user, recentMoods.slice(-5));
       res.json({ techniques });
     } catch (error) {
       console.error("Thought interruption techniques error:", error);
       res.status(500).json({ error: "Failed to generate techniques" });
+    }
+  });
+
+  // AI-powered personalized insights
+  app.get("/api/insights/personalized", requireAuth, async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const user = await storage.getUser(userId);
+      const moodEntries = await storage.getMoodEntriesByUser(userId);
+      const memories = await storage.getMemoriesByUser(userId);
+      const chatMessages = await storage.getChatMessagesByUser(userId);
+      const gratitudeEntries = await storage.getGratitudeEntriesByUser(userId);
+
+      const { generatePersonalizedInsights } = await import("./lib/openai");
+      const insights = await generatePersonalizedInsights({
+        moodEntries,
+        memories,
+        chatMessages,
+        gratitudeEntries,
+        userProfile: user
+      });
+      
+      res.json({ insights });
+    } catch (error) {
+      console.error("Personalized insights error:", error);
+      res.status(500).json({ error: "Failed to generate insights" });
     }
   });
 

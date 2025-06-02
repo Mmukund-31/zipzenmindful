@@ -424,3 +424,116 @@ export async function generatePersonalizedChallenges(userProfile: any, completed
     return [];
   }
 }
+
+export async function generatePersonalizedInsights(userActivity: {
+  moodEntries: any[];
+  memories: any[];
+  chatMessages: any[];
+  gratitudeEntries: any[];
+  userProfile: any;
+}): Promise<string[]> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const { moodEntries, memories, chatMessages, gratitudeEntries, userProfile } = userActivity;
+    
+    // Analyze patterns
+    const moodPattern = moodEntries.length > 0 ? 
+      `${moodEntries.length} mood entries, recent moods: ${moodEntries.slice(-5).map(m => m.mood).join(', ')}` : 
+      'No mood tracking yet';
+    
+    const memoryPattern = memories.length > 0 ? 
+      `${memories.length} memories captured, categories: ${Array.from(new Set(memories.map(m => m.category))).join(', ')}` : 
+      'No memories captured yet';
+    
+    const chatPattern = chatMessages.length > 0 ? 
+      `${chatMessages.length} chat interactions, active engagement` : 
+      'No chat interactions yet';
+    
+    const gratitudePattern = gratitudeEntries.length > 0 ? 
+      `${gratitudeEntries.length} gratitude entries, practicing thankfulness` : 
+      'No gratitude practice yet';
+
+    const prompt = `Analyze this user's wellness app activity and provide 5-7 personalized insights:
+
+User Profile:
+- Goals: ${userProfile?.wellnessGoals?.join(', ') || 'Not set'}
+- Motivation: ${userProfile?.motivation || 'Not provided'}
+- Age: ${userProfile?.age || 'Not provided'}
+
+Activity Patterns:
+- Mood tracking: ${moodPattern}
+- Memory capture: ${memoryPattern}
+- AI chat usage: ${chatPattern}
+- Gratitude practice: ${gratitudePattern}
+
+Generate insights that:
+- Recognize their engagement patterns
+- Suggest improvements based on their goals
+- Highlight positive trends
+- Offer personalized recommendations
+- Reference their specific activities and preferences
+- Are encouraging and actionable
+
+Return as a simple array of insight strings.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    return text.split('\n').filter(line => line.trim().length > 0).slice(0, 7);
+  } catch (error) {
+    console.error('Error generating personalized insights:', error);
+    return [
+      "Keep exploring the wellness features to track your mental health journey.",
+      "Regular mood tracking helps identify patterns and triggers.",
+      "Capturing positive memories can boost your overall well-being.",
+      "Gratitude practice has been shown to improve mental health.",
+      "AI chat support is available whenever you need guidance."
+    ];
+  }
+}
+
+export async function generatePersonalizedThoughtInterruption(userProfile: any, recentMoods: any[]): Promise<string[]> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const moodContext = recentMoods.length > 0 ? 
+      `Recent moods: ${recentMoods.slice(-3).map(m => `${m.mood} (${m.rating}/5)`).join(', ')}` : 
+      'No recent mood data';
+    
+    const goals = userProfile?.wellnessGoals || [];
+    const motivation = userProfile?.motivation || '';
+
+    const prompt = `Create 5 personalized thought interruption techniques for this user:
+
+User Context:
+- Wellness goals: ${goals.join(', ')}
+- Personal motivation: ${motivation}
+- ${moodContext}
+
+Generate techniques that are:
+- Specifically tailored to their goals and recent emotional state
+- Quick and practical (30 seconds to 2 minutes)
+- Evidence-based from CBT and mindfulness practices
+- Easy to remember and implement
+- Personalized to their motivation and current needs
+
+Return as simple technique descriptions, each 1-2 sentences.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    return text.split('\n').filter(line => line.trim().length > 0).slice(0, 5);
+  } catch (error) {
+    console.error('Error generating personalized thought interruption:', error);
+    return [
+      "Take 3 deep breaths and remind yourself of your personal wellness goals.",
+      "Ground yourself by naming 3 things you're grateful for right now.",
+      "Ask yourself: 'What would someone who cares about me say in this moment?'",
+      "Visualize your safe place and spend 30 seconds there mentally.",
+      "Do a quick body scan and release any tension you find."
+    ];
+  }
+}
