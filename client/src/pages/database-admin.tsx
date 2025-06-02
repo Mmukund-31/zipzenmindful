@@ -167,7 +167,7 @@ export default function DatabaseAdmin() {
                           <TableCell className="font-mono text-xs">
                             {userData.user?.id || 'N/A'}
                           </TableCell>
-                          <TableCell>{userData.user?.name || 'Anonymous'}</TableCell>
+                          <TableCell>{getUserName(userData.user?.id)}</TableCell>
                           <TableCell>{userData.user?.age || '-'}</TableCell>
                           <TableCell className="text-xs">{userData.user?.email || '-'}</TableCell>
                           <TableCell className="max-w-32">
