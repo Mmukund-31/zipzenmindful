@@ -103,7 +103,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(moodEntries)
       .where(eq(moodEntries.userId, userId))
-      .orderBy(moodEntries.timestamp);
+      .orderBy(desc(moodEntries.timestamp)); // Most recent first
   }
 
   async getRecentMoodEntry(userId: string): Promise<MoodEntry | undefined> {

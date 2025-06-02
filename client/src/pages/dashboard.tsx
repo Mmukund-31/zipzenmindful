@@ -21,8 +21,11 @@ export default function Dashboard() {
 
   const { data: moodHistory = [] } = useQuery<any[]>({
     queryKey: ["/api/mood"],
-    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
-    refetchOnWindowFocus: true, // Refresh when user returns to tab
+    staleTime: 0, // Data is always considered stale
+    refetchInterval: 2000, // Refresh every 2 seconds for real-time updates
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 
   const moodMutation = useMutation({

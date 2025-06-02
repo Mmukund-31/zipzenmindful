@@ -4,8 +4,10 @@ import multer from "multer";
 import path from "path";
 import session from "express-session";
 import { storage } from "./storage";
-import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema } from "@shared/schema";
+import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema, users, moodEntries, memories, chatMessages, gratitudeEntries } from "@shared/schema";
 import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText, analyzeImageForMemory, generateMemoryGalleryTitle, analyzeImageAndGenerateMeme } from "./lib/openai";
+import { db } from "./db";
+import { desc } from "drizzle-orm";
 // Authentication middleware
 const getCurrentUserId = (req: any): string => {
   // Get user ID from session or JWT token
@@ -520,6 +522,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all user data endpoint for comprehensive dashboard
+  app.get("/api/user/dashboard", requireAuth, async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      
+      // Get all user data in real-time
+      const [
+        user,
+        moodEntries,
+        recentMood,
+        memories,
+        chatMessages,
+        gratitudeEntries,
+        activeChallenges,
+        completedChallenges
+      ] = await Promise.all([
+        storage.getUser(userId),
+        storage.getMoodEntriesByUser(userId),
+        storage.getRecentMoodEntry(userId),
+        storage.getMemoriesByUser(userId),
+        storage.getChatMessagesByUser(userId),
+        storage.getGratitudeEntriesByUser(userId),
+        storage.getActiveChallengesByUser(userId),
+        storage.getCompletedChallengesByUser(userId)
+      ]);
+
+      // Calculate statistics
+      const stats = {
+        totalMoods: moodEntries.length,
+        totalMemories: memories.length,
+        totalGratitude: gratitudeEntries.length,
+        activeChallengesCount: activeChallenges.length,
+        completedChallengesCount: completedChallenges.length,
+        recentActivity: moodEntries.slice(0, 10), // Last 10 mood entries
+        favoriteMemories: memories.filter(m => m.isFavorite)
+      };
+
+      res.json({
+        user,
+        moodEntries: moodEntries.slice(0, 100), // Latest 100 entries
+        recentMood,
+        memories: memories.slice(0, 50), // Latest 50 memories
+        chatMessages: chatMessages.slice(-20), // Last 20 messages
+        gratitudeEntries: gratitudeEntries.slice(0, 30), // Latest 30 entries
+        activeChallenges,
+        completedChallenges,
+        stats
+      });
+    } catch (error) {
+      console.error("Dashboard data error:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard data" });
+    }
+  });
+
   app.post("/api/memories/analyze-image", async (req: any, res) => {
     try {
       const { base64Image } = req.body;
@@ -746,6 +802,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Challenge progress error:", error);
       res.status(500).json({ error: "Failed to update challenge progress" });
+    }
+  });
+
+  // Database admin endpoint for viewing all user data
+  app.get("/api/admin/database", async (req: any, res) => {
+    try {
+      // Get all data from database
+      const [
+        allUsers,
+        allMoodEntries,
+        allMemories,
+        allChatMessages,
+        allGratitudeEntries
+      ] = await Promise.all([
+        db.select().from(users),
+        db.select().from(moodEntries).orderBy(desc(moodEntries.timestamp)),
+        db.select().from(memories).orderBy(desc(memories.timestamp)),
+        db.select().from(chatMessages).orderBy(desc(chatMessages.timestamp)),
+        db.select().from(gratitudeEntries).orderBy(desc(gratitudeEntries.timestamp))
+      ]);
+
+      // Group data by user for easier viewing
+      const userDataMap = new Map();
+      
+      allUsers.forEach(user => {
+        userDataMap.set(user.id, {
+          user,
+          moodEntries: [],
+          memories: [],
+          chatMessages: [],
+          gratitudeEntries: []
+        });
+      });
+
+      // Add mood entries
+      allMoodEntries.forEach(entry => {
+        if (userDataMap.has(entry.userId)) {
+          userDataMap.get(entry.userId).moodEntries.push(entry);
+        }
+      });
+
+      // Add memories
+      allMemories.forEach(memory => {
+        if (userDataMap.has(memory.userId)) {
+          userDataMap.get(memory.userId).memories.push(memory);
+        }
+      });
+
+      // Add chat messages
+      allChatMessages.forEach(message => {
+        if (userDataMap.has(message.userId)) {
+          userDataMap.get(message.userId).chatMessages.push(message);
+        }
+      });
+
+      // Add gratitude entries
+      allGratitudeEntries.forEach(entry => {
+        if (userDataMap.has(entry.userId)) {
+          userDataMap.get(entry.userId).gratitudeEntries.push(entry);
+        }
+      });
+
+      const usersWithData = Array.from(userDataMap.values());
+
+      res.json({
+        totalUsers: allUsers.length,
+        totalMoodEntries: allMoodEntries.length,
+        totalMemories: allMemories.length,
+        totalChatMessages: allChatMessages.length,
+        totalGratitudeEntries: allGratitudeEntries.length,
+        users: usersWithData,
+        recentActivity: {
+          recentMoods: allMoodEntries.slice(0, 20),
+          recentMemories: allMemories.slice(0, 10),
+          recentChat: allChatMessages.slice(0, 10)
+        }
+      });
+    } catch (error) {
+      console.error("Database admin error:", error);
+      res.status(500).json({ error: "Failed to fetch database data" });
     }
   });
 
