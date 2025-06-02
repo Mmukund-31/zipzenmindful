@@ -752,8 +752,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/challenges/available", requireAuth, async (req: any, res) => {
     try {
       const userId = getCurrentUserId(req);
-      const availableChallenges = await storage.getAvailableChallenges(userId);
-      res.json(availableChallenges);
+      const user = await storage.getUser(userId);
+      const completedChallenges = await storage.getCompletedChallengesByUser(userId);
+      const completedIds = completedChallenges.map(c => c.challengeId);
+      
+      // Get standard challenges
+      const standardChallenges = await storage.getAvailableChallenges(userId);
+      
+      // Generate AI-powered personalized challenges
+      let personalizedChallenges = [];
+      if (user) {
+        try {
+          const { generatePersonalizedChallenges } = await import("./lib/openai");
+          personalizedChallenges = await generatePersonalizedChallenges(user, completedIds);
+        } catch (error) {
+          console.error("Error generating personalized challenges:", error);
+        }
+      }
+      
+      res.json([...standardChallenges, ...personalizedChallenges]);
     } catch (error) {
       console.error("Available challenges fetch error:", error);
       res.status(500).json({ error: "Failed to fetch available challenges" });
@@ -882,6 +899,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Database admin error:", error);
       res.status(500).json({ error: "Failed to fetch database data" });
+    }
+  });
+
+  // AI-powered thought interruption techniques
+  app.get("/api/wellness/thought-interruption", requireAuth, async (req: any, res) => {
+    try {
+      const { generateThoughtInterruptionTechniques } = await import("./lib/openai");
+      const techniques = await generateThoughtInterruptionTechniques();
+      res.json({ techniques });
+    } catch (error) {
+      console.error("Thought interruption techniques error:", error);
+      res.status(500).json({ error: "Failed to generate techniques" });
     }
   });
 

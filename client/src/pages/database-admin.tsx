@@ -22,10 +22,10 @@ export default function DatabaseAdmin() {
     refetch();
   };
 
-  // Helper function to get user name by ID
+  // Helper function to get user name by ID from onboarding data
   const getUserName = (userId: string) => {
     const userData = users.find((u: any) => u.user?.id === userId);
-    return userData?.user?.name || 'Anonymous User';
+    return userData?.user?.name || userData?.user?.firstName || 'Anonymous User';
   };
 
   // Toggle motivation text expansion

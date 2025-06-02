@@ -354,3 +354,73 @@ export async function generateMemoryGalleryTitle(memories: any[]): Promise<strin
     return "Beautiful Memories";
   }
 }
+
+export async function generateThoughtInterruptionTechniques(): Promise<string[]> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const prompt = `Generate 10 unique, effective thought interruption techniques for mental wellness. These should be:
+    - Quick and practical (30 seconds to 2 minutes)
+    - Evidence-based from CBT and mindfulness practices
+    - Suitable for anxiety, stress, and negative thought spirals
+    - Easy to remember and implement anywhere
+    - Varied in approach (breathing, grounding, cognitive, physical)
+    
+    Format as a simple list, each technique in 1-2 sentences.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    return text.split('\n').filter(line => line.trim().length > 0).slice(0, 10);
+  } catch (error) {
+    console.error('Error generating thought interruption techniques:', error);
+    return [
+      "Take 5 deep breaths, counting slowly from 1 to 5 on each inhale and exhale.",
+      "Name 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell, 1 you can taste.",
+      "Challenge the thought: 'Is this helpful right now? What would I tell a friend thinking this?'",
+      "Do 10 jumping jacks or stretch your arms above your head to shift physical energy.",
+      "Visualize placing the worry in a box and setting it aside for later."
+    ];
+  }
+}
+
+export async function generatePersonalizedChallenges(userProfile: any, completedChallenges: string[]): Promise<any[]> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const completedList = completedChallenges.join(', ');
+    const goals = userProfile.wellnessGoals || [];
+    const motivation = userProfile.motivation || '';
+    
+    const prompt = `Create 3 personalized wellness challenges based on:
+    - Wellness goals: ${goals.join(', ')}
+    - Personal motivation: ${motivation}
+    - Already completed: ${completedList}
+    
+    Each challenge should be:
+    - 7 days long with daily activities
+    - Tailored to their specific goals
+    - Progressive difficulty
+    - Include mindfulness, physical activity, or emotional wellness
+    - Have a catchy title and clear description
+    
+    Return as JSON array with format:
+    [{"id": "unique-id", "title": "Challenge Title", "description": "Brief description", "duration": 7, "category": "mindfulness|physical|emotional", "dailyTasks": ["Task 1", "Task 2", ...]}]`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Extract JSON from response
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error generating personalized challenges:', error);
+    return [];
+  }
+}
