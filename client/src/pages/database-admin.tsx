@@ -345,7 +345,7 @@ export default function DatabaseAdmin() {
                             <TableCell className="text-xs">
                               {new Date(entry.timestamp).toLocaleDateString()}
                             </TableCell>
-                            <TableCell className="font-mono text-xs">{entry.userId}</TableCell>
+                            <TableCell className="font-medium">{getUserName(entry.userId)}</TableCell>
                             <TableCell className="max-w-96">
                               <div className="whitespace-pre-wrap">{entry.content}</div>
                             </TableCell>
