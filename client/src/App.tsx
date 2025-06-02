@@ -45,7 +45,6 @@ function Router() {
             <Route path="/challenges" component={Challenges} />
             <Route path="/settings" component={Settings} />
             <Route path="/onboarding" component={Onboarding} />
-            <Route component={NotFound} />
           </>
         )}
       </Switch>
