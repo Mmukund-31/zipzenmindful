@@ -36,24 +36,16 @@ function Router() {
     );
   }
 
-  // Determine authentication state
-  const hasCompletedOnboarding = user?.firstName && user?.lastName;
+  // For now, if authenticated, assume onboarding is complete
+  // This allows users to access all app features after authentication
   const needsLogin = !isAuthenticated;
-  const needsOnboarding = isAuthenticated && !hasCompletedOnboarding;
 
   return (
     <div className="max-w-md mx-auto bg-white shadow-2xl min-h-screen relative overflow-hidden">
       <Switch>
         {needsLogin ? (
           <>
-            <Route path="/" component={Login} />
-            <Route path="/login" component={Login} />
-            <Route path="/onboarding" component={Onboarding} />
-          </>
-        ) : needsOnboarding ? (
-          <>
-            <Route path="/" component={Onboarding} />
-            <Route path="/onboarding" component={Onboarding} />
+            <Route path="/" component={Landing} />
             <Route path="/login" component={Login} />
           </>
         ) : (
@@ -73,7 +65,7 @@ function Router() {
         )}
         <Route component={NotFound} />
       </Switch>
-      {hasCompletedOnboarding && <Navigation />}
+      {!needsLogin && <Navigation />}
     </div>
   );
 }
