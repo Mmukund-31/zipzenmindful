@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
-import { useAuth } from "@/hooks/useAuth";
+
 import Navigation from "@/components/navigation";
 import Dashboard from "@/pages/dashboard";
 import Chat from "@/pages/chat";
@@ -22,50 +22,21 @@ import NotFound from "@/pages/not-found";
 
 
 function Router() {
-  const { isAuthenticated, isLoading, user } = useAuth();
-
-  // Show loading state while checking authentication
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-500 rounded-full animate-spin mx-auto mb-2"></div>
-          <p className="text-gray-600">Loading your wellness journey...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // For now, if authenticated, assume onboarding is complete
-  // This allows users to access all app features after authentication
-  const needsLogin = !isAuthenticated;
-
   return (
     <div className="max-w-md mx-auto bg-white shadow-2xl min-h-screen relative overflow-hidden">
       <Switch>
-        {needsLogin ? (
-          <>
-            <Route path="/" component={Landing} />
-            <Route path="/login" component={Login} />
-          </>
-        ) : (
-          <>
-            <Route path="/" component={Dashboard} />
-            <Route path="/chat" component={Chat} />
-            <Route path="/talk" component={Talk} />
-            <Route path="/memories" component={Memories} />
-            <Route path="/insights" component={Insights} />
-            <Route path="/wellness" component={Wellness} />
-            <Route path="/gratitude" component={Gratitude} />
-            <Route path="/challenges" component={Challenges} />
-            <Route path="/settings" component={Settings} />
-            <Route path="/login" component={Login} />
-            <Route path="/onboarding" component={Onboarding} />
-          </>
-        )}
+        <Route path="/" component={Dashboard} />
+        <Route path="/chat" component={Chat} />
+        <Route path="/talk" component={Talk} />
+        <Route path="/memories" component={Memories} />
+        <Route path="/insights" component={Insights} />
+        <Route path="/wellness" component={Wellness} />
+        <Route path="/gratitude" component={Gratitude} />
+        <Route path="/challenges" component={Challenges} />
+        <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
-      {!needsLogin && <Navigation />}
+      <Navigation />
     </div>
   );
 }
