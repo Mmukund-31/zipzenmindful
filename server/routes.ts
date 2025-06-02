@@ -564,9 +564,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/challenges/progress", async (req: any, res) => {
+  app.post("/api/challenges/progress", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const { challengeId, completed, date } = req.body;
       
       if (!challengeId || typeof completed !== 'boolean') {

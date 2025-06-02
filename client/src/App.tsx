@@ -19,29 +19,13 @@ import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
-import { useState, useEffect } from "react";
+
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [userData, setUserData] = useState<any>(null);
-  const [userLoading, setUserLoading] = useState(true);
+  const { isAuthenticated, isLoading, user } = useAuth();
 
-  useEffect(() => {
-    // Check for stored user data from onboarding
-    const storedUser = localStorage.getItem('mindease_user');
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        setUserData(parsed);
-      } catch (error) {
-        console.error('Error parsing stored user data:', error);
-      }
-    }
-    setUserLoading(false);
-  }, []);
-
-  // Show loading state while checking user data
-  if (userLoading) {
+  // Show loading state while checking authentication
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -52,11 +36,10 @@ function Router() {
     );
   }
 
-  // Determine authentication state - check session authentication first
-  const hasServerAuth = isAuthenticated;
-  const hasCompletedOnboarding = userData?.onboardingCompleted;
-  const needsLogin = !hasServerAuth;
-  const needsOnboarding = hasServerAuth && !hasCompletedOnboarding;
+  // Determine authentication state
+  const hasCompletedOnboarding = user?.firstName && user?.lastName;
+  const needsLogin = !isAuthenticated;
+  const needsOnboarding = isAuthenticated && !hasCompletedOnboarding;
 
   return (
     <div className="max-w-md mx-auto bg-white shadow-2xl min-h-screen relative overflow-hidden">
