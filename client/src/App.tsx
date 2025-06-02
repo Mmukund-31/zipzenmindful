@@ -18,6 +18,7 @@ import Settings from "@/pages/settings";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Onboarding from "@/pages/onboarding";
+import DatabaseAdmin from "@/pages/database-admin";
 import NotFound from "@/pages/not-found";
 
 
@@ -42,6 +43,7 @@ function Router() {
         <Route path="/challenges" component={Challenges} />
         <Route path="/settings" component={Settings} />
         <Route path="/onboarding" component={Onboarding} />
+        <Route path="/admin/database" component={DatabaseAdmin} />
       </Switch>
       <Navigation />
     </div>
