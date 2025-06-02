@@ -9,8 +9,8 @@ import { Heart, Mail, Phone, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { signInWithGoogle, sendPhoneOTP, setupRecaptcha } from "@/lib/firebase";
-import { RecaptchaVerifier, ConfirmationResult } from "firebase/auth";
+import { signInWithGoogle } from "@/lib/firebase";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -19,20 +19,8 @@ export default function Login() {
   const [otp, setOtp] = useState("");
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-  useEffect(() => {
-    // Setup reCAPTCHA for phone authentication
-    const verifier = setupRecaptcha('recaptcha-container');
-    setRecaptchaVerifier(verifier);
 
-    return () => {
-      if (verifier) {
-        verifier.clear();
-      }
-    };
-  }, []);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -67,31 +55,30 @@ export default function Login() {
       return;
     }
 
-    if (!recaptchaVerifier) {
-      toast({
-        title: "Security Error",
-        description: "Security verification not ready. Please refresh the page.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       setIsLoading(true);
-      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+1${phoneNumber}`;
-      const result = await sendPhoneOTP(formattedPhone, recaptchaVerifier);
-      setConfirmationResult(result);
-      setShowOtpInput(true);
-      
-      toast({
-        title: "OTP Sent",
-        description: "Verification code sent to your phone. Please check your messages.",
+      const response = await fetch("/api/auth/phone-send-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phoneNumber }),
       });
+
+      if (response.ok) {
+        setShowOtpInput(true);
+        toast({
+          title: "OTP Sent",
+          description: "Verification code sent to your phone. Please check your messages.",
+        });
+      } else {
+        throw new Error("Failed to send OTP");
+      }
     } catch (error: any) {
       console.error("Phone OTP error:", error);
       toast({
         title: "Failed to Send OTP",
-        description: error.message || "Failed to send verification code. Please try again.",
+        description: "Failed to send verification code. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -100,7 +87,7 @@ export default function Login() {
   };
 
   const handleVerifyOTP = async () => {
-    if (!otp || !confirmationResult) {
+    if (!otp) {
       toast({
         title: "OTP Required",
         description: "Please enter the verification code.",
@@ -111,14 +98,23 @@ export default function Login() {
 
     try {
       setIsLoading(true);
-      await confirmationResult.confirm(otp);
-      
-      toast({
-        title: "Welcome!",
-        description: "Phone verification successful. Your wellness journey begins now.",
+      const response = await fetch("/api/auth/phone-verify-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phoneNumber, otp }),
       });
-      
-      setLocation("/");
+
+      if (response.ok) {
+        toast({
+          title: "Welcome!",
+          description: "Phone verification successful. Your wellness journey begins now.",
+        });
+        setLocation("/");
+      } else {
+        throw new Error("Invalid verification code");
+      }
     } catch (error: any) {
       console.error("OTP verification error:", error);
       toast({
@@ -262,8 +258,7 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Hidden reCAPTCHA container */}
-      <div id="recaptcha-container"></div>
+
     </div>
   );
 }
