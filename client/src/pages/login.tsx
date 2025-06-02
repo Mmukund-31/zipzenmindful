@@ -29,6 +29,31 @@ export default function Login() {
     otpSent: false
   });
 
+  const handleQuickStart = async () => {
+    setIsLoading(true);
+    try {
+      // Quick authentication for testing
+      const response = await fetch('/api/auth/user');
+      if (response.ok) {
+        toast({
+          title: "Welcome to MindEase!",
+          description: "Ready to start your wellness journey",
+        });
+        setLocation("/");
+      } else {
+        throw new Error('Authentication failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to authenticate. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
@@ -171,6 +196,15 @@ export default function Login() {
         
         <CardContent>
           <div className="space-y-4">
+            {/* Quick Start for Testing */}
+            <Button 
+              onClick={handleQuickStart}
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3"
+            >
+              {isLoading ? "Starting..." : "Quick Start - Try the App"}
+            </Button>
+
             {/* Google Sign-In */}
             <div className="w-full">
               <GoogleButton

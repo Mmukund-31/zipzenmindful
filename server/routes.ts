@@ -186,19 +186,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get('/api/auth/user', requireAuth, async (req: any, res) => {
+  // Auto-login endpoint for testing and development
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
+      // Auto-authenticate for testing - create session if none exists
+      if (!req.session.userId) {
+        const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        req.session.userId = userId;
+        
+        // Create user in database
+        const user = await storage.upsertUser({
+          id: userId,
+          email: "user@mindease.app",
+          firstName: "Wellness",
+          lastName: "User",
+          profileImageUrl: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        
+        return res.json(user);
+      }
+      
       const userId = getCurrentUserId(req);
       let user = await storage.getUser(userId);
       
-      // Create demo user if doesn't exist
       if (!user) {
         user = await storage.upsertUser({
           id: userId,
-          email: "demo@mindease.app",
-          firstName: "Demo",
+          email: "user@mindease.app",
+          firstName: "Wellness",
           lastName: "User",
-          profileImageUrl: null
+          profileImageUrl: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
         });
       }
       
