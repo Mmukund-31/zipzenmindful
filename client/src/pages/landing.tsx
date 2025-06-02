@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, MessageCircle, TrendingUp, Sparkles } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 p-6">
       <div className="max-w-md mx-auto">
@@ -96,17 +99,7 @@ export default function Landing() {
           </div>
           
           <Button 
-            onClick={() => {
-              // For demo purposes, create a temporary session
-              localStorage.setItem('demo_user', JSON.stringify({
-                id: 'demo_user_' + Date.now(),
-                email: 'demo@mindease.app',
-                firstName: 'Demo',
-                lastName: 'User',
-                profileImageUrl: null
-              }));
-              window.location.reload();
-            }}
+            onClick={() => setLocation("/login")}
             className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
           >
             Start Your Wellness Journey

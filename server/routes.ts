@@ -194,10 +194,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         req.session.userId = userId;
         
-        // Create user in database
+        // Create user in database with unique email
         const user = await storage.upsertUser({
           id: userId,
-          email: "user@mindease.app",
+          email: `user_${userId}@mindease.app`,
           firstName: "Wellness",
           lastName: "User",
           profileImageUrl: null
@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         user = await storage.upsertUser({
           id: userId,
-          email: "user@mindease.app",
+          email: `user_${userId}@mindease.app`,
           firstName: "Wellness",
           lastName: "User",
           profileImageUrl: null
