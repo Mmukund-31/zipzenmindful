@@ -20,6 +20,12 @@ export default function DatabaseAdmin() {
     refetch();
   };
 
+  // Helper function to get user name by ID
+  const getUserName = (userId: string) => {
+    const userData = users.find((u: any) => u.user?.id === userId);
+    return userData?.user?.name || 'Anonymous User';
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-6 flex items-center justify-center">
@@ -118,6 +124,7 @@ export default function DatabaseAdmin() {
                         <TableHead>Email</TableHead>
                         <TableHead>Wellness Goals</TableHead>
                         <TableHead>Preferred Time</TableHead>
+                        <TableHead>Motivation</TableHead>
                         <TableHead>Data Count</TableHead>
                         <TableHead>Created</TableHead>
                       </TableRow>
@@ -143,6 +150,9 @@ export default function DatabaseAdmin() {
                             ) : '-'}
                           </TableCell>
                           <TableCell>{userData.user?.preferredTime || '-'}</TableCell>
+                          <TableCell className="max-w-48">
+                            <div className="text-xs truncate">{userData.user?.motivation || '-'}</div>
+                          </TableCell>
                           <TableCell>
                             <div className="text-xs space-y-1">
                               <div>🎭 {userData.moodEntries?.length || 0}</div>
@@ -175,7 +185,7 @@ export default function DatabaseAdmin() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Timestamp</TableHead>
-                        <TableHead>User ID</TableHead>
+                        <TableHead>User Name</TableHead>
                         <TableHead>Mood</TableHead>
                         <TableHead>Emoji</TableHead>
                         <TableHead>Rating</TableHead>
@@ -188,7 +198,7 @@ export default function DatabaseAdmin() {
                           <TableCell className="text-xs">
                             {new Date(mood.timestamp).toLocaleString()}
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{mood.userId}</TableCell>
+                          <TableCell className="font-medium">{getUserName(mood.userId)}</TableCell>
                           <TableCell>
                             <Badge variant="outline">{mood.mood}</Badge>
                           </TableCell>
@@ -228,7 +238,7 @@ export default function DatabaseAdmin() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Timestamp</TableHead>
-                        <TableHead>User ID</TableHead>
+                        <TableHead>User Name</TableHead>
                         <TableHead>Title</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead>Description</TableHead>
@@ -242,7 +252,7 @@ export default function DatabaseAdmin() {
                           <TableCell className="text-xs">
                             {new Date(memory.timestamp).toLocaleString()}
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{memory.userId}</TableCell>
+                          <TableCell className="font-medium">{getUserName(memory.userId)}</TableCell>
                           <TableCell className="font-medium">{memory.title}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">{memory.category}</Badge>
@@ -283,7 +293,7 @@ export default function DatabaseAdmin() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Timestamp</TableHead>
-                        <TableHead>User ID</TableHead>
+                        <TableHead>User Name</TableHead>
                         <TableHead>From</TableHead>
                         <TableHead>Message</TableHead>
                       </TableRow>
@@ -294,7 +304,7 @@ export default function DatabaseAdmin() {
                           <TableCell className="text-xs">
                             {new Date(message.timestamp).toLocaleString()}
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{message.userId}</TableCell>
+                          <TableCell className="font-medium">{getUserName(message.userId)}</TableCell>
                           <TableCell>
                             <Badge variant={message.isFromUser ? "default" : "secondary"}>
                               {message.isFromUser ? "User" : "AI"}
@@ -324,7 +334,7 @@ export default function DatabaseAdmin() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
-                        <TableHead>User ID</TableHead>
+                        <TableHead>User Name</TableHead>
                         <TableHead>Gratitude Content</TableHead>
                       </TableRow>
                     </TableHeader>
