@@ -185,3 +185,93 @@ export async function generateDailyWellnessTip(): Promise<string> {
     throw error;
   }
 }
+
+export async function analyzeImageForMemory(base64Image: string): Promise<{
+  title: string;
+  category: string;
+  description: string;
+  emotions: string[];
+}> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const prompt = `Analyze this image and extract meaningful information for a mental wellness memory app. 
+    Look for emotional context, activities, people, locations, and positive elements that could be used for wellness support.
+    
+    Respond with JSON in this exact format:
+    {
+      "title": "A meaningful, descriptive title for this memory",
+      "category": "one of: family, friends, pets, travel, nature, celebration, personal, other",
+      "description": "A warm, positive description of what's happening in the image",
+      "emotions": ["array of positive emotions this image might evoke like joy, peace, love, etc"]
+    }
+    
+    Focus on the positive and wellness aspects of the image.`;
+    
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: base64Image
+        }
+      }
+    ]);
+    
+    const response = await result.response;
+    const resultText = response.text();
+    
+    // Parse JSON from response
+    const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    
+    return {
+      title: parsed.title || "Beautiful Memory",
+      category: parsed.category || "other",
+      description: parsed.description || "A special moment captured in time",
+      emotions: parsed.emotions || ["joy", "happiness"]
+    };
+  } catch (error) {
+    console.error("Image analysis error:", error);
+    return {
+      title: "Beautiful Memory",
+      category: "other",
+      description: "A special moment captured in time",
+      emotions: ["joy", "happiness"]
+    };
+  }
+}
+
+export async function generateMemoryGalleryTitle(memories: any[]): Promise<string> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    const memoryTitles = memories.map(m => m.title).join(", ");
+    const categories = Array.from(new Set(memories.map(m => m.category)));
+    
+    const prompt = `Based on these memory titles and categories, create a beautiful, inspiring gallery title that captures the essence of these memories:
+    
+    Memory titles: ${memoryTitles}
+    Categories: ${categories.join(", ")}
+    
+    Create a title that:
+    - Is 2-6 words long
+    - Feels warm and nostalgic
+    - Could be used for a photo gallery
+    - Relates to mental wellness and positive emotions
+    
+    Examples: "Moments of Joy", "Family Adventures", "Peaceful Times", "Happy Memories"
+    
+    Return just the title, no quotes or extra text.`;
+    
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    
+    return response.text().trim() || "Beautiful Memories";
+  } catch (error) {
+    console.error("Gallery title generation error:", error);
+    return "Beautiful Memories";
+  }
+}

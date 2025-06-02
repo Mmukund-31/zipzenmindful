@@ -4,7 +4,7 @@ import multer from "multer";
 import path from "path";
 import { storage } from "./storage";
 import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema } from "@shared/schema";
-import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText } from "./lib/openai";
+import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText, analyzeImageForMemory, generateMemoryGalleryTitle } from "./lib/openai";
 // Removed complex auth - using simple demo auth instead
 
 // Configure multer for file uploads
@@ -194,6 +194,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(memory);
     } catch (error) {
       res.status(500).json({ error: "Failed to update memory" });
+    }
+  });
+
+  app.post("/api/memories/analyze-image", async (req: any, res) => {
+    try {
+      const { base64Image } = req.body;
+      
+      if (!base64Image) {
+        return res.status(400).json({ error: "Base64 image is required" });
+      }
+
+      const analysis = await analyzeImageForMemory(base64Image);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      res.status(500).json({ error: "Failed to analyze image" });
+    }
+  });
+
+  app.post("/api/memories/gallery-title", async (req: any, res) => {
+    try {
+      const { memories } = req.body;
+      
+      if (!memories || !Array.isArray(memories)) {
+        return res.status(400).json({ error: "Memories array is required" });
+      }
+
+      const title = await generateMemoryGalleryTitle(memories);
+      res.json({ title });
+    } catch (error) {
+      console.error("Error generating gallery title:", error);
+      res.status(500).json({ error: "Failed to generate gallery title" });
     }
   });
 

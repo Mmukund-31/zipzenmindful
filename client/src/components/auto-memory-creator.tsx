@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Sparkles, Calendar, Users, Heart } from "lucide-react";
+import { Sparkles, Calendar, Users, Heart, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface AutoMemoryCreatorProps {
   memories: Array<{
