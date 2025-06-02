@@ -69,12 +69,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return req.userId || req.session?.userId;
   };
 
-  // Authentication routes
+  // Firebase authentication sync endpoint
+  app.post('/api/auth/sync', async (req: any, res) => {
+    try {
+      const { uid, email, firstName, lastName, profileImageUrl, phoneNumber } = req.body;
+      
+      if (!uid) {
+        return res.status(400).json({ error: 'Firebase UID is required' });
+      }
+      
+      // Create or update user in our database
+      const user = await storage.upsertUser({
+        id: uid,
+        email,
+        firstName,
+        lastName,
+        profileImageUrl,
+        phoneNumber
+      });
+      
+      // Set session
+      req.session.userId = uid;
+      
+      res.json({ success: true, user });
+    } catch (error) {
+      console.error('Firebase sync error:', error);
+      res.status(500).json({ error: 'Failed to sync user data' });
+    }
+  });
+
+  // Legacy authentication routes (keeping for backward compatibility)
   app.post('/api/auth/email-login', async (req: any, res) => {
     try {
       const { email, password, isSignUp } = req.body;
       
       if (isSignUp) {
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser) {
+          // User already exists, just log them in
+          req.session.userId = existingUser.id;
+          res.json({ 
+            success: true, 
+            user: existingUser,
+            message: `Welcome back ${existingUser.firstName}!`
+          });
+          return;
+        }
+        
         // Create new personalized user
         const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
@@ -100,7 +142,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           profileImageUrl: null
         });
         req.session.userId = userId;
-        res.json({ success: true, user });
+        res.json({ 
+          success: true, 
+          user,
+          message: `Welcome ${randomName.first}! Your wellness journey begins now.`
+        });
       } else {
         // Find existing user by email
         const existingUser = await storage.getUserByEmail(email);

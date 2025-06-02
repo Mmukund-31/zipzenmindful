@@ -1,66 +1,55 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Heart, Mail, Phone, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Mail, Phone, Eye, EyeOff } from "lucide-react";
-import GoogleButton from "react-google-button";
 import { useLocation } from "wouter";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { signInWithGoogle, sendPhoneOTP, setupRecaptcha } from "@/lib/firebase";
+import { RecaptchaVerifier, ConfirmationResult } from "firebase/auth";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [showPassword, setShowPassword] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [showOtpInput, setShowOtpInput] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Form states
-  const [emailForm, setEmailForm] = useState({
-    email: "",
-    password: "",
-    isSignUp: false
-  });
-  
-  const [phoneForm, setPhoneForm] = useState({
-    phoneNumber: "",
-    otp: "",
-    otpSent: false
-  });
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-  const handleQuickStart = async () => {
-    setIsLoading(true);
+  useEffect(() => {
+    // Setup reCAPTCHA for phone authentication
+    const verifier = setupRecaptcha('recaptcha-container');
+    setRecaptchaVerifier(verifier);
+
+    return () => {
+      if (verifier) {
+        verifier.clear();
+      }
+    };
+  }, []);
+
+  const handleGoogleSignIn = async () => {
     try {
-      // Create a personalized session for this device/user
-      const response = await fetch('/api/auth/quick-start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          deviceId: localStorage.getItem('mindease_device_id') || 
-                   'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
-        })
+      setIsLoading(true);
+      await signInWithGoogle();
+      
+      toast({
+        title: "Welcome!",
+        description: "Successfully signed in with Google. Your wellness journey begins now.",
       });
       
-      if (response.ok) {
-        const userData = await response.json();
-        // Store device ID for consistent personalization
-        localStorage.setItem('mindease_device_id', userData.deviceId);
-        
-        toast({
-          title: "Welcome to MindEase!",
-          description: `Hello ${userData.user.firstName}! Ready for your wellness journey?`,
-        });
-        setLocation("/");
-      } else {
-        throw new Error('Authentication failed');
-      }
-    } catch (error) {
+      setLocation("/");
+    } catch (error: any) {
+      console.error("Google sign-in error:", error);
       toast({
-        title: "Error",
-        description: "Failed to authenticate. Please try again.",
+        title: "Sign-in Failed",
+        description: error.message || "Failed to sign in with Google. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -68,306 +57,213 @@ export default function Login() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      // Initialize Firebase Auth with Google provider
+  const handleSendOTP = async () => {
+    if (!phoneNumber) {
       toast({
-        title: "Google Sign-In",
-        description: "Setting up Google authentication...",
+        title: "Phone Number Required",
+        description: "Please enter your phone number.",
+        variant: "destructive",
       });
-      
-      // Simulate successful login for demo
-      setTimeout(() => {
-        toast({
-          title: "Welcome!",
-          description: "Successfully signed in with Google",
-        });
-        setLocation("/onboarding");
-      }, 2000);
-      
-    } catch (error) {
+      return;
+    }
+
+    if (!recaptchaVerifier) {
       toast({
-        title: "Authentication Error",
-        description: "Failed to sign in with Google. Please try again.",
-        variant: "destructive"
+        title: "Security Error",
+        description: "Security verification not ready. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+1${phoneNumber}`;
+      const result = await sendPhoneOTP(formattedPhone, recaptchaVerifier);
+      setConfirmationResult(result);
+      setShowOtpInput(true);
+      
+      toast({
+        title: "OTP Sent",
+        description: "Verification code sent to your phone. Please check your messages.",
+      });
+    } catch (error: any) {
+      console.error("Phone OTP error:", error);
+      toast({
+        title: "Failed to Send OTP",
+        description: error.message || "Failed to send verification code. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch('/api/auth/email-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailForm.email,
-          password: emailForm.password,
-          isSignUp: emailForm.isSignUp
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed');
-      }
-
+  const handleVerifyOTP = async () => {
+    if (!otp || !confirmationResult) {
       toast({
-        title: emailForm.isSignUp ? "Account Created" : "Welcome Back!",
-        description: emailForm.isSignUp ? "Your account has been created successfully!" : "Successfully signed in with email",
+        title: "OTP Required",
+        description: "Please enter the verification code.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await confirmationResult.confirm(otp);
+      
+      toast({
+        title: "Welcome!",
+        description: "Phone verification successful. Your wellness journey begins now.",
       });
       
       setLocation("/");
     } catch (error: any) {
+      console.error("OTP verification error:", error);
       toast({
-        title: "Authentication Error",
-        description: error.message || "Authentication failed. Please try again.",
-        variant: "destructive"
+        title: "Verification Failed",
+        description: "Invalid verification code. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handlePhoneAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      if (!phoneForm.otpSent) {
-        // Send OTP
-        const response = await fetch('/api/auth/phone-send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: phoneForm.phoneNumber })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to send OTP');
-        }
-
-        toast({
-          title: "OTP Sent",
-          description: `Verification code sent to ${phoneForm.phoneNumber}`,
-        });
-        setPhoneForm({ ...phoneForm, otpSent: true });
-      } else {
-        // Verify OTP
-        const response = await fetch('/api/auth/phone-verify-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            phoneNumber: phoneForm.phoneNumber,
-            otp: phoneForm.otp 
-          })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Invalid OTP');
-        }
-
-        toast({
-          title: "Phone Verified",
-          description: "Successfully verified your phone number",
-        });
-        setLocation("/");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Verification Error",
-        description: error.message || "Failed to verify phone number. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleQuickStart = () => {
+    toast({
+      title: "Quick Start",
+      description: "Use Google sign-in or phone authentication for the best experience.",
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-            <Heart className="w-8 h-8 text-white" />
-          </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Welcome to MindEase
-          </CardTitle>
-          <CardDescription>
-            Your personal mental wellness companion
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="space-y-4">
-            {/* Quick Start for Testing */}
-            <Button 
-              onClick={handleQuickStart}
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3"
-            >
-              {isLoading ? "Starting..." : "Quick Start - Try the App"}
-            </Button>
-
-            {/* Google Sign-In */}
-            <div className="w-full">
-              <GoogleButton
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-                style={{ width: "100%" }}
-              />
-            </div>
-            
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center space-y-2">
+          <div className="flex justify-center">
             <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
+              <Heart className="h-12 w-12 text-pink-500 fill-current" />
+              <Sparkles className="h-6 w-6 text-yellow-400 fill-current absolute -top-1 -right-1 animate-pulse" />
             </div>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">MindfulAI</h1>
+          <p className="text-gray-600 dark:text-gray-300">Your personalized wellness companion</p>
+        </div>
 
-            {/* Email/Phone Tabs */}
-            <Tabs defaultValue="email" className="w-full">
+        <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur border-0 shadow-xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">Welcome</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-300">
+              Sign in to continue your wellness journey
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="google" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="email" className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  Email
+                <TabsTrigger value="google" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Google
                 </TabsTrigger>
                 <TabsTrigger value="phone" className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
+                  <Phone className="h-4 w-4" />
                   Phone
                 </TabsTrigger>
               </TabsList>
-              
-              {/* Email Tab */}
-              <TabsContent value="email">
-                <form onSubmit={handleEmailAuth} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={emailForm.email}
-                      onChange={(e) => setEmailForm({ ...emailForm, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={emailForm.password}
-                        onChange={(e) => setEmailForm({ ...emailForm, password: e.target.value })}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Please wait..." : emailForm.isSignUp ? "Create Account" : "Sign In"}
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="w-full"
-                    onClick={() => setEmailForm({ ...emailForm, isSignUp: !emailForm.isSignUp })}
-                  >
-                    {emailForm.isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-                  </Button>
-                </form>
+
+              <TabsContent value="google" className="space-y-4">
+                <Button 
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  {isLoading ? "Signing in..." : "Continue with Google"}
+                </Button>
               </TabsContent>
-              
-              {/* Phone Tab */}
-              <TabsContent value="phone">
-                <form onSubmit={handlePhoneAuth} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      value={phoneForm.phoneNumber}
-                      onChange={(e) => setPhoneForm({ ...phoneForm, phoneNumber: e.target.value })}
-                      disabled={phoneForm.otpSent}
-                      required
-                    />
+
+              <TabsContent value="phone" className="space-y-4">
+                {!showOtpInput ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="+1 (555) 123-4567"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="bg-white dark:bg-gray-700"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSendOTP}
+                      disabled={isLoading}
+                      className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-medium py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      {isLoading ? "Sending..." : "Send Verification Code"}
+                    </Button>
                   </div>
-                  
-                  {phoneForm.otpSent && (
+                ) : (
+                  <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="otp">Verification Code</Label>
                       <Input
                         id="otp"
                         type="text"
-                        placeholder="Enter 6-digit code"
-                        value={phoneForm.otp}
-                        onChange={(e) => setPhoneForm({ ...phoneForm, otp: e.target.value })}
+                        placeholder="123456"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        className="bg-white dark:bg-gray-700 text-center text-2xl tracking-widest"
                         maxLength={6}
-                        required
                       />
                     </div>
-                  )}
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Please wait..." : phoneForm.otpSent ? "Verify Code" : "Send Code"}
-                  </Button>
-                  
-                  {phoneForm.otpSent && (
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="w-full"
-                      onClick={() => setPhoneForm({ ...phoneForm, otpSent: false, otp: "" })}
-                    >
-                      Use different number
-                    </Button>
-                  )}
-                </form>
+                    <div className="space-y-2">
+                      <Button 
+                        onClick={handleVerifyOTP}
+                        disabled={isLoading}
+                        className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-medium py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                      >
+                        {isLoading ? "Verifying..." : "Verify Code"}
+                      </Button>
+                      <Button 
+                        onClick={() => setShowOtpInput(false)}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        Use Different Number
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
-          </div>
-        </CardContent>
-      </Card>
+
+            <div className="mt-6">
+              <Separator className="my-4" />
+              <Button 
+                onClick={handleQuickStart}
+                variant="outline" 
+                className="w-full border-dashed border-2 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 transition-all duration-200"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Quick Start Demo
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+          Secure authentication powered by Google Firebase
+        </div>
+      </div>
+
+      {/* Hidden reCAPTCHA container */}
+      <div id="recaptcha-container"></div>
     </div>
   );
 }
