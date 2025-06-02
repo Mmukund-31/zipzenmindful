@@ -18,15 +18,15 @@ export default function Settings() {
 
   const { data: userStats } = useQuery({
     queryKey: ["/api/mood"],
-    select: (data) => ({
-      totalMoodEntries: data?.length || 0,
+    select: (data: any) => ({
+      totalMoodEntries: Array.isArray(data) ? data.length : 0,
       streakDays: 0, // Could calculate streak from data
     }),
   });
 
   const { data: memoriesCount } = useQuery({
     queryKey: ["/api/memories"],
-    select: (data) => data?.length || 0,
+    select: (data: any) => Array.isArray(data) ? data.length : 0,
   });
 
   const handleResetOnboarding = () => {
@@ -50,36 +50,20 @@ export default function Settings() {
     URL.revokeObjectURL(url);
   };
 
-  const getUserInitials = (user: any) => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
-    }
-    if (user?.email) {
-      return user.email[0].toUpperCase();
+  const getUserInitials = (profile: any) => {
+    if (profile?.name) {
+      const nameParts = profile.name.split(' ');
+      if (nameParts.length >= 2) {
+        return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
+      }
+      return profile.name[0].toUpperCase();
     }
     return 'U';
   };
 
-  const getUserDisplayName = (user: any) => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-    if (user?.firstName) {
-      return user.firstName;
-    }
-    if (user?.email) {
-      return user.email;
-    }
-    return 'User';
+  const getUserDisplayName = (profile: any) => {
+    return profile?.name || 'User';
   };
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="pb-20 p-6 space-y-6">
@@ -96,15 +80,14 @@ export default function Settings() {
         <CardContent>
           <div className="flex items-center space-x-4 mb-4">
             <Avatar className="w-16 h-16">
-              <AvatarImage src={user.profileImageUrl} alt={getUserDisplayName(user)} />
               <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
-                {getUserInitials(user)}
+                {getUserInitials(userProfile)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h3 className="font-semibold text-foreground">{getUserDisplayName(user)}</h3>
-              {user.email && (
-                <p className="text-sm text-muted-foreground">{user.email}</p>
+              <h3 className="font-semibold text-foreground">{getUserDisplayName(userProfile)}</h3>
+              {userProfile.age && (
+                <p className="text-sm text-muted-foreground">Age: {userProfile.age}</p>
               )}
               <Badge variant="secondary" className="mt-2">
                 <Heart className="w-3 h-3 mr-1" />
@@ -260,12 +243,12 @@ export default function Settings() {
       <Card className="border-destructive/20">
         <CardContent className="p-4">
           <Button
-            onClick={handleLogout}
+            onClick={handleResetOnboarding}
             variant="destructive"
             className="w-full"
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
+            Reset App
           </Button>
         </CardContent>
       </Card>
