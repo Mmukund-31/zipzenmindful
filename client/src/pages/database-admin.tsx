@@ -418,7 +418,7 @@ export default function DatabaseAdmin() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {users.filter((userData: any) => userData.moodEntries?.length > 0 || userData.memories?.length > 0).map((userData: any, index: number) => (
                           <div key={index} className="p-3 border rounded-lg">
-                            <div className="font-medium">{userData.user?.name || 'Anonymous User'}</div>
+                            <div className="font-medium">{getUserName(userData.user?.id)}</div>
                             <div className="text-xs text-gray-600 mb-2">{userData.user?.id}</div>
                             <div className="text-sm space-y-1">
                               <div>🎭 {userData.moodEntries?.length || 0} moods</div>
