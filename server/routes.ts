@@ -44,6 +44,17 @@ const generateOTP = (): string => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configure session middleware
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'mindease-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+      secure: false, // Set to true in production with HTTPS
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
+
   // Authentication middleware
   const requireAuth = (req: any, res: any, next: any) => {
     const userId = req.session?.userId;

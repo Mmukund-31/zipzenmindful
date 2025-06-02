@@ -23,7 +23,7 @@ import { useState, useEffect } from "react";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState<any>(null);
   const [userLoading, setUserLoading] = useState(true);
 
   useEffect(() => {
@@ -52,10 +52,11 @@ function Router() {
     );
   }
 
-  // Determine authentication state
+  // Determine authentication state - check session authentication first
+  const hasServerAuth = isAuthenticated;
   const hasCompletedOnboarding = userData?.onboardingCompleted;
-  const needsLogin = !userData;
-  const needsOnboarding = userData && !hasCompletedOnboarding;
+  const needsLogin = !hasServerAuth;
+  const needsOnboarding = hasServerAuth && !hasCompletedOnboarding;
 
   return (
     <div className="max-w-md mx-auto bg-white shadow-2xl min-h-screen relative overflow-hidden">

@@ -63,24 +63,32 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      if (emailForm.isSignUp) {
-        // Sign up logic
-        toast({
-          title: "Account Created",
-          description: "Your account has been created successfully!",
-        });
-      } else {
-        // Sign in logic
-        toast({
-          title: "Welcome Back!",
-          description: "Successfully signed in with email",
-        });
+      const response = await fetch('/api/auth/email-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailForm.email,
+          password: emailForm.password,
+          isSignUp: emailForm.isSignUp
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
       }
+
+      toast({
+        title: emailForm.isSignUp ? "Account Created" : "Welcome Back!",
+        description: emailForm.isSignUp ? "Your account has been created successfully!" : "Successfully signed in with email",
+      });
+      
       setLocation("/onboarding");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Authentication Error",
-        description: "Invalid credentials. Please try again.",
+        description: error.message || "Authentication failed. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -95,6 +103,18 @@ export default function Login() {
     try {
       if (!phoneForm.otpSent) {
         // Send OTP
+        const response = await fetch('/api/auth/phone-send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: phoneForm.phoneNumber })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to send OTP');
+        }
+
         toast({
           title: "OTP Sent",
           description: `Verification code sent to ${phoneForm.phoneNumber}`,
@@ -102,16 +122,31 @@ export default function Login() {
         setPhoneForm({ ...phoneForm, otpSent: true });
       } else {
         // Verify OTP
+        const response = await fetch('/api/auth/phone-verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            phoneNumber: phoneForm.phoneNumber,
+            otp: phoneForm.otp 
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Invalid OTP');
+        }
+
         toast({
           title: "Phone Verified",
           description: "Successfully verified your phone number",
         });
         setLocation("/onboarding");
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Verification Error",
-        description: "Failed to verify phone number. Please try again.",
+        description: error.message || "Failed to verify phone number. Please try again.",
         variant: "destructive"
       });
     } finally {
