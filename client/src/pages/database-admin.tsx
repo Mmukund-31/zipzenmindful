@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Database, Users, MessageSquare, Heart, Camera, BarChart3, RefreshCw } from "lucide-react";
+import { Database, Users, MessageSquare, Heart, Camera, BarChart3, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { queryClient } from "@/lib/queryClient";
 
 export default function DatabaseAdmin() {
+  const [expandedMotivation, setExpandedMotivation] = useState<string | null>(null);
+  
   const { data: dbData, isLoading, refetch } = useQuery<any>({
     queryKey: ["/api/admin/database"],
     staleTime: 0,
@@ -24,6 +26,11 @@ export default function DatabaseAdmin() {
   const getUserName = (userId: string) => {
     const userData = users.find((u: any) => u.user?.id === userId);
     return userData?.user?.name || 'Anonymous User';
+  };
+
+  // Toggle motivation text expansion
+  const toggleMotivation = (userId: string) => {
+    setExpandedMotivation(expandedMotivation === userId ? null : userId);
   };
 
   if (isLoading) {
@@ -150,8 +157,28 @@ export default function DatabaseAdmin() {
                             ) : '-'}
                           </TableCell>
                           <TableCell>{userData.user?.preferredTime || '-'}</TableCell>
-                          <TableCell className="max-w-48">
-                            <div className="text-xs truncate">{userData.user?.motivation || '-'}</div>
+                          <TableCell className="max-w-60">
+                            <div className="flex items-center gap-2">
+                              <div className={`text-xs ${
+                                expandedMotivation === userData.user?.id ? 'whitespace-pre-wrap' : 'truncate'
+                              }`}>
+                                {userData.user?.motivation || '-'}
+                              </div>
+                              {userData.user?.motivation && userData.user.motivation.length > 50 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleMotivation(userData.user.id)}
+                                  className="h-6 w-6 p-0 hover:bg-muted"
+                                >
+                                  {expandedMotivation === userData.user.id ? (
+                                    <EyeOff className="h-3 w-3" />
+                                  ) : (
+                                    <Eye className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="text-xs space-y-1">
