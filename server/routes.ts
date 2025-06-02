@@ -186,37 +186,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Auto-login endpoint for testing and development
+  // Personalized Quick Start endpoint for unique user experiences
+  app.post('/api/auth/quick-start', async (req: any, res) => {
+    try {
+      const { deviceId } = req.body;
+      
+      // Create unique user ID based on device and timestamp
+      const userId = `user_${deviceId}_${Date.now()}`;
+      
+      // Generate personalized user details
+      const userNames = [
+        { first: 'Alex', last: 'Johnson' },
+        { first: 'Sam', last: 'Chen' },
+        { first: 'Jordan', last: 'Smith' },
+        { first: 'Casey', last: 'Davis' },
+        { first: 'Taylor', last: 'Wilson' },
+        { first: 'Morgan', last: 'Brown' },
+        { first: 'Riley', last: 'Garcia' },
+        { first: 'Avery', last: 'Miller' }
+      ];
+      
+      const randomName = userNames[Math.floor(Math.random() * userNames.length)];
+      
+      // Create personalized user in database
+      const user = await storage.upsertUser({
+        id: userId,
+        email: `${userId}@mindease.app`,
+        firstName: randomName.first,
+        lastName: randomName.last,
+        profileImageUrl: null
+      });
+      
+      // Create session for this personalized user
+      req.session.userId = userId;
+      
+      res.json({ 
+        success: true, 
+        user,
+        deviceId,
+        message: `Welcome ${randomName.first}! Your personalized wellness journey begins now.`
+      });
+    } catch (error) {
+      console.error('Quick start error:', error);
+      res.status(500).json({ error: 'Failed to create personalized session' });
+    }
+  });
+
+  // Check authentication status
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // Auto-authenticate for testing - create session if none exists
+      // Check if user has valid session
       if (!req.session.userId) {
-        const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        req.session.userId = userId;
-        
-        // Create user in database with unique email
-        const user = await storage.upsertUser({
-          id: userId,
-          email: `user_${userId}@mindease.app`,
-          firstName: "Wellness",
-          lastName: "User",
-          profileImageUrl: null
-        });
-        
-        return res.json(user);
+        return res.status(401).json({ error: 'Authentication required' });
       }
       
       const userId = getCurrentUserId(req);
-      let user = await storage.getUser(userId);
+      const user = await storage.getUser(userId);
       
       if (!user) {
-        user = await storage.upsertUser({
-          id: userId,
-          email: `user_${userId}@mindease.app`,
-          firstName: "Wellness",
-          lastName: "User",
-          profileImageUrl: null
-        });
+        return res.status(401).json({ error: 'User not found' });
       }
       
       res.json(user);

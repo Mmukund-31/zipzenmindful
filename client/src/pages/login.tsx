@@ -32,12 +32,26 @@ export default function Login() {
   const handleQuickStart = async () => {
     setIsLoading(true);
     try {
-      // Quick authentication for testing
-      const response = await fetch('/api/auth/user');
+      // Create a personalized session for this device/user
+      const response = await fetch('/api/auth/quick-start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          deviceId: localStorage.getItem('mindease_device_id') || 
+                   'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+        })
+      });
+      
       if (response.ok) {
+        const userData = await response.json();
+        // Store device ID for consistent personalization
+        localStorage.setItem('mindease_device_id', userData.deviceId);
+        
         toast({
           title: "Welcome to MindEase!",
-          description: "Ready to start your wellness journey",
+          description: `Hello ${userData.user.firstName}! Ready for your wellness journey?`,
         });
         setLocation("/");
       } else {
