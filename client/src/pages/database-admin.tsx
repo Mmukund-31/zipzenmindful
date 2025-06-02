@@ -24,10 +24,14 @@ export default function DatabaseAdmin() {
 
   // Helper function to get user name by ID from onboarding data
   const getUserName = (userId: string) => {
+    console.log('Looking for user:', userId, 'in users array with length:', users.length);
     const userData = users.find((u: any) => u.user?.id === userId);
+    console.log('Found userData:', userData?.user);
+    
     if (userData?.user) {
       // First check for full name from onboarding
       if (userData.user.name && userData.user.name.trim()) {
+        console.log('Using name field:', userData.user.name);
         return userData.user.name;
       }
       
@@ -35,14 +39,19 @@ export default function DatabaseAdmin() {
       if (userData.user.firstName && userData.user.firstName.trim()) {
         const lastName = userData.user.lastName && userData.user.lastName.trim() ? 
           ` ${userData.user.lastName}` : '';
-        return `${userData.user.firstName}${lastName}`;
+        const fullName = `${userData.user.firstName}${lastName}`;
+        console.log('Using firstName/lastName:', fullName);
+        return fullName;
       }
       
       // Fall back to email username if available
       if (userData.user.email && userData.user.email.includes('@')) {
-        return userData.user.email.split('@')[0];
+        const emailName = userData.user.email.split('@')[0];
+        console.log('Using email name:', emailName);
+        return emailName;
       }
     }
+    console.log('Returning Anonymous User for:', userId);
     return 'Anonymous User';
   };
 
