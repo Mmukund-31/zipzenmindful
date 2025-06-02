@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/components/theme-provider";
 
 export default function Settings() {
-  const { user } = useAuth();
+  const userProfile = JSON.parse(localStorage.getItem('wellness_user_profile') || '{"name": "User"}');
   const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
   const [weeklyReports, setWeeklyReports] = useState(true);
@@ -29,15 +29,25 @@ export default function Settings() {
     select: (data) => data?.length || 0,
   });
 
-  const { isDemoMode } = useAuth();
+  const handleResetOnboarding = () => {
+    localStorage.removeItem('wellness_onboarding_complete');
+    localStorage.removeItem('wellness_user_profile');
+    window.location.reload();
+  };
 
-  const handleLogout = () => {
-    if (isDemoMode) {
-      localStorage.removeItem('demo_user');
-      window.location.reload();
-    } else {
-      window.location.href = '/api/logout';
-    }
+  const handleExportData = () => {
+    const userData = {
+      profile: userProfile,
+      completedAt: new Date().toISOString()
+    };
+    const dataStr = JSON.stringify(userData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mindease-data-${userProfile.name || 'user'}-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const getUserInitials = (user: any) => {
