@@ -210,9 +210,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mood tracking endpoints
-  app.post("/api/mood", async (req: any, res) => {
+  app.post("/api/mood", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const moodData = insertMoodEntrySchema.parse({ ...req.body, userId });
       const moodEntry = await storage.createMoodEntry(moodData);
       res.json(moodEntry);
@@ -221,9 +221,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/mood", async (req: any, res) => {
+  app.get("/api/mood", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const entries = await storage.getMoodEntriesByUser(userId);
       res.json(entries);
     } catch (error) {
@@ -231,9 +231,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/mood/recent", async (req: any, res) => {
+  app.get("/api/mood/recent", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const entry = await storage.getRecentMoodEntry(userId);
       res.json(entry || null);
     } catch (error) {
@@ -242,9 +242,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat endpoints
-  app.post("/api/chat", async (req: any, res) => {
+  app.post("/api/chat", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const { message } = req.body;
       
       if (!message || typeof message !== 'string') {
@@ -278,9 +278,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/chat", async (req: any, res) => {
+  app.get("/api/chat", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const messages = await storage.getChatMessagesByUser(userId);
       res.json(messages);
     } catch (error) {
@@ -289,9 +289,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Memory endpoints
-  app.post("/api/memories", upload.single('image'), async (req: any, res) => {
+  app.post("/api/memories", requireAuth, upload.single('image'), async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       if (!req.file) {
         return res.status(400).json({ error: "Image file is required" });
       }
@@ -318,9 +318,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/memories", async (req: any, res) => {
+  app.get("/api/memories", requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId(req);
       const { category } = req.query;
       let memories;
       
