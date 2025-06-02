@@ -200,9 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: "user@mindease.app",
           firstName: "Wellness",
           lastName: "User",
-          profileImageUrl: null,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          profileImageUrl: null
         });
         
         return res.json(user);
@@ -217,9 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: "user@mindease.app",
           firstName: "Wellness",
           lastName: "User",
-          profileImageUrl: null,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          profileImageUrl: null
         });
       }
       
