@@ -75,13 +75,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, password, isSignUp } = req.body;
       
       if (isSignUp) {
-        // Create new user
+        // Create new personalized user
         const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Generate personalized user details
+        const userNames = [
+          { first: 'Alex', last: 'Johnson' },
+          { first: 'Sam', last: 'Chen' },
+          { first: 'Jordan', last: 'Smith' },
+          { first: 'Casey', last: 'Davis' },
+          { first: 'Taylor', last: 'Wilson' },
+          { first: 'Morgan', last: 'Brown' },
+          { first: 'Riley', last: 'Garcia' },
+          { first: 'Avery', last: 'Miller' }
+        ];
+        
+        const randomName = userNames[Math.floor(Math.random() * userNames.length)];
+        
         const user = await storage.upsertUser({
           id: userId,
           email,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          firstName: randomName.first,
+          lastName: randomName.last,
+          profileImageUrl: null
         });
         req.session.userId = userId;
         res.json({ success: true, user });
@@ -135,11 +151,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.getUserByPhone(phoneNumber);
       if (!user) {
         const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Generate personalized user details
+        const userNames = [
+          { first: 'Alex', last: 'Johnson' },
+          { first: 'Sam', last: 'Chen' },
+          { first: 'Jordan', last: 'Smith' },
+          { first: 'Casey', last: 'Davis' },
+          { first: 'Taylor', last: 'Wilson' },
+          { first: 'Morgan', last: 'Brown' },
+          { first: 'Riley', last: 'Garcia' },
+          { first: 'Avery', last: 'Miller' }
+        ];
+        
+        const randomName = userNames[Math.floor(Math.random() * userNames.length)];
+        
         user = await storage.upsertUser({
           id: userId,
           phoneNumber,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          firstName: randomName.first,
+          lastName: randomName.last,
+          profileImageUrl: null
         });
       }
       

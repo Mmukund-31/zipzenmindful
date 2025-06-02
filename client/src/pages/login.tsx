@@ -123,7 +123,7 @@ export default function Login() {
         description: emailForm.isSignUp ? "Your account has been created successfully!" : "Successfully signed in with email",
       });
       
-      setLocation("/onboarding");
+      setLocation("/");
     } catch (error: any) {
       toast({
         title: "Authentication Error",
@@ -180,7 +180,7 @@ export default function Login() {
           title: "Phone Verified",
           description: "Successfully verified your phone number",
         });
-        setLocation("/onboarding");
+        setLocation("/");
       }
     } catch (error: any) {
       toast({
