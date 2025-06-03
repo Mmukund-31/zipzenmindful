@@ -908,11 +908,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       // Helper function to identify real vs demo users
-      const isRealUser = (user: any) => {
-        // Demo users are identified by:
-        // 1. User IDs that start with 'user_' or are 'undefined' (auto-generated session IDs)
-        // 2. Users with demo names from our predefined list
-        // 3. Users without email or phone authentication
+      const isDemoUser = (user: any) => {
+        // Demo users have these characteristics:
+        // 1. Auto-generated session IDs (user_timestamp_randomstring or 'undefined')
+        // 2. No email or phone authentication
+        // 3. Auto-generated demo names from our predefined list
         
         const demoNames = [
           'Alex Johnson', 'Sam Chen', 'Jordan Smith', 'Casey Davis',
@@ -921,24 +921,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
         
-        // Demo user patterns
-        const isDemoUserId = user.id && (user.id.startsWith('user_') || user.id === 'undefined');
-        const isDemoName = demoNames.includes(fullName);
+        // Check for auto-generated session ID pattern
+        const hasSessionId = user.id === 'undefined' || (user.id && user.id.startsWith('user_'));
+        
+        // Check for demo name
+        const hasDemoName = demoNames.includes(fullName);
+        
+        // Check for lack of authentication
         const hasNoAuth = !user.email && !user.phoneNumber;
         
-        // Real users must have authentication AND not be auto-generated
-        if (user.email || user.phoneNumber) {
-          // Has authentication - check if it's not just a demo account
-          return !isDemoUserId;
-        }
-        
-        // No authentication - check if it has real profile data
-        if (user.firstName && user.lastName && !isDemoName && !isDemoUserId) {
-          return true;
-        }
-        
-        // Default to demo user if no clear authentication or profile
-        return false;
+        // User is demo if they have session ID AND (no auth OR demo name)
+        return hasSessionId && (hasNoAuth || hasDemoName);
+      };
+
+      const isRealUser = (user: any) => {
+        return !isDemoUser(user);
       };
 
       // Separate real and demo users
