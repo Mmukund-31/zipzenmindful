@@ -25,15 +25,42 @@ import NotFound from "@/pages/not-found";
 
 
 function Router() {
+  // Create a unique device fingerprint for persistent user identity
+  const generateDeviceFingerprint = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx?.fillText('MindEase', 10, 10);
+    const canvasFingerprint = canvas.toDataURL();
+    
+    const fingerprint = btoa(JSON.stringify({
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      platform: navigator.platform,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      screen: `${screen.width}x${screen.height}`,
+      canvas: canvasFingerprint.slice(-50), // Last 50 chars for uniqueness
+    })).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
+    
+    return `user_device_${fingerprint}_${Date.now()}`;
+  };
+
   // Initialize user session for personalized data storage
   const sessionInitMutation = useMutation({
     mutationFn: async () => {
       // Check if we have a stored session ID to restore
-      const storedSessionId = localStorage.getItem('mindease_session_id');
+      let storedSessionId = localStorage.getItem('mindease_session_id');
       
-      // Only initialize if no session exists or if we have a valid stored session
-      if (!storedSessionId) {
-        return apiRequest("POST", "/api/auth/init", {});
+      // If no stored session, create one based on device fingerprint
+      if (!storedSessionId || storedSessionId === 'undefined') {
+        // Check if we have a device-specific ID
+        let deviceId = localStorage.getItem('mindease_device_id');
+        if (!deviceId) {
+          deviceId = generateDeviceFingerprint();
+          localStorage.setItem('mindease_device_id', deviceId);
+        }
+        
+        // Try to find existing user with this device ID
+        return apiRequest("POST", "/api/auth/device-login", { deviceId });
       } else {
         // Validate existing session
         return apiRequest("POST", "/api/auth/init", { sessionId: storedSessionId });
@@ -43,7 +70,7 @@ function Router() {
       // Store session ID for persistence across page refreshes
       if (data.sessionId && data.sessionId !== 'undefined') {
         localStorage.setItem('mindease_session_id', data.sessionId);
-        console.log('User session initialized:', data.user.firstName, data.user.lastName);
+        console.log('User session restored:', data.user.firstName, data.user.lastName);
       }
     },
     onError: (error) => {
@@ -53,15 +80,7 @@ function Router() {
 
   useEffect(() => {
     // Initialize session when app loads to ensure personalized data storage
-    const storedSessionId = localStorage.getItem('mindease_session_id');
-    
-    // Only initialize if we don't have a valid session or need to restore one
-    if (!storedSessionId || storedSessionId === 'undefined') {
-      sessionInitMutation.mutate();
-    } else {
-      // Validate existing session
-      sessionInitMutation.mutate();
-    }
+    sessionInitMutation.mutate();
   }, []);
 
   // Check if user has completed onboarding

@@ -285,6 +285,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Device-based login endpoint for persistent user identity
+  app.post('/api/auth/device-login', async (req: any, res) => {
+    try {
+      const { deviceId } = req.body;
+      
+      if (!deviceId) {
+        return res.status(400).json({ error: 'Device ID is required' });
+      }
+      
+      // Look for existing user with this device fingerprint
+      let existingUser = null;
+      const allUsers = await db.select().from(users);
+      
+      // Check if any user has this device fingerprint in their email or ID
+      existingUser = allUsers.find(user => 
+        user.email?.includes(deviceId.split('_')[2]) || 
+        user.id.includes(deviceId.split('_')[2])
+      );
+      
+      if (existingUser) {
+        // Return existing user
+        req.session.userId = existingUser.id;
+        res.json({ 
+          success: true, 
+          user: existingUser,
+          sessionId: existingUser.id,
+          message: `Welcome back! Your data has been restored.`
+        });
+      } else {
+        // Create new user with device fingerprint
+        const userId = deviceId;
+        const user = await storage.upsertUser({
+          id: userId,
+          email: `${userId}@mindease.app`,
+          firstName: 'New User',
+          lastName: '',
+          profileImageUrl: null
+        });
+        
+        req.session.userId = userId;
+        res.json({ 
+          success: true, 
+          user,
+          sessionId: userId,
+          message: `Welcome! Your personalized wellness journey begins now.`
+        });
+      }
+    } catch (error) {
+      console.error('Device login error:', error);
+      res.status(500).json({ error: 'Failed to authenticate device' });
+    }
+  });
+
   // Personalized Quick Start endpoint for unique user experiences
   app.post('/api/auth/quick-start', async (req: any, res) => {
     try {
