@@ -279,7 +279,7 @@ export async function generateMemeText(memoryTitle: string, memoryCategory: stri
   }
 }
 
-export async function generateDailyWellnessTip(): Promise<string> {
+export async function generateDailyWellnessTip(userContext?: any): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     

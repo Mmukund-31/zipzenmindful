@@ -30,12 +30,21 @@ function Router() {
     mutationFn: async () => {
       // Check if we have a stored session ID to restore
       const storedSessionId = localStorage.getItem('mindease_session_id');
-      return apiRequest("POST", "/api/auth/init", { sessionId: storedSessionId });
+      
+      // Only initialize if no session exists or if we have a valid stored session
+      if (!storedSessionId) {
+        return apiRequest("POST", "/api/auth/init", {});
+      } else {
+        // Validate existing session
+        return apiRequest("POST", "/api/auth/init", { sessionId: storedSessionId });
+      }
     },
     onSuccess: (data: any) => {
       // Store session ID for persistence across page refreshes
-      localStorage.setItem('mindease_session_id', data.sessionId);
-      console.log('User session initialized:', data.user.firstName, data.user.lastName);
+      if (data.sessionId && data.sessionId !== 'undefined') {
+        localStorage.setItem('mindease_session_id', data.sessionId);
+        console.log('User session initialized:', data.user.firstName, data.user.lastName);
+      }
     },
     onError: (error) => {
       console.error('Failed to initialize session:', error);
@@ -44,7 +53,15 @@ function Router() {
 
   useEffect(() => {
     // Initialize session when app loads to ensure personalized data storage
-    sessionInitMutation.mutate();
+    const storedSessionId = localStorage.getItem('mindease_session_id');
+    
+    // Only initialize if we don't have a valid session or need to restore one
+    if (!storedSessionId || storedSessionId === 'undefined') {
+      sessionInitMutation.mutate();
+    } else {
+      // Validate existing session
+      sessionInitMutation.mutate();
+    }
   }, []);
 
   // Check if user has completed onboarding

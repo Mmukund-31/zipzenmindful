@@ -59,14 +59,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication middleware
   const requireAuth = (req: any, res: any, next: any) => {
-    // Create a persistent user session if none exists
-    if (!req.session.userId) {
+    // Only create new session if no existing session and no user header provided
+    if (!req.session.userId && !req.headers['x-user-id']) {
       // Create a consistent user ID that persists across sessions
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substr(2, 9);
       req.session.userId = `user_${timestamp}_${randomId}`;
     }
-    req.userId = req.session.userId;
+    // Prefer user header over session for authenticated users
+    req.userId = req.headers['x-user-id'] || req.session.userId;
     next();
   };
 
@@ -347,21 +348,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { sessionId } = req.body;
       
-      // Restore existing session if provided, otherwise create new one
-      if (sessionId && !req.session.userId) {
-        req.session.userId = sessionId;
-      } else if (!req.session.userId) {
+      // Use provided sessionId or existing session userId
+      let userId = sessionId || req.session.userId;
+      
+      // Only create new session if no existing session and no sessionId provided
+      if (!userId) {
         const timestamp = Date.now();
         const randomId = Math.random().toString(36).substr(2, 9);
-        req.session.userId = `user_${timestamp}_${randomId}`;
+        userId = `user_${timestamp}_${randomId}`;
+        req.session.userId = userId;
+      } else if (sessionId && sessionId !== req.session.userId) {
+        // Update session with provided sessionId
+        req.session.userId = sessionId;
+        userId = sessionId;
       }
       
-      const userId = req.session.userId;
-      
-      // Check if user already exists, if not create one
+      // Check if user already exists
       let user = await storage.getUser(userId);
       if (!user) {
-        // Generate personalized user details
+        // Only create new user if none exists - this should rarely happen for existing users
         const userNames = [
           { first: 'Alex', last: 'Johnson' },
           { first: 'Sam', last: 'Chen' },
