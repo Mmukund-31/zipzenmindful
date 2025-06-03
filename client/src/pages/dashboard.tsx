@@ -83,9 +83,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="pb-16 sm:pb-20">
+    <div className="pb-16 sm:pb-20 ios-safe-area gesture-safe full-height">
       {/* Header */}
-      <header className="gradient-bg text-white p-4 sm:p-6 relative">
+      <header className="gradient-bg text-white p-4 sm:p-6 relative ios-safe-area gesture-safe" role="banner">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2 sm:space-x-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center">

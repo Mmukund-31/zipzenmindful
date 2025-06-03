@@ -60,6 +60,84 @@
   }
 }
 
+/* Android-specific optimizations */
+@supports (-webkit-appearance: none) {
+  /* Chrome/Android specific styles */
+  .nav-tab {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  .action-card {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* iOS Safari specific improvements */
+@supports (-webkit-overflow-scrolling: touch) {
+  /* iOS Safari specific styles */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  .ios-safe-area {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  /* Fix for iOS Safari viewport height */
+  .full-height {
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+}
+
+/* PWA and mobile app optimizations */
+@media (display-mode: standalone) {
+  /* PWA specific styles */
+  .pwa-nav {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .pwa-content {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .icon-crisp {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Gesture navigation support */
+.gesture-safe {
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+}
+
+/* Enhanced touch targets */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Better focus visibility for accessibility */
+.focus-ring:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Tablet optimizations */
 @media (min-width: 768px) and (max-width: 1024px) {
   .tablet-grid {
