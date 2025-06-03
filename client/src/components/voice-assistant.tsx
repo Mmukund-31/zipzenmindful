@@ -59,40 +59,52 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
       if (isIOSDevice) {
         const initAudio = () => {
           if (!audioInitialized) {
-            // Create a silent utterance to initialize the audio system
-            const initUtterance = new SpeechSynthesisUtterance('');
-            initUtterance.volume = 0;
-            initUtterance.rate = 1;
-            initUtterance.pitch = 1;
+            console.log('iOS Safari: Initializing audio system');
             
-            // iOS Safari requires a brief delay before speaking
+            // Create multiple initialization attempts
+            const initUtterance1 = new SpeechSynthesisUtterance('');
+            initUtterance1.volume = 0;
+            initUtterance1.rate = 1;
+            initUtterance1.pitch = 1;
+            
+            const initUtterance2 = new SpeechSynthesisUtterance('Audio ready');
+            initUtterance2.volume = 0.1;
+            initUtterance2.rate = 1;
+            initUtterance2.pitch = 1;
+            
+            // First silent utterance
+            synthesisRef.current?.speak(initUtterance1);
+            
+            // Then audible test
             setTimeout(() => {
-              synthesisRef.current?.speak(initUtterance);
+              synthesisRef.current?.speak(initUtterance2);
               
-              // Wait for voices to be available
-              const waitForVoices = () => {
-                const voices = synthesisRef.current?.getVoices() || [];
-                if (voices.length > 0) {
-                  setAudioInitialized(true);
-                } else {
-                  setTimeout(waitForVoices, 100);
-                }
-              };
+              // Force voice loading
+              const voices = synthesisRef.current?.getVoices() || [];
+              console.log('iOS Safari: Initial voices:', voices.length);
               
-              // Trigger voice loading and wait
-              if (synthesisRef.current) {
-                synthesisRef.current.onvoiceschanged = waitForVoices;
-                waitForVoices();
+              // Multiple initialization attempts
+              for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                  const testUtterance = new SpeechSynthesisUtterance('Test');
+                  testUtterance.volume = 0;
+                  synthesisRef.current?.speak(testUtterance);
+                }, i * 200);
               }
-            }, 50);
+              
+              setAudioInitialized(true);
+              console.log('iOS Safari: Audio initialization complete');
+            }, 100);
             
             document.removeEventListener('touchstart', initAudio);
             document.removeEventListener('click', initAudio);
           }
         };
         
+        // Multiple event listeners for iOS
         document.addEventListener('touchstart', initAudio, { once: true });
         document.addEventListener('click', initAudio, { once: true });
+        document.addEventListener('touchend', initAudio, { once: true });
         
         // Also initialize on page visibility change (iOS Safari specific)
         document.addEventListener('visibilitychange', () => {
@@ -140,7 +152,16 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
 
     // For iOS, ensure audio is initialized before speaking
     if (isIOS && !audioInitialized) {
-      console.log('Audio not initialized on iOS, skipping speech');
+      console.log('Audio not initialized on iOS, forcing initialization');
+      // Force audio initialization
+      const initUtterance = new SpeechSynthesisUtterance('Ready');
+      initUtterance.volume = 0.5;
+      initUtterance.rate = 1;
+      synthesisRef.current.speak(initUtterance);
+      setAudioInitialized(true);
+      
+      // Retry speaking after initialization
+      setTimeout(() => speakResponse(text), 1000);
       return;
     }
 
@@ -151,64 +172,87 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
     
     // iOS-specific audio settings for better compatibility
     if (isIOS) {
-      utterance.volume = 1.0;
-      utterance.rate = 0.85; // Optimized for iOS Safari
-      utterance.pitch = 1.0;
+      console.log('iOS Safari: Attempting to speak:', text.substring(0, 50));
       
-      // Wait for voices to load on iOS
-      const speakWhenReady = () => {
+      utterance.volume = 1.0;
+      utterance.rate = 0.8; // Slower for iOS compatibility
+      utterance.pitch = 1.0;
+      utterance.lang = 'en-US';
+      
+      // Immediate speaking attempt for iOS
+      const attemptSpeak = () => {
         const voices = synthesisRef.current?.getVoices() || [];
+        console.log('iOS Safari: Available voices:', voices.length);
+        
         if (voices.length > 0) {
-          // Prioritize default iOS voices for better compatibility
-          const englishVoice = voices.find(voice => 
-            voice.lang.startsWith('en') && 
-            (voice.default || voice.localService) &&
-            !voice.name.includes('Enhanced') &&
-            !voice.name.includes('Premium')
-          ) || voices.find(voice => voice.lang.startsWith('en'));
+          // Find the best voice for iOS
+          let selectedVoice = voices.find(voice => 
+            voice.lang === 'en-US' && voice.localService
+          ) || voices.find(voice => 
+            voice.lang.startsWith('en-US')
+          ) || voices.find(voice => 
+            voice.lang.startsWith('en')
+          ) || voices[0];
           
-          if (englishVoice) {
-            utterance.voice = englishVoice;
+          if (selectedVoice) {
+            utterance.voice = selectedVoice;
+            console.log('iOS Safari: Using voice:', selectedVoice.name);
           }
+        }
+        
+        utterance.onstart = () => {
+          console.log('iOS Safari: Speech started');
+          setIsSpeaking(true);
+        };
+        utterance.onend = () => {
+          console.log('iOS Safari: Speech ended');
+          setIsSpeaking(false);
+        };
+        utterance.onerror = (event) => {
+          console.error('iOS Safari: Speech error:', event.error);
+          setIsSpeaking(false);
           
-          utterance.onstart = () => setIsSpeaking(true);
-          utterance.onend = () => {
-            setIsSpeaking(false);
-            // iOS Safari cleanup
+          // Try alternative approach on error
+          if (event.error === 'network' || event.error === 'synthesis-unavailable') {
+            console.log('iOS Safari: Retrying with simpler utterance');
             setTimeout(() => {
-              if (synthesisRef.current) {
-                synthesisRef.current.cancel();
-              }
-            }, 100);
-          };
-          utterance.onerror = (event) => {
-            console.error('Speech synthesis error on iOS:', event);
-            setIsSpeaking(false);
-            // Retry mechanism for iOS
-            if (event.error === 'interrupted' || event.error === 'synthesis-unavailable') {
-              setTimeout(() => {
-                if (synthesisRef.current && !isSpeaking) {
-                  synthesisRef.current.speak(utterance);
-                }
-              }, 500);
+              const simpleUtterance = new SpeechSynthesisUtterance(text);
+              simpleUtterance.volume = 1.0;
+              simpleUtterance.rate = 1.0;
+              synthesisRef.current?.speak(simpleUtterance);
+            }, 500);
+          }
+        };
+        
+        // Multiple attempts for iOS Safari
+        if (synthesisRef.current) {
+          console.log('iOS Safari: Speaking now');
+          synthesisRef.current.speak(utterance);
+          
+          // Backup attempt in case first fails silently
+          setTimeout(() => {
+            if (!isSpeaking && synthesisRef.current) {
+              console.log('iOS Safari: Backup speak attempt');
+              const backupUtterance = new SpeechSynthesisUtterance(text);
+              backupUtterance.volume = 1.0;
+              backupUtterance.rate = 0.9;
+              synthesisRef.current.speak(backupUtterance);
             }
-          };
-          
-          // iOS Safari requires careful timing
-          if (synthesisRef.current) {
-            // Clear any pending speech
-            synthesisRef.current.cancel();
-            setTimeout(() => {
-              synthesisRef.current?.speak(utterance);
-            }, 150);
-          }
-        } else {
-          // Retry if voices not loaded yet
-          setTimeout(speakWhenReady, 100);
+          }, 1000);
         }
       };
       
-      speakWhenReady();
+      // Force voice loading if needed
+      if (synthesisRef.current.getVoices().length === 0) {
+        synthesisRef.current.onvoiceschanged = () => {
+          console.log('iOS Safari: Voices loaded, attempting speak');
+          attemptSpeak();
+        };
+        // Trigger voice loading
+        synthesisRef.current.getVoices();
+      } else {
+        attemptSpeak();
+      }
     } else {
       // Non-iOS devices - use mood-based voice adjustments
       const voices = synthesisRef.current.getVoices();
@@ -334,6 +378,31 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
             <p className="text-yellow-800 text-sm leading-relaxed">
               On iOS Safari, tap any button to enable voice responses
             </p>
+            <Button 
+              onClick={() => {
+                console.log('iOS Safari: Manual audio initialization');
+                const testUtterance = new SpeechSynthesisUtterance('Voice test');
+                testUtterance.volume = 0.5;
+                testUtterance.rate = 1;
+                testUtterance.onstart = () => console.log('iOS Safari: Test speech started');
+                testUtterance.onend = () => console.log('iOS Safari: Test speech ended');
+                testUtterance.onerror = (e) => console.error('iOS Safari: Test speech error:', e);
+                synthesisRef.current?.speak(testUtterance);
+                setAudioInitialized(true);
+              }}
+              className="mt-2 text-sm"
+              size="sm"
+            >
+              Test Voice Now
+            </Button>
+          </div>
+        )}
+
+        {/* iOS Debug Info */}
+        {isIOS && (
+          <div className="p-3 bg-gray-50 rounded-lg border text-xs">
+            <p>iOS Debug: Audio {audioInitialized ? 'Ready' : 'Not Ready'}</p>
+            <p>Voices: {synthesisRef.current?.getVoices().length || 0} available</p>
           </div>
         )}
 
