@@ -285,7 +285,13 @@ export async function generateDailyWellnessTip(userContext?: any): Promise<strin
     
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
     
-    const prompt = `Generate a personalized daily wellness tip for someone managing stress and overthinking. 
+    const contextInfo = userContext ? `
+    User wellness goals: ${userContext.wellnessGoals?.join(', ') || 'general wellness'}
+    Preferred activity time: ${userContext.preferredTime || 'any time'}
+    Recent mood patterns: ${userContext.recentMoods?.map((m: { mood: string; rating: number }) => `${m.mood} (${m.rating}/5)`).join(', ') || 'none available'}
+    ` : '';
+
+    const prompt = `Generate a personalized daily wellness tip for someone managing stress and overthinking.${contextInfo}
     
     Make it practical, actionable, and supportive. Focus on techniques like mindfulness, breathing, grounding, self-compassion, or gentle movement. 
     Keep it to 1-2 sentences and make it feel personal and encouraging. Today is day ${dayOfYear} of the year.

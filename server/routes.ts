@@ -348,25 +348,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { sessionId } = req.body;
       
-      // Use provided sessionId or existing session userId
-      let userId = sessionId || req.session.userId;
+      // Priority order: provided sessionId > existing session > create new
+      let userId: string;
       
-      // Only create new session if no existing session and no sessionId provided
-      if (!userId) {
+      if (sessionId && sessionId !== 'undefined') {
+        // Use provided sessionId and update session
+        userId = sessionId;
+        req.session.userId = userId;
+      } else if (req.session.userId && req.session.userId !== 'undefined') {
+        // Use existing session
+        userId = req.session.userId;
+      } else {
+        // Create new session only as last resort
         const timestamp = Date.now();
         const randomId = Math.random().toString(36).substr(2, 9);
         userId = `user_${timestamp}_${randomId}`;
         req.session.userId = userId;
-      } else if (sessionId && sessionId !== req.session.userId) {
-        // Update session with provided sessionId
-        req.session.userId = sessionId;
-        userId = sessionId;
       }
       
-      // Check if user already exists
+      // Check if user exists in database
       let user = await storage.getUser(userId);
-      if (!user) {
-        // Only create new user if none exists - this should rarely happen for existing users
+      if (!user && userId !== 'undefined') {
+        // Create user only if valid userId and user doesn't exist
         const userNames = [
           { first: 'Alex', last: 'Johnson' },
           { first: 'Sam', last: 'Chen' },
@@ -387,6 +390,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: randomName.last,
           profileImageUrl: null
         });
+      } else if (!user) {
+        // Handle undefined case by creating a new valid user
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substr(2, 9);
+        const newUserId = `user_${timestamp}_${randomId}`;
+        req.session.userId = newUserId;
+        
+        const userNames = [
+          { first: 'Alex', last: 'Johnson' },
+          { first: 'Sam', last: 'Chen' },
+          { first: 'Jordan', last: 'Smith' },
+          { first: 'Casey', last: 'Davis' },
+          { first: 'Taylor', last: 'Wilson' },
+          { first: 'Morgan', last: 'Brown' },
+          { first: 'Riley', last: 'Garcia' },
+          { first: 'Avery', last: 'Miller' }
+        ];
+        
+        const randomName = userNames[Math.floor(Math.random() * userNames.length)];
+        
+        user = await storage.upsertUser({
+          id: newUserId,
+          email: `${newUserId}@mindease.app`,
+          firstName: randomName.first,
+          lastName: randomName.last,
+          profileImageUrl: null
+        });
+        
+        userId = newUserId;
       }
       
       res.json({ success: true, user, sessionId: userId });
