@@ -160,17 +160,53 @@ export async function generateMoodInsights(moodEntries: any[]): Promise<string[]
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
+    if (moodEntries.length === 0) {
+      return [
+        "Start tracking your mood daily to identify patterns and triggers",
+        "Regular mood monitoring helps build emotional awareness",
+        "Consider setting a daily reminder to check in with yourself"
+      ];
+    }
+
+    // Analyze patterns including multiple entries per day
     const moodData = moodEntries.map(entry => ({
       mood: entry.mood,
       rating: entry.rating,
-      date: entry.timestamp
+      date: new Date(entry.timestamp).toDateString(),
+      time: new Date(entry.timestamp).toLocaleTimeString()
     }));
 
-    const prompt = `Analyze the mood data and provide 2-3 supportive insights about patterns and recommendations. 
-    Respond with JSON in this format: { "insights": ["insight1", "insight2", "insight3"] }
-    Keep insights positive, actionable, and encouraging.
+    // Group by date to identify daily patterns
+    const dailyPatterns = moodData.reduce((acc, entry) => {
+      if (!acc[entry.date]) acc[entry.date] = [];
+      acc[entry.date].push(entry);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    const multiEntryDays = Object.entries(dailyPatterns).filter(([_, entries]) => entries.length > 1);
     
-    Mood data: ${JSON.stringify(moodData)}`;
+    const prompt = `Analyze this comprehensive mood tracking data and provide 3-4 supportive insights about patterns, trends, and recommendations.
+
+Total mood entries: ${moodEntries.length}
+Days with multiple entries: ${multiEntryDays.length}
+${multiEntryDays.length > 0 ? `
+Days with mood changes:
+${multiEntryDays.map(([date, entries]) => 
+  `${date}: ${entries.map(e => `${e.mood}(${e.rating}) at ${e.time}`).join(' → ')}`
+).join('\n')}` : ''}
+
+Complete mood data chronologically:
+${JSON.stringify(moodData, null, 2)}
+
+Focus on:
+- Mood fluctuation patterns within days (if multiple entries exist)
+- Overall trends and improvement opportunities  
+- Recognition of self-awareness (tracking multiple times shows engagement)
+- Actionable recommendations based on observed patterns
+- Positive reinforcement for consistent tracking
+
+Respond with JSON in this format: { "insights": ["insight1", "insight2", "insight3", "insight4"] }
+Keep insights supportive, specific to the data, and encouraging.`;
     
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -182,15 +218,16 @@ export async function generateMoodInsights(moodEntries: any[]): Promise<string[]
     
     const parsed = JSON.parse(jsonMatch[0]);
     return parsed.insights || [
-      "Keep tracking your mood to understand patterns better",
-      "Remember that it's normal for moods to fluctuate",
-      "Consider what activities help improve your mood"
+      "Your consistent mood tracking shows great self-awareness",
+      "Multiple daily entries indicate thoughtful emotional monitoring",
+      "Consider what activities or events correlate with mood changes",
+      "Regular tracking helps identify patterns over time"
     ];
   } catch (error) {
     console.error("Insights generation error:", error);
     return [
       "Keep tracking your mood to understand patterns better",
-      "Remember that it's normal for moods to fluctuate",
+      "Multiple daily entries show excellent self-awareness",
       "Consider what activities help improve your mood"
     ];
   }
