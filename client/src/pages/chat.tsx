@@ -199,23 +199,34 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-screen flex flex-col pb-20">
+    <div className="h-screen flex flex-col pb-16 sm:pb-20 max-w-4xl mx-auto">
       {/* Chat Header */}
-      <div className="bg-white border-b border-border p-4 flex items-center space-x-3">
-        <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
-          <Bot className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h3 className="font-medium text-foreground">MindEase Assistant</h3>
-          <div className="flex items-center text-xs text-green-600">
-            <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse-gentle"></span>
-            Online
+      <div className="bg-white dark:bg-gray-950 border-b border-border p-3 sm:p-4 flex items-center justify-between">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm sm:text-base font-medium text-foreground">MindEase Assistant</h3>
+            <div className="flex items-center text-xs text-green-600">
+              <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse-gentle"></span>
+              Online
+            </div>
           </div>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleVoice}
+          className="w-8 h-8 sm:w-10 sm:h-10 p-0"
+          title={voiceEnabled ? "Disable voice" : "Enable voice"}
+        >
+          {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </Button>
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted chat-scroll">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-muted/30 chat-scroll">
         {messages.length === 0 && (
           <div className="text-center py-8">
             <Bot className="w-12 h-12 text-muted-foreground mx-auto mb-4" />

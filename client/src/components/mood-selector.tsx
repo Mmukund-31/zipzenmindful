@@ -26,17 +26,17 @@ export default function MoodSelector({ onMoodSelect, selectedMood }: MoodSelecto
   };
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-      <p className="text-sm mb-3 opacity-90">Quick mood check-in</p>
-      <div className="flex justify-between space-x-2">
+    <div className="bg-white/10 rounded-xl p-3 sm:p-4 backdrop-blur-sm">
+      <p className="text-xs sm:text-sm mb-2 sm:mb-3 opacity-90">Quick mood check-in</p>
+      <div className="flex justify-between gap-1 sm:gap-2">
         {moodOptions.map(({ id, emoji, label }) => (
           <button
             key={id}
             onClick={() => handleMoodClick(id, emoji)}
-            className={`mood-emoji w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all ${
+            className={`mood-emoji w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl transition-all active:scale-95 ${
               selected === id
                 ? "bg-white/40 scale-110"
-                : "bg-white/20 hover:bg-white/30"
+                : "bg-white/20 hover:bg-white/30 active:bg-white/35"
             }`}
             title={label}
           >

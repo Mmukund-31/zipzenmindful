@@ -51,8 +51,8 @@ export default function Insights() {
   const overallMood = getOverallMood();
 
   return (
-    <div className="pb-20 p-6 space-y-6">
-      <h2 className="text-xl font-semibold text-foreground mb-6">Mood Insights</h2>
+    <div className="pb-16 sm:pb-20 p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6">Mood Insights</h2>
 
       {/* Weekly Overview */}
       <Card>

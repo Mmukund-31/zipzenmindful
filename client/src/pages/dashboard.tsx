@@ -82,26 +82,26 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="pb-20">
+    <div className="pb-16 sm:pb-20">
       {/* Header */}
-      <header className="gradient-bg text-white p-6 relative">
+      <header className="gradient-bg text-white p-4 sm:p-6 relative">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-              <Smile className="w-5 h-5" />
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center">
+              <Smile className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold">Hello, {userProfile.name || 'Friend'}</h1>
-              <p className="text-sm opacity-90">How are you feeling today?</p>
+              <h1 className="text-base sm:text-lg font-semibold">Hello, {userProfile.name || 'Friend'}</h1>
+              <p className="text-xs sm:text-sm opacity-90">How are you feeling today?</p>
             </div>
           </div>
           <Link href="/insights">
             <Button
               variant="default"
               size="sm"
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg border-0 w-10 h-10 rounded-full transition-all duration-200 hover:shadow-xl p-0"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg border-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-200 hover:shadow-xl p-0"
             >
-              <BarChart3 className="w-5 h-5" />
+              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </Link>
         </div>
@@ -110,7 +110,7 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="p-6 space-y-6">
+      <main className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
         {/* Today's Wellness */}
         <section className="animate-fade-in">
           <h2 className="text-xl font-semibold text-foreground mb-4">Today's Wellness</h2>
@@ -135,39 +135,39 @@ export default function Dashboard() {
           </Card>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
             <Link href="/chat">
-              <Card className="hover:shadow-md transition-all cursor-pointer h-full">
-                <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3 mx-auto">
-                    <MessageCircle className="w-5 h-5 text-primary" />
+              <Card className="hover:shadow-md transition-all cursor-pointer h-full active:scale-95">
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2 sm:mb-3 mx-auto">
+                    <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   </div>
-                  <h4 className="font-medium text-sm text-foreground">Chat</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Text conversation</p>
+                  <h4 className="font-medium text-xs sm:text-sm text-foreground">Chat</h4>
+                  <p className="text-xs text-muted-foreground mt-1 hidden sm:block">Text conversation</p>
                 </CardContent>
               </Card>
             </Link>
 
             <Link href="/talk">
-              <Card className="hover:shadow-md transition-all cursor-pointer h-full">
-                <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-3 mx-auto">
-                    <Mic className="w-5 h-5 text-blue-600" />
+              <Card className="hover:shadow-md transition-all cursor-pointer h-full active:scale-95">
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2 sm:mb-3 mx-auto">
+                    <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
-                  <h4 className="font-medium text-sm text-foreground">Talk</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Voice assistant</p>
+                  <h4 className="font-medium text-xs sm:text-sm text-foreground">Talk</h4>
+                  <p className="text-xs text-muted-foreground mt-1 hidden sm:block">Voice assistant</p>
                 </CardContent>
               </Card>
             </Link>
 
-            <Link href="/memories">
-              <Card className="hover:shadow-md transition-all cursor-pointer h-full">
-                <CardContent className="p-4 text-center">
-                  <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center mb-3 mx-auto">
-                    <Camera className="w-5 h-5 text-accent" />
+            <Link href="/memories" className="col-span-2 sm:col-span-1">
+              <Card className="hover:shadow-md transition-all cursor-pointer h-full active:scale-95">
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-accent/10 rounded-full flex items-center justify-center mb-2 sm:mb-3 mx-auto">
+                    <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
                   </div>
-                  <h4 className="font-medium text-sm text-foreground">Memory</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Capture moments</p>
+                  <h4 className="font-medium text-xs sm:text-sm text-foreground">Memory</h4>
+                  <p className="text-xs text-muted-foreground mt-1 hidden sm:block">Capture moments</p>
                 </CardContent>
               </Card>
             </Link>
