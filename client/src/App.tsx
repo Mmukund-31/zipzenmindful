@@ -30,7 +30,7 @@ function Router() {
     mutationFn: async () => {
       return apiRequest("POST", "/api/auth/init", {});
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       console.log('User session initialized:', data.user.firstName, data.user.lastName);
     },
     onError: (error) => {

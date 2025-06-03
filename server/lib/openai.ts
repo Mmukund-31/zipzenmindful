@@ -454,7 +454,7 @@ export async function generatePersonalizedInsights(userActivity: {
       `${gratitudeEntries.length} gratitude entries, practicing thankfulness` : 
       'No gratitude practice yet';
 
-    const prompt = `Analyze this user's wellness app activity and provide 5-7 personalized insights:
+    const prompt = `Analyze this user's wellness app activity and provide 5-7 personalized insights.
 
 User Profile:
 - Goals: ${userProfile?.wellnessGoals?.join(', ') || 'Not set'}
@@ -475,13 +475,27 @@ Generate insights that:
 - Reference their specific activities and preferences
 - Are encouraging and actionable
 
-Return as a simple array of insight strings.`;
+Respond with ONLY a JSON object in this exact format:
+{ "insights": ["insight1", "insight2", "insight3", "insight4", "insight5"] }
+
+Do not include any code blocks, backticks, or formatting. Return only valid JSON.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
     
-    return text.split('\n').filter(line => line.trim().length > 0).slice(0, 7);
+    // Parse JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    return parsed.insights || [
+      "Keep exploring the wellness features to track your mental health journey.",
+      "Regular mood tracking helps identify patterns and triggers.",
+      "Capturing positive memories can boost your overall well-being.",
+      "Gratitude practice has been shown to improve mental health.",
+      "AI chat support is available whenever you need guidance."
+    ];
   } catch (error) {
     console.error('Error generating personalized insights:', error);
     return [
