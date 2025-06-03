@@ -4,6 +4,7 @@ import { Settings, Bot, Camera, Smile, MessageCircle, Mic, BarChart3 } from "luc
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import MoodSelector from "@/components/mood-selector";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -15,14 +16,14 @@ export default function Dashboard() {
   // Get user profile from onboarding
   const userProfile = JSON.parse(localStorage.getItem('wellness_user_profile') || '{"name": "User"}');
   
-  const { data: recentMood } = useQuery<any>({
+  const { data: recentMood, isLoading: isLoadingRecentMood } = useQuery<any>({
     queryKey: ["/api/mood/recent"],
   });
 
-  const { data: moodHistory = [] } = useQuery<any[]>({
+  const { data: moodHistory = [], isLoading: isLoadingMoodHistory } = useQuery<any[]>({
     queryKey: ["/api/mood"],
-    staleTime: 0, // Data is always considered stale
-    refetchInterval: 2000, // Refresh every 2 seconds for real-time updates
+    staleTime: 30000, // Data is fresh for 30 seconds
+    refetchInterval: 30000, // Refresh every 30 seconds for better performance
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchOnReconnect: true,
@@ -116,23 +117,45 @@ export default function Dashboard() {
           <h2 className="text-xl font-semibold text-foreground mb-4">Today's Wellness</h2>
 
           {/* Current Mood Card */}
-          <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20 mb-4 mood-card">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium text-foreground">Current Mood</h3>
-                <span className="text-2xl">{recentMood?.emoji || "😌"}</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                {getMoodDescription(recentMood?.mood)}
-              </p>
-              <div className="flex items-center space-x-2">
-                <Progress value={getMoodLevel(recentMood?.mood)} className="flex-1" />
-                <span className="text-xs text-muted-foreground">
-                  {recentMood?.mood ? "Good" : "-"}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+          {isLoadingRecentMood ? (
+            <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20 mb-4">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-3/4 mb-3" />
+                <div className="flex items-center space-x-2">
+                  <Skeleton className="h-2 flex-1 rounded-full" />
+                  <Skeleton className="h-3 w-8" />
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20 mb-4 mood-card">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-medium text-foreground">Current Mood</h3>
+                  <span className="text-2xl" role="img" aria-label="Current mood emoji">
+                    {recentMood?.emoji || "😌"}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {getMoodDescription(recentMood?.mood)}
+                </p>
+                <div className="flex items-center space-x-2">
+                  <Progress 
+                    value={getMoodLevel(recentMood?.mood)} 
+                    className="flex-1" 
+                    aria-label={`Mood level: ${getMoodLevel(recentMood?.mood)}%`}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {recentMood?.mood ? "Good" : "-"}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick Actions */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
