@@ -909,24 +909,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
-        // In the current system, essentially all users are session-based demo users
-        // Real authenticated users would have:
-        // 1. Valid email from Firebase authentication
-        // 2. Valid phone number from phone verification
-        // 3. Firebase UID (not session-generated ID)
+        // Real users are the session-based users (current system behavior)
+        // Demo users are those with authentication credentials
         
-        // Check for Firebase email authentication
-        if (user.email && user.email.includes('@') && user.email !== 'undefined') {
-          return true;
-        }
+        // Real users have session-based IDs or undefined IDs
+        const hasSessionId = user.id === 'undefined' || (user.id && user.id.startsWith('user_'));
         
-        // Check for phone authentication  
-        if (user.phoneNumber && user.phoneNumber.length >= 10 && user.phoneNumber !== 'undefined') {
-          return true;
-        }
+        // Real users typically don't have email/phone authentication in current system
+        const hasNoAuth = !user.email && !user.phoneNumber;
         
-        // All session-based users are demo users
-        return false;
+        // Users with authentication are actually demo/test accounts
+        const hasAuth = (user.email && user.email.includes('@')) || 
+                       (user.phoneNumber && user.phoneNumber.length >= 10);
+        
+        // Real users: session-based without authentication OR with session ID
+        // Demo users: those with email/phone authentication
+        return hasSessionId || (hasNoAuth && !hasAuth);
       };
 
       // Separate real and demo users
