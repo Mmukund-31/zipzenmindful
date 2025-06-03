@@ -908,34 +908,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       // Helper function to identify real vs demo users
-      const isDemoUser = (user: any) => {
-        // Demo users have these characteristics:
-        // 1. Auto-generated session IDs (user_timestamp_randomstring or 'undefined')
-        // 2. No email or phone authentication
-        // 3. Auto-generated demo names from our predefined list
-        
-        const demoNames = [
-          'Alex Johnson', 'Sam Chen', 'Jordan Smith', 'Casey Davis',
-          'Taylor Wilson', 'Morgan Brown', 'Riley Garcia', 'Avery Miller'
-        ];
-        
-        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-        
-        // Check for auto-generated session ID pattern
-        const hasSessionId = user.id === 'undefined' || (user.id && user.id.startsWith('user_'));
-        
-        // Check for demo name
-        const hasDemoName = demoNames.includes(fullName);
-        
-        // Check for lack of authentication
-        const hasNoAuth = !user.email && !user.phoneNumber;
-        
-        // User is demo if they have session ID AND (no auth OR demo name)
-        return hasSessionId && (hasNoAuth || hasDemoName);
-      };
-
       const isRealUser = (user: any) => {
-        return !isDemoUser(user);
+        // In the current system, essentially all users are session-based demo users
+        // Real authenticated users would have:
+        // 1. Valid email from Firebase authentication
+        // 2. Valid phone number from phone verification
+        // 3. Firebase UID (not session-generated ID)
+        
+        // Check for Firebase email authentication
+        if (user.email && user.email.includes('@') && user.email !== 'undefined') {
+          return true;
+        }
+        
+        // Check for phone authentication  
+        if (user.phoneNumber && user.phoneNumber.length >= 10 && user.phoneNumber !== 'undefined') {
+          return true;
+        }
+        
+        // All session-based users are demo users
+        return false;
       };
 
       // Separate real and demo users
