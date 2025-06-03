@@ -909,10 +909,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
-        // Real users have:
-        // 1. Email addresses (from Firebase/email auth)
-        // 2. Phone numbers (from phone auth)
-        // 3. FirstName and LastName that aren't from our demo name list
+        // Demo users are identified by:
+        // 1. User IDs that start with 'user_' or are 'undefined' (auto-generated session IDs)
+        // 2. Users with demo names from our predefined list
+        // 3. Users without email or phone authentication
         
         const demoNames = [
           'Alex Johnson', 'Sam Chen', 'Jordan Smith', 'Casey Davis',
@@ -921,21 +921,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
         
-        // Check if user has email or phone (real authentication)
+        // Demo user patterns
+        const isDemoUserId = user.id && (user.id.startsWith('user_') || user.id === 'undefined');
+        const isDemoName = demoNames.includes(fullName);
+        const hasNoAuth = !user.email && !user.phoneNumber;
+        
+        // Real users must have authentication AND not be auto-generated
         if (user.email || user.phoneNumber) {
+          // Has authentication - check if it's not just a demo account
+          return !isDemoUserId;
+        }
+        
+        // No authentication - check if it has real profile data
+        if (user.firstName && user.lastName && !isDemoName && !isDemoUserId) {
           return true;
         }
         
-        // Check if user has non-demo name
-        if (user.firstName && user.lastName && !demoNames.includes(fullName)) {
-          return true;
-        }
-        
-        // Check if user ID doesn't match our generated pattern
-        if (user.id && !user.id.startsWith('user_') && user.id !== 'undefined') {
-          return true;
-        }
-        
+        // Default to demo user if no clear authentication or profile
         return false;
       };
 
