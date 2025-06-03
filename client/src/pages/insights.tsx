@@ -19,6 +19,9 @@ export default function Insights() {
   const { data: personalizedInsights, isLoading: isLoadingPersonalized } = useQuery({
     queryKey: ["/api/insights/personalized"],
     staleTime: 10 * 60 * 1000, // 10 minutes
+    onSuccess: (data) => {
+      console.log('Personalized insights received:', data);
+    }
   });
 
   if (isLoading) {
