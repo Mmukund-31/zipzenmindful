@@ -293,22 +293,22 @@ export default function Chat() {
       </div>
 
       {/* Chat Input */}
-      <div className="bg-white border-t border-border p-4">
+      <div className="bg-white dark:bg-gray-950 border-t border-border p-3 sm:p-4">
         {/* Voice Status Indicator */}
         {(isListening || isSpeaking) && (
-          <div className="mb-3 text-center">
-            <div className={`inline-flex items-center space-x-2 px-3 py-2 rounded-full text-sm ${
+          <div className="mb-2 sm:mb-3 text-center">
+            <div className={`inline-flex items-center space-x-2 px-2 sm:px-3 py-1 sm:py-2 rounded-full text-xs sm:text-sm ${
               isListening ? 'bg-red-50 text-red-700 border border-red-200' :
               'bg-blue-50 text-blue-700 border border-blue-200'
             }`}>
               {isListening ? (
                 <>
-                  <Mic className="w-4 h-4 animate-pulse" />
+                  <Mic className="w-3 h-3 sm:w-4 sm:h-4 animate-pulse" />
                   <span>Listening...</span>
                 </>
               ) : (
                 <>
-                  <Volume2 className="w-4 h-4 animate-pulse" />
+                  <Volume2 className="w-3 h-3 sm:w-4 sm:h-4 animate-pulse" />
                   <span>Speaking...</span>
                 </>
               )}
@@ -316,7 +316,7 @@ export default function Chat() {
           </div>
         )}
 
-        <div className="flex items-center space-x-3 mb-3">
+        <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
           {/* Voice Controls */}
           <div className="flex items-center space-x-2">
             <Button
