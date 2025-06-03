@@ -14,15 +14,15 @@ export default function Challenges() {
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const { toast } = useToast();
 
-  const { data: activeChallenges = [] } = useQuery({
+  const { data: activeChallenges = [] } = useQuery<any[]>({
     queryKey: ['/api/challenges/active'],
   });
 
-  const { data: availableChallenges = [] } = useQuery({
+  const { data: availableChallenges = [] } = useQuery<any[]>({
     queryKey: ['/api/challenges/available'],
   });
 
-  const { data: completedChallenges = [] } = useQuery({
+  const { data: completedChallenges = [] } = useQuery<any[]>({
     queryKey: ['/api/challenges/completed'],
   });
 
@@ -178,7 +178,7 @@ export default function Challenges() {
   };
 
   const getTotalPoints = () => {
-    return completedChallenges.reduce((total: number, challenge: any) => total + challenge.points, 0);
+    return (completedChallenges as any[]).reduce((total: number, challenge: any) => total + challenge.points, 0);
   };
 
   return (
@@ -200,37 +200,37 @@ export default function Challenges() {
         </Card>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">{activeChallenges.length}</div>
-              <div className="text-sm text-muted-foreground">Active</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-3 md:p-4 text-center">
+              <div className="text-xl md:text-2xl font-bold text-blue-600">{(activeChallenges as any[]).length}</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Active</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">{completedChallenges.length}</div>
-              <div className="text-sm text-muted-foreground">Completed</div>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-3 md:p-4 text-center">
+              <div className="text-xl md:text-2xl font-bold text-green-600">{(completedChallenges as any[]).length}</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Completed</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">{getTotalPoints()}</div>
-              <div className="text-sm text-muted-foreground">Total Points</div>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-3 md:p-4 text-center">
+              <div className="text-xl md:text-2xl font-bold text-purple-600">{getTotalPoints()}</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Total Points</div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {activeChallenges.filter((c: any) => getProgressPercentage(c) > 75).length}
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-3 md:p-4 text-center">
+              <div className="text-xl md:text-2xl font-bold text-orange-600">
+                {(activeChallenges as any[]).filter((c: any) => getProgressPercentage(c) > 75).length}
               </div>
-              <div className="text-sm text-muted-foreground">Near Completion</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Near Completion</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Active Challenges */}
-        {activeChallenges.length > 0 && (
+        {(activeChallenges as any[]).length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -239,8 +239,8 @@ export default function Challenges() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {activeChallenges.map((challenge: any) => (
-                <div key={challenge.id} className="border rounded-lg p-4">
+              {activeChallenges.map((challenge: any, index: number) => (
+                <div key={`active-${challenge.challengeId || challenge.id}-${index}`} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <span className="text-2xl">{challenge.icon}</span>
@@ -414,8 +414,8 @@ export default function Challenges() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {completedChallenges.map((challenge: any) => (
-                  <div key={challenge.id} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                {completedChallenges.map((challenge: any, index: number) => (
+                  <div key={`completed-${challenge.id}-${index}`} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <span className="text-xl">{challenge.icon}</span>
                       <div>
