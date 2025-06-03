@@ -81,14 +81,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name, age, wellnessGoals, preferredTime, motivation } = req.body;
       const userId = req.headers['x-user-id'] || getCurrentUserId(req);
       
-      if (!userId) {
-        return res.status(400).json({ error: 'User ID is required' });
+      if (!userId || userId === 'undefined') {
+        return res.status(400).json({ error: 'Valid user ID is required' });
       }
       
-      // Create or update user with onboarding data
+      // Update existing user with onboarding data, preserving their actual name
       const user = await storage.upsertUser({
         id: userId,
-        name,
+        firstName: name.split(' ')[0] || name,
+        lastName: name.split(' ').slice(1).join(' ') || '',
         age,
         wellnessGoals: JSON.stringify(wellnessGoals),
         preferredTime,
@@ -231,25 +232,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // Generate personalized user details
-        const userNames = [
-          { first: 'Alex', last: 'Johnson' },
-          { first: 'Sam', last: 'Chen' },
-          { first: 'Jordan', last: 'Smith' },
-          { first: 'Casey', last: 'Davis' },
-          { first: 'Taylor', last: 'Wilson' },
-          { first: 'Morgan', last: 'Brown' },
-          { first: 'Riley', last: 'Garcia' },
-          { first: 'Avery', last: 'Miller' }
-        ];
-        
-        const randomName = userNames[Math.floor(Math.random() * userNames.length)];
-        
+        // Create minimal user profile - actual name will be set during onboarding
         user = await storage.upsertUser({
           id: userId,
           phoneNumber,
-          firstName: randomName.first,
-          lastName: randomName.last,
+          firstName: 'New User',
+          lastName: '',
           profileImageUrl: null
         });
       }
@@ -305,26 +293,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create unique user ID based on device and timestamp
       const userId = `user_${deviceId}_${Date.now()}`;
       
-      // Generate personalized user details
-      const userNames = [
-        { first: 'Alex', last: 'Johnson' },
-        { first: 'Sam', last: 'Chen' },
-        { first: 'Jordan', last: 'Smith' },
-        { first: 'Casey', last: 'Davis' },
-        { first: 'Taylor', last: 'Wilson' },
-        { first: 'Morgan', last: 'Brown' },
-        { first: 'Riley', last: 'Garcia' },
-        { first: 'Avery', last: 'Miller' }
-      ];
-      
-      const randomName = userNames[Math.floor(Math.random() * userNames.length)];
-      
-      // Create personalized user in database
+      // Create minimal user profile - actual name will be set during onboarding
       const user = await storage.upsertUser({
         id: userId,
         email: `${userId}@mindease.app`,
-        firstName: randomName.first,
-        lastName: randomName.last,
+        firstName: 'New User',
+        lastName: '',
         profileImageUrl: null
       });
       
@@ -335,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true, 
         user,
         deviceId,
-        message: `Welcome ${randomName.first}! Your personalized wellness journey begins now.`
+        message: `Welcome! Your personalized wellness journey begins now.`
       });
     } catch (error) {
       console.error('Quick start error:', error);
@@ -369,25 +343,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user exists in database
       let user = await storage.getUser(userId);
       if (!user && userId !== 'undefined') {
-        // Create user only if valid userId and user doesn't exist
-        const userNames = [
-          { first: 'Alex', last: 'Johnson' },
-          { first: 'Sam', last: 'Chen' },
-          { first: 'Jordan', last: 'Smith' },
-          { first: 'Casey', last: 'Davis' },
-          { first: 'Taylor', last: 'Wilson' },
-          { first: 'Morgan', last: 'Brown' },
-          { first: 'Riley', last: 'Garcia' },
-          { first: 'Avery', last: 'Miller' }
-        ];
-        
-        const randomName = userNames[Math.floor(Math.random() * userNames.length)];
-        
+        // Create minimal user profile - actual name will be set during onboarding
         user = await storage.upsertUser({
           id: userId,
           email: `${userId}@mindease.app`,
-          firstName: randomName.first,
-          lastName: randomName.last,
+          firstName: 'New User',
+          lastName: '',
           profileImageUrl: null
         });
       } else if (!user) {
@@ -397,24 +358,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const newUserId = `user_${timestamp}_${randomId}`;
         req.session.userId = newUserId;
         
-        const userNames = [
-          { first: 'Alex', last: 'Johnson' },
-          { first: 'Sam', last: 'Chen' },
-          { first: 'Jordan', last: 'Smith' },
-          { first: 'Casey', last: 'Davis' },
-          { first: 'Taylor', last: 'Wilson' },
-          { first: 'Morgan', last: 'Brown' },
-          { first: 'Riley', last: 'Garcia' },
-          { first: 'Avery', last: 'Miller' }
-        ];
-        
-        const randomName = userNames[Math.floor(Math.random() * userNames.length)];
-        
         user = await storage.upsertUser({
           id: newUserId,
           email: `${newUserId}@mindease.app`,
-          firstName: randomName.first,
-          lastName: randomName.last,
+          firstName: 'New User',
+          lastName: '',
           profileImageUrl: null
         });
         
