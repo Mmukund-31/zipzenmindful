@@ -304,14 +304,14 @@ export default function Challenges() {
           <CardContent className="p-4 md:p-6 pt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
               {predefinedChallenges.map((challenge) => (
-                <Card key={challenge.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
+                <Card key={challenge.id} className="hover:shadow-md transition-all duration-200 border-0 shadow-sm bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+                  <CardContent className="p-3 md:p-4">
                     <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xl">{challenge.icon}</span>
-                        <div>
-                          <h3 className="font-semibold text-sm">{challenge.title}</h3>
-                          <div className="flex items-center space-x-2 mt-1">
+                      <div className="flex items-start space-x-2 flex-1 min-w-0">
+                        <span className="text-lg md:text-xl flex-shrink-0">{challenge.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm md:text-base mb-1 line-clamp-1">{challenge.title}</h3>
+                          <div className="flex flex-wrap gap-1 md:gap-2">
                             <Badge variant="outline" className="text-xs">
                               {challenge.duration} days
                             </Badge>
@@ -323,22 +323,27 @@ export default function Challenges() {
                       </div>
                     </div>
                     
-                    <p className="text-xs text-muted-foreground mb-3">{challenge.description}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-3 line-clamp-2">{challenge.description}</p>
                     
                     <div className="space-y-2 mb-3">
                       <div className="text-xs font-medium">Benefits:</div>
                       <div className="flex flex-wrap gap-1">
-                        {challenge.benefits.map((benefit, index) => (
+                        {challenge.benefits.slice(0, 3).map((benefit, index) => (
                           <Badge key={index} variant="secondary" className="text-xs">
                             {benefit}
                           </Badge>
                         ))}
+                        {challenge.benefits.length > 3 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{challenge.benefits.length - 3} more
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                        <Star className="w-3 h-3" />
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                      <div className="flex items-center space-x-1 text-xs md:text-sm text-muted-foreground">
+                        <Star className="w-3 h-3 md:w-4 md:h-4" />
                         <span>{challenge.points} points</span>
                       </div>
                       <Dialog>
@@ -347,6 +352,7 @@ export default function Challenges() {
                             size="sm" 
                             variant="outline"
                             onClick={() => setSelectedChallenge(challenge)}
+                            className="text-xs md:text-sm px-3 md:px-4 py-2 w-full sm:w-auto"
                           >
                             Start Challenge
                           </Button>
@@ -405,31 +411,31 @@ export default function Challenges() {
 
         {/* Completed Challenges */}
         {(completedChallenges as any[]).length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                 <CheckCircle className="w-5 h-5 text-green-500" />
                 <span>Completed Challenges</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 md:p-6 pt-0">
               <div className="space-y-3">
                 {(completedChallenges as any[]).map((challenge: any, index: number) => (
-                  <div key={`completed-${challenge.id}-${index}`} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-xl">{challenge.icon}</span>
-                      <div>
-                        <div className="font-medium">{challenge.title}</div>
-                        <div className="text-sm text-muted-foreground">
+                  <div key={`completed-${challenge.id}-${index}`} className="flex items-center justify-between p-3 md:p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-xl border border-green-200 dark:border-green-800 shadow-sm">
+                    <div className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
+                      <span className="text-lg md:text-xl flex-shrink-0">{challenge.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm md:text-base truncate">{challenge.title}</div>
+                        <div className="text-xs md:text-sm text-muted-foreground">
                           Completed on {new Date(challenge.completedAt).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge className="bg-green-600 text-white">
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 flex-shrink-0">
+                      <Badge className="bg-green-600 text-white text-xs">
                         +{challenge.points} points
                       </Badge>
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-600 hidden sm:block" />
                     </div>
                   </div>
                 ))}
