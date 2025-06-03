@@ -665,8 +665,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/insights", requireAuth, async (req: any, res) => {
     try {
       const userId = getCurrentUserId(req);
-      const moodEntries = await storage.getMoodEntriesByUser(userId);
-      const insights = await generateMoodInsights(moodEntries);
+      
+      // Get all user data for personalized insights
+      const [moodEntries, memories, chatMessages, gratitudeEntries, userProfile] = await Promise.all([
+        storage.getMoodEntriesByUser(userId),
+        storage.getMemoriesByUser(userId),
+        storage.getChatMessagesByUser(userId),
+        storage.getGratitudeEntriesByUser(userId),
+        storage.getUser(userId)
+      ]);
+
+      // Generate personalized insights based on user profile and activity
+      const { generatePersonalizedInsights } = await import("./lib/openai");
+      const personalizedInsights = await generatePersonalizedInsights({
+        moodEntries,
+        memories,
+        chatMessages,
+        gratitudeEntries,
+        userProfile
+      });
       
       // Calculate mood distribution
       const moodCounts = moodEntries.reduce((acc: Record<string, number>, entry: any) => {
@@ -694,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .slice(-7);
 
       res.json({
-        insights,
+        insights: personalizedInsights,
         moodDistribution,
         totalEntries: moodEntries.length,
         dailyEntries: dailyMoods.size,
@@ -734,10 +751,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate daily wellness tip
-  app.post("/api/wellness/daily-tip", async (req: any, res) => {
+  app.post("/api/wellness/daily-tip", requireAuth, async (req: any, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      const [user, recentMoods] = await Promise.all([
+        storage.getUser(userId),
+        storage.getMoodEntriesByUser(userId)
+      ]);
+
       const { generateDailyWellnessTip } = await import("./lib/openai");
-      const tip = await generateDailyWellnessTip();
+      
+      // Provide context for personalized tips
+      const userContext = {
+        wellnessGoals: user?.wellnessGoals || [],
+        preferredTime: user?.preferredTime,
+        recentMoods: recentMoods.slice(-3).map(m => ({ mood: m.mood, rating: m.rating }))
+      };
+      
+      const tip = await generateDailyWellnessTip(userContext);
       res.json({ tip });
     } catch (error) {
       console.error("Daily tip generation error:", error);
@@ -819,19 +850,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/challenges/available", requireAuth, async (req: any, res) => {
     try {
       const userId = getCurrentUserId(req);
-      const user = await storage.getUser(userId);
-      const completedChallenges = await storage.getCompletedChallengesByUser(userId);
+      const [user, completedChallenges, recentMoods] = await Promise.all([
+        storage.getUser(userId),
+        storage.getCompletedChallengesByUser(userId),
+        storage.getMoodEntriesByUser(userId)
+      ]);
+      
       const completedIds = completedChallenges.map(c => c.challengeId);
       
       // Get standard challenges
       const standardChallenges = await storage.getAvailableChallenges(userId);
       
-      // Generate AI-powered personalized challenges
+      // Generate AI-powered personalized challenges based on user profile and mood patterns
       let personalizedChallenges = [];
       if (user) {
         try {
           const { generatePersonalizedChallenges } = await import("./lib/openai");
-          personalizedChallenges = await generatePersonalizedChallenges(user, completedIds);
+          
+          // Enhanced user profile with mood context for better personalization
+          const enhancedProfile = {
+            ...user,
+            recentMoodPatterns: recentMoods.slice(-7).map(m => ({ mood: m.mood, rating: m.rating })),
+            moodTrend: recentMoods.length > 0 ? 
+              recentMoods.slice(-3).reduce((sum, m) => sum + m.rating, 0) / Math.min(3, recentMoods.length) : 3
+          };
+          
+          personalizedChallenges = await generatePersonalizedChallenges(enhancedProfile, completedIds);
         } catch (error) {
           console.error("Error generating personalized challenges:", error);
         }
