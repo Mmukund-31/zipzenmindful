@@ -971,6 +971,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public admin dashboard with basic auth
+  app.get("/admin", (req, res) => {
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindEase Admin Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #2563eb; }
+        .stat-label { font-size: 14px; color: #6b7280; margin-top: 5px; }
+        .data-section { margin-bottom: 30px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .data-table th { background: #f8f9fa; font-weight: 600; }
+        .refresh-btn { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+        .refresh-btn:hover { background: #1d4ed8; }
+        .truncate { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MindEase Admin Dashboard</h1>
+            <p>Real-time database overview and user activity</p>
+            <button class="refresh-btn" onclick="loadData()">Refresh Data</button>
+        </div>
+        <div id="content">Loading...</div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                const response = await fetch('/api/admin/database');
+                const data = await response.json();
+                
+                document.getElementById('content').innerHTML = \`
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-number">\${data.totalUsers}</div>
+                            <div class="stat-label">Total Users</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">\${data.totalMoodEntries}</div>
+                            <div class="stat-label">Mood Entries</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">\${data.totalMemories}</div>
+                            <div class="stat-label">Memories</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">\${data.totalChatMessages}</div>
+                            <div class="stat-label">Chat Messages</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">\${data.totalGratitudeEntries}</div>
+                            <div class="stat-label">Gratitude Entries</div>
+                        </div>
+                    </div>
+
+                    <div class="data-section">
+                        <h3>Recent Users (Last 10)</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>User ID</th>
+                                    <th>Email</th>
+                                    <th>Created</th>
+                                    <th>Mood Entries</th>
+                                    <th>Memories</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                \${data.users.slice(0, 10).map(user => \`
+                                    <tr>
+                                        <td class="truncate">\${user.id}</td>
+                                        <td>\${user.email || 'N/A'}</td>
+                                        <td>\${new Date(user.createdAt).toLocaleDateString()}</td>
+                                        <td>\${user.moodEntries?.length || 0}</td>
+                                        <td>\${user.memories?.length || 0}</td>
+                                    </tr>
+                                \`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="data-section">
+                        <h3>Recent Activity</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>User</th>
+                                    <th>Content</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                \${data.recentActivity.recentMoods?.slice(0, 5).map(mood => \`
+                                    <tr>
+                                        <td>Mood</td>
+                                        <td class="truncate">\${mood.userId}</td>
+                                        <td>\${mood.mood} (\${mood.rating}/5)</td>
+                                        <td>\${new Date(mood.timestamp).toLocaleString()}</td>
+                                    </tr>
+                                \`).join('') || ''}
+                                \${data.recentActivity.recentMemories?.slice(0, 5).map(memory => \`
+                                    <tr>
+                                        <td>Memory</td>
+                                        <td class="truncate">\${memory.userId}</td>
+                                        <td class="truncate">\${memory.title}</td>
+                                        <td>\${new Date(memory.timestamp).toLocaleString()}</td>
+                                    </tr>
+                                \`).join('') || ''}
+                            </tbody>
+                        </table>
+                    </div>
+                \`;
+            } catch (error) {
+                document.getElementById('content').innerHTML = '<p>Error loading data: ' + error.message + '</p>';
+            }
+        }
+        
+        // Load data on page load
+        loadData();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>`;
+    
+    res.send(htmlContent);
+  });
+
   // Database admin endpoint for viewing all user data
   app.get("/api/admin/database", async (req: any, res) => {
     try {
