@@ -74,6 +74,9 @@ export default function DatabaseAdmin() {
     const userData = users.find((u: any) => u.user?.id === userId);
     
     if (userData?.user) {
+      // Debug: Log the user data to understand structure
+      console.log('User data for', userId, ':', userData.user);
+      
       // First priority: full name from onboarding (this should show "Mukund")
       if (userData.user.name && userData.user.name.trim() && userData.user.name !== 'New User') {
         return userData.user.name;
