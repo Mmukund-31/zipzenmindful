@@ -36,6 +36,8 @@ export default function Dashboard() {
       // Force immediate refresh of mood data for real-time updates
       queryClient.invalidateQueries({ queryKey: ["/api/mood"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mood/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/insights"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/insights/personalized"] });
       queryClient.refetchQueries({ queryKey: ["/api/mood"] });
       queryClient.refetchQueries({ queryKey: ["/api/mood/recent"] });
       

@@ -14,6 +14,8 @@ const moodEmojis = {
 export default function Insights() {
   const { data: insightsData, isLoading } = useQuery({
     queryKey: ["/api/insights"],
+    staleTime: 30 * 1000, // 30 seconds - refresh more frequently
+    refetchOnWindowFocus: true,
   });
 
   const { data: personalizedInsights, isLoading: isLoadingPersonalized } = useQuery({
