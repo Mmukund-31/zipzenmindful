@@ -1038,61 +1038,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     </div>
 
                     <div class="data-section">
-                        <h3>Recent Users (Last 10)</h3>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>User ID</th>
-                                    <th>Email</th>
-                                    <th>Created</th>
-                                    <th>Mood Entries</th>
-                                    <th>Memories</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                \${data.users.slice(0, 10).map(user => \`
+                        <h3>All Users (\${data.users.length} total)</h3>
+                        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px;">
+                            <table class="data-table">
+                                <thead style="position: sticky; top: 0; background: white; z-index: 1;">
                                     <tr>
-                                        <td class="truncate">\${user.id}</td>
-                                        <td>\${user.email || 'N/A'}</td>
-                                        <td>\${new Date(user.createdAt).toLocaleDateString()}</td>
-                                        <td>\${user.moodEntries?.length || 0}</td>
-                                        <td>\${user.memories?.length || 0}</td>
+                                        <th>User ID</th>
+                                        <th>Email</th>
+                                        <th>Name</th>
+                                        <th>Created</th>
+                                        <th>Last Updated</th>
+                                        <th>Moods</th>
+                                        <th>Memories</th>
+                                        <th>Chats</th>
+                                        <th>Gratitude</th>
+                                        <th>Total Activity</th>
                                     </tr>
-                                \`).join('')}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    \${data.users.map(user => \`
+                                        <tr>
+                                            <td class="truncate" title="\${user.id}">\${user.id}</td>
+                                            <td>\${user.email || 'N/A'}</td>
+                                            <td>\${(user.firstName || '') + ' ' + (user.lastName || '')}</td>
+                                            <td>\${new Date(user.createdAt).toLocaleDateString()}</td>
+                                            <td>\${new Date(user.updatedAt).toLocaleDateString()}</td>
+                                            <td style="text-align: center;">\${user.moodEntries?.length || 0}</td>
+                                            <td style="text-align: center;">\${user.memories?.length || 0}</td>
+                                            <td style="text-align: center;">\${user.chatMessages?.length || 0}</td>
+                                            <td style="text-align: center;">\${user.gratitudeEntries?.length || 0}</td>
+                                            <td style="text-align: center; font-weight: bold;">\${(user.moodEntries?.length || 0) + (user.memories?.length || 0) + (user.chatMessages?.length || 0) + (user.gratitudeEntries?.length || 0)}</td>
+                                        </tr>
+                                    \`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <div class="data-section">
-                        <h3>Recent Activity</h3>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Type</th>
-                                    <th>User</th>
-                                    <th>Content</th>
-                                    <th>Timestamp</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                \${data.recentActivity.recentMoods?.slice(0, 5).map(mood => \`
+                        <h3>All Recent Activity (Latest 50 entries)</h3>
+                        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px;">
+                            <table class="data-table">
+                                <thead style="position: sticky; top: 0; background: white; z-index: 1;">
                                     <tr>
-                                        <td>Mood</td>
-                                        <td class="truncate">\${mood.userId}</td>
-                                        <td>\${mood.mood} (\${mood.rating}/5)</td>
-                                        <td>\${new Date(mood.timestamp).toLocaleString()}</td>
+                                        <th>Type</th>
+                                        <th>User ID</th>
+                                        <th>Content</th>
+                                        <th>Details</th>
+                                        <th>Timestamp</th>
                                     </tr>
-                                \`).join('') || ''}
-                                \${data.recentActivity.recentMemories?.slice(0, 5).map(memory => \`
-                                    <tr>
-                                        <td>Memory</td>
-                                        <td class="truncate">\${memory.userId}</td>
-                                        <td class="truncate">\${memory.title}</td>
-                                        <td>\${new Date(memory.timestamp).toLocaleString()}</td>
-                                    </tr>
-                                \`).join('') || ''}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    \${data.recentActivity.recentMoods?.slice(0, 20).map(mood => \`
+                                        <tr>
+                                            <td><span style="background: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">MOOD</span></td>
+                                            <td class="truncate" title="\${mood.userId}">\${mood.userId}</td>
+                                            <td>\${mood.mood}</td>
+                                            <td>Rating: \${mood.rating}/5 | Notes: \${mood.notes || 'None'}</td>
+                                            <td>\${new Date(mood.timestamp).toLocaleString()}</td>
+                                        </tr>
+                                    \`).join('') || ''}
+                                    \${data.recentActivity.recentMemories?.slice(0, 15).map(memory => \`
+                                        <tr>
+                                            <td><span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">MEMORY</span></td>
+                                            <td class="truncate" title="\${memory.userId}">\${memory.userId}</td>
+                                            <td class="truncate">\${memory.title}</td>
+                                            <td>Category: \${memory.category} | Favorite: \${memory.isFavorite ? 'Yes' : 'No'}</td>
+                                            <td>\${new Date(memory.timestamp).toLocaleString()}</td>
+                                        </tr>
+                                    \`).join('') || ''}
+                                    \${data.recentActivity.recentChat?.slice(0, 15).map(chat => \`
+                                        <tr>
+                                            <td><span style="background: #8b5cf6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">CHAT</span></td>
+                                            <td class="truncate" title="\${chat.userId}">\${chat.userId}</td>
+                                            <td class="truncate">\${chat.message}</td>
+                                            <td>AI Response: \${chat.aiResponse ? 'Yes' : 'No'}</td>
+                                            <td>\${new Date(chat.timestamp).toLocaleString()}</td>
+                                        </tr>
+                                    \`).join('') || ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="data-section">
+                        <h3>User Engagement Analysis</h3>
+                        <div class="stats">
+                            <div class="stat-card">
+                                <div class="stat-number">\${data.users.filter(u => (u.moodEntries?.length || 0) > 0).length}</div>
+                                <div class="stat-label">Users with Mood Data</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">\${data.users.filter(u => (u.memories?.length || 0) > 0).length}</div>
+                                <div class="stat-label">Users with Memories</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">\${data.users.filter(u => (u.chatMessages?.length || 0) > 0).length}</div>
+                                <div class="stat-label">Users with Chats</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">\${data.users.filter(u => (u.gratitudeEntries?.length || 0) > 0).length}</div>
+                                <div class="stat-label">Users with Gratitude</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">\${Math.round(data.users.reduce((sum, u) => sum + ((u.moodEntries?.length || 0) + (u.memories?.length || 0) + (u.chatMessages?.length || 0) + (u.gratitudeEntries?.length || 0)), 0) / data.users.length)}</div>
+                                <div class="stat-label">Avg Activities per User</div>
+                            </div>
+                        </div>
                     </div>
                 \`;
             } catch (error) {
