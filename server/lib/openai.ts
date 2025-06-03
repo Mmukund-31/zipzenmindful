@@ -491,31 +491,28 @@ export async function generatePersonalizedInsights(userActivity: {
       `${gratitudeEntries.length} gratitude entries, practicing thankfulness` : 
       'No gratitude practice yet';
 
-    const prompt = `Analyze this user's wellness app activity and provide 5-7 personalized insights.
+    // Extract wellness goals if they exist
+    const wellnessGoals = userProfile?.wellnessGoals ? 
+      (typeof userProfile.wellnessGoals === 'string' ? 
+        JSON.parse(userProfile.wellnessGoals) : userProfile.wellnessGoals) : [];
+
+    const prompt = `Analyze this user's wellness app activity and provide 5 personalized insights based on their goals and patterns.
 
 User Profile:
-- Goals: ${userProfile?.wellnessGoals?.join(', ') || 'Not set'}
+- Wellness Goals: ${wellnessGoals.join(', ') || 'Not set'}
 - Motivation: ${userProfile?.motivation || 'Not provided'}
+- Preferred Time: ${userProfile?.preferredTime || 'Not provided'}
 - Age: ${userProfile?.age || 'Not provided'}
 
 Activity Patterns:
 - Mood tracking: ${moodPattern}
 - Memory capture: ${memoryPattern}
-- AI chat usage: ${chatPattern}
+- Chat engagement: ${chatPattern}
 - Gratitude practice: ${gratitudePattern}
 
-Generate insights that:
-- Recognize their engagement patterns
-- Suggest improvements based on their goals
-- Highlight positive trends
-- Offer personalized recommendations
-- Reference their specific activities and preferences
-- Are encouraging and actionable
+Generate insights that connect their activity patterns to their stated wellness goals, acknowledge progress, and provide specific actionable recommendations.
 
-Respond with ONLY a JSON object in this exact format:
-{ "insights": ["insight1", "insight2", "insight3", "insight4", "insight5"] }
-
-Do not include any code blocks, backticks, or formatting. Return only valid JSON.`;
+Respond with JSON: { "insights": ["insight1", "insight2", "insight3", "insight4", "insight5"] }`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -553,14 +550,16 @@ export async function generatePersonalizedThoughtInterruption(userProfile: any, 
       `Recent moods: ${recentMoods.slice(-3).map(m => `${m.mood} (${m.rating}/5)`).join(', ')}` : 
       'No recent mood data';
     
-    const goals = userProfile?.wellnessGoals || [];
+    const wellnessGoals = userProfile?.wellnessGoals ? 
+      (typeof userProfile.wellnessGoals === 'string' ? 
+        JSON.parse(userProfile.wellnessGoals) : userProfile.wellnessGoals) : [];
     const motivation = userProfile?.motivation || '';
 
-    const prompt = `Create 5 personalized thought interruption techniques for this user:
+    const prompt = `Create 5 personalized thought interruption techniques for this user based on their profile and recent mood patterns.
 
 User Context:
-- Wellness goals: ${goals.join(', ')}
-- Personal motivation: ${motivation}
+- Wellness Goals: ${wellnessGoals.join(', ') || 'Not specified'}
+- Personal Motivation: ${motivation}
 - ${moodContext}
 
 Generate techniques that are:
@@ -570,21 +569,31 @@ Generate techniques that are:
 - Easy to remember and implement
 - Personalized to their motivation and current needs
 
-Return as simple technique descriptions, each 1-2 sentences.`;
+Respond with JSON: { "techniques": ["technique1", "technique2", "technique3", "technique4", "technique5"] }`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
     
-    return text.split('\n').filter(line => line.trim().length > 0).slice(0, 5);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    return parsed.techniques || [
+      "Take 5 deep breaths, counting slowly to 4 on each inhale and exhale",
+      "Name 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell, 1 you can taste",
+      "Repeat a personal affirmation that aligns with your wellness goals",
+      "Do 10 jumping jacks or stretch for 30 seconds to shift your energy",
+      "Write down one thing you're grateful for right now"
+    ];
   } catch (error) {
     console.error('Error generating personalized thought interruption:', error);
     return [
-      "Take 3 deep breaths and remind yourself of your personal wellness goals.",
-      "Ground yourself by naming 3 things you're grateful for right now.",
-      "Ask yourself: 'What would someone who cares about me say in this moment?'",
-      "Visualize your safe place and spend 30 seconds there mentally.",
-      "Do a quick body scan and release any tension you find."
+      "Take 5 deep breaths, counting slowly to 4 on each inhale and exhale",
+      "Name 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell, 1 you can taste",
+      "Repeat a personal affirmation that aligns with your wellness goals",
+      "Do 10 jumping jacks or stretch for 30 seconds to shift your energy",
+      "Write down one thing you're grateful for right now"
     ];
   }
 }
