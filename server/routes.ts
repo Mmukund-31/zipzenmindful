@@ -345,8 +345,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize session for new users
   app.post('/api/auth/init', async (req: any, res) => {
     try {
-      // Create a persistent user session if none exists
-      if (!req.session.userId) {
+      const { sessionId } = req.body;
+      
+      // Restore existing session if provided, otherwise create new one
+      if (sessionId && !req.session.userId) {
+        req.session.userId = sessionId;
+      } else if (!req.session.userId) {
         const timestamp = Date.now();
         const randomId = Math.random().toString(36).substr(2, 9);
         req.session.userId = `user_${timestamp}_${randomId}`;
