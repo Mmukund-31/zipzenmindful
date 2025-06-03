@@ -111,7 +111,7 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <main className="p-3 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto desktop-max-width tablet-padding">
         {/* Today's Wellness */}
         <section className="animate-fade-in">
           <h2 className="text-xl font-semibold text-foreground mb-4">Today's Wellness</h2>
