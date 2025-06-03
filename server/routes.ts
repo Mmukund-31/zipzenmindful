@@ -4,10 +4,10 @@ import multer from "multer";
 import path from "path";
 import session from "express-session";
 import { storage } from "./storage";
-import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema, users, moodEntries, memories, chatMessages, gratitudeEntries } from "@shared/schema";
+import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema, users, moodEntries, memories, chatMessages, gratitudeEntries, challengeProgress } from "@shared/schema";
 import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText, analyzeImageForMemory, generateMemoryGalleryTitle, analyzeImageAndGenerateMeme } from "./lib/openai";
 import { db } from "./db";
-import { desc } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 // Authentication middleware
 const getCurrentUserId = (req: any): string => {
   // Get user ID from session or JWT token
@@ -1023,6 +1023,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Database admin error:", error);
       res.status(500).json({ error: "Failed to fetch database data" });
+    }
+  });
+
+  // Database cleanup endpoint - remove last N users
+  app.delete("/api/admin/cleanup-users/:count", async (req: any, res) => {
+    try {
+      const count = parseInt(req.params.count);
+      
+      if (!count || count <= 0 || count > 50) {
+        return res.status(400).json({ error: "Count must be between 1 and 50" });
+      }
+
+      // Get the last N users ordered by creation date
+      const usersToDelete = await db
+        .select({ id: users.id })
+        .from(users)
+        .orderBy(desc(users.createdAt))
+        .limit(count);
+
+      if (usersToDelete.length === 0) {
+        return res.json({ message: "No users found to delete", deletedCount: 0 });
+      }
+
+      const userIds = usersToDelete.map(user => user.id);
+
+      // Delete related data first (foreign key constraints)
+      await Promise.all([
+        db.delete(moodEntries).where(inArray(moodEntries.userId, userIds)),
+        db.delete(memories).where(inArray(memories.userId, userIds)),
+        db.delete(chatMessages).where(inArray(chatMessages.userId, userIds)),
+        db.delete(gratitudeEntries).where(inArray(gratitudeEntries.userId, userIds)),
+        db.delete(challengeProgress).where(inArray(challengeProgress.userId, userIds))
+      ]);
+
+      // Delete the users
+      await db.delete(users).where(inArray(users.id, userIds));
+
+      res.json({ 
+        message: `Successfully deleted ${userIds.length} users and their associated data`,
+        deletedCount: userIds.length,
+        deletedUserIds: userIds
+      });
+    } catch (error) {
+      console.error("Database cleanup error:", error);
+      res.status(500).json({ error: "Failed to cleanup database" });
     }
   });
 

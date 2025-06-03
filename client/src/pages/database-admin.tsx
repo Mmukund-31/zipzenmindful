@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Database, Users, MessageSquare, Heart, Camera, BarChart3, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Database, Users, MessageSquare, Heart, Camera, BarChart3, RefreshCw, Eye, EyeOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function DatabaseAdmin() {
   const [expandedMotivation, setExpandedMotivation] = useState<string | null>(null);
+  const { toast } = useToast();
   
   const { data: dbData, isLoading, refetch } = useQuery<any>({
     queryKey: ["/api/admin/database"],
@@ -17,9 +19,37 @@ export default function DatabaseAdmin() {
     refetchInterval: 30000, // Refresh every 30 seconds instead of 5
   });
 
+  const cleanupMutation = useMutation({
+    mutationFn: async (count: number) => {
+      const response = await apiRequest("DELETE", `/api/admin/cleanup-users/${count}`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Database Cleanup Successful",
+        description: `Deleted ${data.deletedCount} users and their associated data`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/database"] });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Cleanup Failed",
+        description: error.message || "Failed to cleanup database",
+        variant: "destructive",
+      });
+    },
+  });
+
   const refreshData = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/admin/database"] });
     refetch();
+  };
+
+  const handleCleanup = () => {
+    if (confirm("Are you sure you want to delete the last 19 users and all their data? This action cannot be undone.")) {
+      cleanupMutation.mutate(19);
+    }
   };
 
   // Helper function to get user name by ID from onboarding data
@@ -92,10 +122,20 @@ export default function DatabaseAdmin() {
               <p className="text-gray-600">Real-time view of all user data and activity</p>
             </div>
           </div>
-          <Button onClick={refreshData} variant="outline">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh Data
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleCleanup} 
+              variant="destructive"
+              disabled={cleanupMutation.isPending}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {cleanupMutation.isPending ? "Cleaning..." : "Remove Last 19 Users"}
+            </Button>
+            <Button onClick={refreshData} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh Data
+            </Button>
+          </div>
         </div>
 
         {/* Real User Statistics */}
