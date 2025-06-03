@@ -111,7 +111,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(moodEntries)
       .where(eq(moodEntries.userId, userId))
-      .orderBy(moodEntries.timestamp)
+      .orderBy(desc(moodEntries.timestamp))
       .limit(1);
     return entry;
   }

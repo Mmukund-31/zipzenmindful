@@ -28,9 +28,13 @@ function Router() {
   // Initialize user session for personalized data storage
   const sessionInitMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/auth/init", {});
+      // Check if we have a stored session ID to restore
+      const storedSessionId = localStorage.getItem('mindease_session_id');
+      return apiRequest("POST", "/api/auth/init", { sessionId: storedSessionId });
     },
     onSuccess: (data: any) => {
+      // Store session ID for persistence across page refreshes
+      localStorage.setItem('mindease_session_id', data.sessionId);
       console.log('User session initialized:', data.user.firstName, data.user.lastName);
     },
     onError: (error) => {
