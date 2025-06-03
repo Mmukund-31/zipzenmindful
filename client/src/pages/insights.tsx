@@ -19,10 +19,9 @@ export default function Insights() {
   const { data: personalizedInsights, isLoading: isLoadingPersonalized } = useQuery({
     queryKey: ["/api/insights/personalized"],
     staleTime: 10 * 60 * 1000, // 10 minutes
-    onSuccess: (data) => {
-      console.log('Personalized insights received:', data);
-    }
   });
+
+  const personalizedData = personalizedInsights as any;
 
   if (isLoading) {
     return (
@@ -148,9 +147,9 @@ export default function Insights() {
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
               <p className="text-sm text-muted-foreground mt-2">Analyzing your wellness patterns...</p>
             </div>
-          ) : (personalizedInsights as any)?.insights?.length > 0 ? (
+          ) : personalizedData?.insights && personalizedData.insights.length > 0 ? (
             <div className="space-y-3">
-              {(personalizedInsights as any).insights.map((insight: string, index: number) => (
+              {personalizedData.insights.map((insight: string, index: number) => (
                 <Card key={index} className="bg-white/80 dark:bg-gray-800/80 border-blue-100 dark:border-blue-800">
                   <CardContent className="p-4">
                     <p className="text-sm text-foreground leading-relaxed">{insight}</p>
