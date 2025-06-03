@@ -1,9 +1,11 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useMutation } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import { useEffect } from "react";
+import { apiRequest } from "./lib/queryClient";
 
 import Navigation from "@/components/navigation";
 import Dashboard from "@/pages/dashboard";
@@ -23,6 +25,24 @@ import NotFound from "@/pages/not-found";
 
 
 function Router() {
+  // Initialize user session for personalized data storage
+  const sessionInitMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/auth/init", {});
+    },
+    onSuccess: (data) => {
+      console.log('User session initialized:', data.user.firstName, data.user.lastName);
+    },
+    onError: (error) => {
+      console.error('Failed to initialize session:', error);
+    }
+  });
+
+  useEffect(() => {
+    // Initialize session when app loads to ensure personalized data storage
+    sessionInitMutation.mutate();
+  }, []);
+
   // Check if user has completed onboarding
   const hasCompletedOnboarding = localStorage.getItem('wellness_onboarding_complete') === 'true';
 

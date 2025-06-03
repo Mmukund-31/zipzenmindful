@@ -59,10 +59,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication middleware
   const requireAuth = (req: any, res: any, next: any) => {
-    // Create a demo user session if none exists
-    const userId = req.session?.userId || 'demo_user_' + Math.random().toString(36).substr(2, 9);
-    req.session.userId = userId;
-    req.userId = userId;
+    // Create a persistent user session if none exists
+    if (!req.session.userId) {
+      // Create a consistent user ID that persists across sessions
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substr(2, 9);
+      req.session.userId = `user_${timestamp}_${randomId}`;
+    }
+    req.userId = req.session.userId;
     next();
   };
 
@@ -335,6 +339,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Quick start error:', error);
       res.status(500).json({ error: 'Failed to create personalized session' });
+    }
+  });
+
+  // Initialize session for new users
+  app.post('/api/auth/init', async (req: any, res) => {
+    try {
+      // Create a persistent user session if none exists
+      if (!req.session.userId) {
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substr(2, 9);
+        req.session.userId = `user_${timestamp}_${randomId}`;
+      }
+      
+      const userId = req.session.userId;
+      
+      // Check if user already exists, if not create one
+      let user = await storage.getUser(userId);
+      if (!user) {
+        // Generate personalized user details
+        const userNames = [
+          { first: 'Alex', last: 'Johnson' },
+          { first: 'Sam', last: 'Chen' },
+          { first: 'Jordan', last: 'Smith' },
+          { first: 'Casey', last: 'Davis' },
+          { first: 'Taylor', last: 'Wilson' },
+          { first: 'Morgan', last: 'Brown' },
+          { first: 'Riley', last: 'Garcia' },
+          { first: 'Avery', last: 'Miller' }
+        ];
+        
+        const randomName = userNames[Math.floor(Math.random() * userNames.length)];
+        
+        user = await storage.upsertUser({
+          id: userId,
+          email: `${userId}@mindease.app`,
+          firstName: randomName.first,
+          lastName: randomName.last,
+          profileImageUrl: null
+        });
+      }
+      
+      res.json({ success: true, user, sessionId: userId });
+    } catch (error) {
+      console.error('Session init error:', error);
+      res.status(500).json({ error: 'Failed to initialize session' });
     }
   });
 
