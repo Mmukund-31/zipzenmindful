@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function DatabaseAdmin() {
   const [expandedMotivation, setExpandedMotivation] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
   
   const { data: dbData, isLoading, refetch } = useQuery<any>({
@@ -41,9 +42,25 @@ export default function DatabaseAdmin() {
     },
   });
 
-  const refreshData = () => {
-    queryClient.invalidateQueries({ queryKey: ["/api/admin/database"] });
-    refetch();
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      // Force refetch and invalidate cache
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/database"] });
+      await refetch();
+      toast({
+        title: "Data Refreshed",
+        description: "Database information has been updated",
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh Failed",
+        description: "Could not refresh database data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleCleanup = () => {
@@ -122,20 +139,14 @@ export default function DatabaseAdmin() {
               <p className="text-gray-600">Real-time view of all user data and activity</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleCleanup} 
-              variant="destructive"
-              disabled={cleanupMutation.isPending}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {cleanupMutation.isPending ? "Cleaning..." : "Remove Last 19 Users"}
-            </Button>
-            <Button onClick={refreshData} variant="outline">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Data
-            </Button>
-          </div>
+          <Button 
+            onClick={refreshData} 
+            variant="outline"
+            disabled={isRefreshing || isLoading}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? "Refreshing..." : "Refresh Data"}
+          </Button>
         </div>
 
         {/* Real User Statistics */}
