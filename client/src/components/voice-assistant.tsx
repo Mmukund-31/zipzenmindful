@@ -16,27 +16,33 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
   const [transcript, setTranscript] = useState("");
   const [lastResponse, setLastResponse] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [isIOS, setIsIOS] = useState(false);
+  const [audioInitialized, setAudioInitialized] = useState(false);
   
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const synthesisRef = useRef<SpeechSynthesis | null>(null);
   const queryClient = useQueryClient();
 
   // Initialize speech recognition and synthesis
   useEffect(() => {
+    // Detect iOS devices
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    setIsIOS(isIOSDevice);
+
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
       recognitionRef.current.lang = 'en-US';
 
-      recognitionRef.current.onresult = (event) => {
+      recognitionRef.current.onresult = (event: any) => {
         const speechToText = event.results[0][0].transcript;
         setTranscript(speechToText);
         handleVoiceMessage(speechToText);
       };
 
-      recognitionRef.current.onerror = (event) => {
+      recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
       };
@@ -48,6 +54,26 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
 
     if ('speechSynthesis' in window) {
       synthesisRef.current = window.speechSynthesis;
+      
+      // For iOS, we need to initialize audio context on first user interaction
+      if (isIOSDevice) {
+        const initAudio = () => {
+          if (!audioInitialized) {
+            // Create a silent utterance to initialize the audio system
+            const initUtterance = new SpeechSynthesisUtterance('');
+            initUtterance.volume = 0;
+            synthesisRef.current?.speak(initUtterance);
+            setAudioInitialized(true);
+            document.removeEventListener('touchstart', initAudio);
+            document.removeEventListener('click', initAudio);
+          }
+        };
+        
+        document.addEventListener('touchstart', initAudio, { once: true });
+        document.addEventListener('click', initAudio, { once: true });
+      } else {
+        setAudioInitialized(true);
+      }
     }
 
     return () => {
@@ -83,48 +109,91 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
   const speakResponse = (text: string) => {
     if (!synthesisRef.current || !voiceEnabled) return;
 
+    // For iOS, ensure audio is initialized before speaking
+    if (isIOS && !audioInitialized) {
+      console.log('Audio not initialized on iOS, skipping speech');
+      return;
+    }
+
     // Cancel any ongoing speech
     synthesisRef.current.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Choose voice based on mood
-    const voices = synthesisRef.current.getVoices();
-    let selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
-    
-    if (currentMood) {
-      // Adjust voice characteristics based on mood
-      switch (currentMood.toLowerCase()) {
-        case 'anxious':
-        case 'stressed':
-          utterance.rate = 0.8; // Slower, calming pace
-          utterance.pitch = 0.8; // Lower, soothing pitch
-          break;
-        case 'excited':
-        case 'happy':
-          utterance.rate = 1.1; // Slightly faster
-          utterance.pitch = 1.1; // Higher, more energetic
-          break;
-        case 'sad':
-        case 'lonely':
-          utterance.rate = 0.9; // Gentle pace
-          utterance.pitch = 0.9; // Warm, comforting tone
-          break;
-        default:
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
+    // iOS-specific audio settings for better compatibility
+    if (isIOS) {
+      utterance.volume = 1.0;
+      utterance.rate = 0.9; // Slightly slower for iOS compatibility
+      utterance.pitch = 1.0;
+      
+      // Wait for voices to load on iOS
+      const speakWhenReady = () => {
+        const voices = synthesisRef.current?.getVoices() || [];
+        if (voices.length > 0) {
+          const englishVoice = voices.find(voice => 
+            voice.lang.startsWith('en') && !voice.name.includes('Enhanced')
+          );
+          if (englishVoice) {
+            utterance.voice = englishVoice;
+          }
+          
+          utterance.onstart = () => setIsSpeaking(true);
+          utterance.onend = () => setIsSpeaking(false);
+          utterance.onerror = (event) => {
+            console.error('Speech synthesis error on iOS:', event);
+            setIsSpeaking(false);
+          };
+          
+          // Force iOS to respect the speech
+          setTimeout(() => {
+            synthesisRef.current?.speak(utterance);
+          }, 100);
+        } else {
+          // Retry if voices not loaded yet
+          setTimeout(speakWhenReady, 100);
+        }
+      };
+      
+      speakWhenReady();
+    } else {
+      // Non-iOS devices - use mood-based voice adjustments
+      const voices = synthesisRef.current.getVoices();
+      let selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
+      
+      if (currentMood) {
+        // Adjust voice characteristics based on mood
+        switch (currentMood.toLowerCase()) {
+          case 'anxious':
+          case 'stressed':
+            utterance.rate = 0.8; // Slower, calming pace
+            utterance.pitch = 0.8; // Lower, soothing pitch
+            break;
+          case 'excited':
+          case 'happy':
+            utterance.rate = 1.1; // Slightly faster
+            utterance.pitch = 1.1; // Higher, more energetic
+            break;
+          case 'sad':
+          case 'lonely':
+            utterance.rate = 0.9; // Gentle pace
+            utterance.pitch = 0.9; // Warm, comforting tone
+            break;
+          default:
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+        }
       }
+
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
+      synthesisRef.current.speak(utterance);
     }
-
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-    }
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    synthesisRef.current.speak(utterance);
   };
 
   const startListening = () => {
@@ -205,6 +274,15 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
       </CardHeader>
       
       <CardContent className="space-y-6">
+        {/* iOS Audio Initialization Warning */}
+        {isIOS && !audioInitialized && (
+          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <p className="text-yellow-800 text-sm leading-relaxed">
+              On iOS Safari, tap any button to enable voice responses
+            </p>
+          </div>
+        )}
+
         {/* Mood-based greeting */}
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-blue-800 text-sm leading-relaxed">
