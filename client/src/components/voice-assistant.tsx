@@ -62,8 +62,30 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
             // Create a silent utterance to initialize the audio system
             const initUtterance = new SpeechSynthesisUtterance('');
             initUtterance.volume = 0;
-            synthesisRef.current?.speak(initUtterance);
-            setAudioInitialized(true);
+            initUtterance.rate = 1;
+            initUtterance.pitch = 1;
+            
+            // iOS Safari requires a brief delay before speaking
+            setTimeout(() => {
+              synthesisRef.current?.speak(initUtterance);
+              
+              // Wait for voices to be available
+              const waitForVoices = () => {
+                const voices = synthesisRef.current?.getVoices() || [];
+                if (voices.length > 0) {
+                  setAudioInitialized(true);
+                } else {
+                  setTimeout(waitForVoices, 100);
+                }
+              };
+              
+              // Trigger voice loading and wait
+              if (synthesisRef.current) {
+                synthesisRef.current.onvoiceschanged = waitForVoices;
+                waitForVoices();
+              }
+            }, 50);
+            
             document.removeEventListener('touchstart', initAudio);
             document.removeEventListener('click', initAudio);
           }
@@ -71,6 +93,13 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
         
         document.addEventListener('touchstart', initAudio, { once: true });
         document.addEventListener('click', initAudio, { once: true });
+        
+        // Also initialize on page visibility change (iOS Safari specific)
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && !audioInitialized) {
+            initAudio();
+          }
+        });
       } else {
         setAudioInitialized(true);
       }
@@ -123,31 +152,56 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
     // iOS-specific audio settings for better compatibility
     if (isIOS) {
       utterance.volume = 1.0;
-      utterance.rate = 0.9; // Slightly slower for iOS compatibility
+      utterance.rate = 0.85; // Optimized for iOS Safari
       utterance.pitch = 1.0;
       
       // Wait for voices to load on iOS
       const speakWhenReady = () => {
         const voices = synthesisRef.current?.getVoices() || [];
         if (voices.length > 0) {
+          // Prioritize default iOS voices for better compatibility
           const englishVoice = voices.find(voice => 
-            voice.lang.startsWith('en') && !voice.name.includes('Enhanced')
-          );
+            voice.lang.startsWith('en') && 
+            (voice.default || voice.localService) &&
+            !voice.name.includes('Enhanced') &&
+            !voice.name.includes('Premium')
+          ) || voices.find(voice => voice.lang.startsWith('en'));
+          
           if (englishVoice) {
             utterance.voice = englishVoice;
           }
           
           utterance.onstart = () => setIsSpeaking(true);
-          utterance.onend = () => setIsSpeaking(false);
+          utterance.onend = () => {
+            setIsSpeaking(false);
+            // iOS Safari cleanup
+            setTimeout(() => {
+              if (synthesisRef.current) {
+                synthesisRef.current.cancel();
+              }
+            }, 100);
+          };
           utterance.onerror = (event) => {
             console.error('Speech synthesis error on iOS:', event);
             setIsSpeaking(false);
+            // Retry mechanism for iOS
+            if (event.error === 'interrupted' || event.error === 'synthesis-unavailable') {
+              setTimeout(() => {
+                if (synthesisRef.current && !isSpeaking) {
+                  synthesisRef.current.speak(utterance);
+                }
+              }, 500);
+            }
           };
           
-          // Force iOS to respect the speech
-          setTimeout(() => {
-            synthesisRef.current?.speak(utterance);
-          }, 100);
+          // iOS Safari requires careful timing
+          if (synthesisRef.current) {
+            // Clear any pending speech
+            synthesisRef.current.cancel();
+            setTimeout(() => {
+              synthesisRef.current?.speak(utterance);
+            }, 150);
+          }
         } else {
           // Retry if voices not loaded yet
           setTimeout(speakWhenReady, 100);
@@ -338,7 +392,14 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
             disabled={chatMutation.isPending}
             size="lg"
             variant={isListening ? "destructive" : "default"}
-            className="flex items-center space-x-2"
+            className={`flex items-center space-x-2 transition-all duration-200 ${isIOS ? 'touch-manipulation select-none' : ''}`}
+            style={isIOS ? { 
+              WebkitTapHighlightColor: 'transparent',
+              minHeight: '48px',
+              fontSize: '16px',
+              WebkitUserSelect: 'none',
+              userSelect: 'none'
+            } : {}}
           >
             {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             <span>{isListening ? 'Stop' : 'Talk'}</span>
@@ -348,7 +409,14 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
             onClick={toggleVoice}
             variant="outline"
             size="lg"
-            className="flex items-center space-x-2"
+            className={`flex items-center space-x-2 transition-all duration-200 ${isIOS ? 'touch-manipulation select-none' : ''}`}
+            style={isIOS ? { 
+              WebkitTapHighlightColor: 'transparent',
+              minHeight: '48px',
+              fontSize: '16px',
+              WebkitUserSelect: 'none',
+              userSelect: 'none'
+            } : {}}
           >
             {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
             <span>{voiceEnabled ? 'Voice On' : 'Voice Off'}</span>
