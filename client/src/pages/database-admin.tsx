@@ -74,13 +74,13 @@ export default function DatabaseAdmin() {
     const userData = users.find((u: any) => u.user?.id === userId);
     
     if (userData?.user) {
-      // First check for full name from onboarding
-      if (userData.user.name && userData.user.name.trim()) {
+      // First priority: full name from onboarding (this should show "Mukund")
+      if (userData.user.name && userData.user.name.trim() && userData.user.name !== 'New User') {
         return userData.user.name;
       }
       
-      // Then check for firstName/lastName combination
-      if (userData.user.firstName && userData.user.firstName.trim()) {
+      // Second priority: firstName/lastName combination
+      if (userData.user.firstName && userData.user.firstName.trim() && userData.user.firstName !== 'New User') {
         const lastName = userData.user.lastName && userData.user.lastName.trim() ? 
           ` ${userData.user.lastName}` : '';
         return `${userData.user.firstName}${lastName}`;
@@ -88,13 +88,18 @@ export default function DatabaseAdmin() {
       
       // Fall back to email username if available
       if (userData.user.email && userData.user.email.includes('@')) {
-        return userData.user.email.split('@')[0];
+        const emailName = userData.user.email.split('@')[0];
+        if (!emailName.includes('user_')) {
+          return emailName;
+        }
       }
     }
     
-    // For demo users without corresponding user records, extract a cleaner name from the ID
-    if (userId.startsWith('demo_user_')) {
-      return `Demo User (${userId.slice(-8)})`;
+    // Extract user number for anonymous users
+    if (userId.includes('user_')) {
+      const parts = userId.split('_');
+      const userNum = parts[parts.length - 1].slice(0, 4);
+      return `User ${userNum}`;
     }
     
     return 'Anonymous User';
