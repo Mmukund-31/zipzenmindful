@@ -69,7 +69,16 @@ export default function DatabaseAdmin() {
     );
   }
 
-  const { users = [], totalUsers = 0, totalMoodEntries = 0, totalMemories = 0, totalChatMessages = 0, totalGratitudeEntries = 0, recentActivity = {} } = dbData || {};
+  const { 
+    users = [], 
+    totalUsers = 0, 
+    totalMoodEntries = 0, 
+    totalMemories = 0, 
+    totalChatMessages = 0, 
+    totalGratitudeEntries = 0, 
+    demoStats = {},
+    recentActivity = {} 
+  } = dbData || {};
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -89,43 +98,94 @@ export default function DatabaseAdmin() {
           </Button>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Users className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{totalUsers}</div>
-              <div className="text-sm text-gray-600">Total Users</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <BarChart3 className="h-6 w-6 text-green-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{totalMoodEntries}</div>
-              <div className="text-sm text-gray-600">Mood Entries</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Camera className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{totalMemories}</div>
-              <div className="text-sm text-gray-600">Memories</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <MessageSquare className="h-6 w-6 text-orange-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{totalChatMessages}</div>
-              <div className="text-sm text-gray-600">Chat Messages</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Heart className="h-6 w-6 text-red-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{totalGratitudeEntries}</div>
-              <div className="text-sm text-gray-600">Gratitude Entries</div>
-            </CardContent>
-          </Card>
+        {/* Real User Statistics */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-green-700 flex items-center gap-2">
+            <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+            Real User Data
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-4 text-center">
+                <Users className="h-6 w-6 text-green-700 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-green-800">{totalUsers}</div>
+                <div className="text-sm text-green-600">Real Users</div>
+              </CardContent>
+            </Card>
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-4 text-center">
+                <BarChart3 className="h-6 w-6 text-green-700 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-green-800">{totalMoodEntries}</div>
+                <div className="text-sm text-green-600">Mood Entries</div>
+              </CardContent>
+            </Card>
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-4 text-center">
+                <Camera className="h-6 w-6 text-green-700 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-green-800">{totalMemories}</div>
+                <div className="text-sm text-green-600">Memories</div>
+              </CardContent>
+            </Card>
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-4 text-center">
+                <MessageSquare className="h-6 w-6 text-green-700 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-green-800">{totalChatMessages}</div>
+                <div className="text-sm text-green-600">Chat Messages</div>
+              </CardContent>
+            </Card>
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-4 text-center">
+                <Heart className="h-6 w-6 text-green-700 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-green-800">{totalGratitudeEntries}</div>
+                <div className="text-sm text-green-600">Gratitude Entries</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Demo User Statistics */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-gray-600 flex items-center gap-2">
+            <span className="w-3 h-3 bg-gray-400 rounded-full"></span>
+            Demo/Test Data
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Card className="border-gray-200 bg-gray-50">
+              <CardContent className="p-4 text-center">
+                <Users className="h-6 w-6 text-gray-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-700">{demoStats.totalDemoUsers || 0}</div>
+                <div className="text-sm text-gray-500">Demo Users</div>
+              </CardContent>
+            </Card>
+            <Card className="border-gray-200 bg-gray-50">
+              <CardContent className="p-4 text-center">
+                <BarChart3 className="h-6 w-6 text-gray-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-700">{demoStats.totalDemoMoodEntries || 0}</div>
+                <div className="text-sm text-gray-500">Demo Moods</div>
+              </CardContent>
+            </Card>
+            <Card className="border-gray-200 bg-gray-50">
+              <CardContent className="p-4 text-center">
+                <Camera className="h-6 w-6 text-gray-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-700">{demoStats.totalDemoMemories || 0}</div>
+                <div className="text-sm text-gray-500">Demo Memories</div>
+              </CardContent>
+            </Card>
+            <Card className="border-gray-200 bg-gray-50">
+              <CardContent className="p-4 text-center">
+                <MessageSquare className="h-6 w-6 text-gray-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-700">{demoStats.totalDemoChatMessages || 0}</div>
+                <div className="text-sm text-gray-500">Demo Messages</div>
+              </CardContent>
+            </Card>
+            <Card className="border-gray-200 bg-gray-50">
+              <CardContent className="p-4 text-center">
+                <Heart className="h-6 w-6 text-gray-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-700">{demoStats.totalDemoGratitudeEntries || 0}</div>
+                <div className="text-sm text-gray-500">Demo Gratitude</div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Data Tables */}
@@ -163,11 +223,20 @@ export default function DatabaseAdmin() {
                     </TableHeader>
                     <TableBody>
                       {users.map((userData: any, index: number) => (
-                        <TableRow key={userData.user?.id || index}>
+                        <TableRow key={userData.user?.id || index} className={userData.user?.isRealUser ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}>
                           <TableCell className="font-mono text-xs">
-                            {userData.user?.id || 'N/A'}
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${userData.user?.isRealUser ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                              {userData.user?.id || 'N/A'}
+                            </div>
                           </TableCell>
-                          <TableCell>{getUserName(userData.user?.id)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getUserName(userData.user?.id)}
+                              {userData.user?.isRealUser && <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-300">Real</Badge>}
+                              {!userData.user?.isRealUser && <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300">Demo</Badge>}
+                            </div>
+                          </TableCell>
                           <TableCell>{userData.user?.age || '-'}</TableCell>
                           <TableCell className="text-xs">{userData.user?.email || '-'}</TableCell>
                           <TableCell className="max-w-32">

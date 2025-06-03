@@ -907,12 +907,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         db.select().from(gratitudeEntries).orderBy(desc(gratitudeEntries.timestamp))
       ]);
 
+      // Helper function to identify real vs demo users
+      const isRealUser = (user: any) => {
+        // Real users have:
+        // 1. Email addresses (from Firebase/email auth)
+        // 2. Phone numbers (from phone auth)
+        // 3. FirstName and LastName that aren't from our demo name list
+        
+        const demoNames = [
+          'Alex Johnson', 'Sam Chen', 'Jordan Smith', 'Casey Davis',
+          'Taylor Wilson', 'Morgan Brown', 'Riley Garcia', 'Avery Miller'
+        ];
+        
+        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        
+        // Check if user has email or phone (real authentication)
+        if (user.email || user.phoneNumber) {
+          return true;
+        }
+        
+        // Check if user has non-demo name
+        if (user.firstName && user.lastName && !demoNames.includes(fullName)) {
+          return true;
+        }
+        
+        // Check if user ID doesn't match our generated pattern
+        if (user.id && !user.id.startsWith('user_') && user.id !== 'undefined') {
+          return true;
+        }
+        
+        return false;
+      };
+
+      // Separate real and demo users
+      const realUsers = allUsers.filter(isRealUser);
+      const demoUsers = allUsers.filter(user => !isRealUser(user));
+
       // Group data by user for easier viewing
       const userDataMap = new Map();
       
       allUsers.forEach(user => {
         userDataMap.set(user.id, {
-          user,
+          user: {
+            ...user,
+            isRealUser: isRealUser(user)
+          },
           moodEntries: [],
           memories: [],
           chatMessages: [],
@@ -950,12 +989,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const usersWithData = Array.from(userDataMap.values());
 
+      // Get counts for real users only
+      const realUserData = usersWithData.filter(userData => userData.user.isRealUser);
+      const realUserMoodEntries = allMoodEntries.filter(entry => {
+        const userData = userDataMap.get(entry.userId);
+        return userData && userData.user.isRealUser;
+      });
+      const realUserMemories = allMemories.filter(memory => {
+        const userData = userDataMap.get(memory.userId);
+        return userData && userData.user.isRealUser;
+      });
+      const realUserChatMessages = allChatMessages.filter(message => {
+        const userData = userDataMap.get(message.userId);
+        return userData && userData.user.isRealUser;
+      });
+      const realUserGratitudeEntries = allGratitudeEntries.filter(entry => {
+        const userData = userDataMap.get(entry.userId);
+        return userData && userData.user.isRealUser;
+      });
+
       res.json({
-        totalUsers: allUsers.length,
-        totalMoodEntries: allMoodEntries.length,
-        totalMemories: allMemories.length,
-        totalChatMessages: allChatMessages.length,
-        totalGratitudeEntries: allGratitudeEntries.length,
+        // Real user counts
+        totalUsers: realUsers.length,
+        totalMoodEntries: realUserMoodEntries.length,
+        totalMemories: realUserMemories.length,
+        totalChatMessages: realUserChatMessages.length,
+        totalGratitudeEntries: realUserGratitudeEntries.length,
+        
+        // Demo user counts (for comparison)
+        demoStats: {
+          totalDemoUsers: demoUsers.length,
+          totalDemoMoodEntries: allMoodEntries.length - realUserMoodEntries.length,
+          totalDemoMemories: allMemories.length - realUserMemories.length,
+          totalDemoChatMessages: allChatMessages.length - realUserChatMessages.length,
+          totalDemoGratitudeEntries: allGratitudeEntries.length - realUserGratitudeEntries.length
+        },
+        
         users: usersWithData,
         recentActivity: {
           recentMoods: allMoodEntries.slice(0, 20),
