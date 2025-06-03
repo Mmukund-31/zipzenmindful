@@ -15,6 +15,9 @@ export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
   const [weeklyReports, setWeeklyReports] = useState(true);
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showContactSupport, setShowContactSupport] = useState(false);
 
   const { data: userStats } = useQuery({
     queryKey: ["/api/mood"],
@@ -224,18 +227,57 @@ export default function Settings() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button variant="ghost" className="w-full justify-start">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start"
+            onClick={() => setShowHelpCenter(!showHelpCenter)}
+          >
             <HelpCircle className="w-4 h-4 mr-2" />
             Help Center
           </Button>
-          <Button variant="ghost" className="w-full justify-start">
+          {showHelpCenter && (
+            <div className="ml-6 p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground mb-2">
+                For any questions or assistance with MindEase, please contact "Mukund" from contact support.
+              </p>
+            </div>
+          )}
+          
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start"
+            onClick={() => setShowPrivacyPolicy(!showPrivacyPolicy)}
+          >
             <Shield className="w-4 h-4 mr-2" />
             Privacy Policy
           </Button>
-          <Button variant="ghost" className="w-full justify-start">
+          {showPrivacyPolicy && (
+            <div className="ml-6 p-4 bg-muted rounded-lg space-y-2">
+              <p className="text-sm text-muted-foreground">
+                • All user data is anonymous and personalized
+              </p>
+              <p className="text-sm text-muted-foreground">
+                • For any queries contact "Mukund" from contact support
+              </p>
+            </div>
+          )}
+          
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start"
+            onClick={() => setShowContactSupport(!showContactSupport)}
+          >
             <Bell className="w-4 h-4 mr-2" />
             Contact Support
           </Button>
+          {showContactSupport && (
+            <div className="ml-6 p-4 bg-muted rounded-lg space-y-2">
+              <p className="text-sm font-medium">Contact Information:</p>
+              <p className="text-sm text-muted-foreground">Name - Mukund</p>
+              <p className="text-sm text-muted-foreground">Email - mvsslnmukund@gmail.com</p>
+              <p className="text-sm text-muted-foreground">Mobile - 8247437407</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
