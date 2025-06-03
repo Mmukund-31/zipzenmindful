@@ -31,7 +31,7 @@ export default function Insights() {
     );
   }
 
-  const { insights = [], moodDistribution = [], weeklyData = [] } = (insightsData as any) || {};
+  const { insights = [], moodDistribution = [], weeklyData = [], dailyEntries = 0 } = (insightsData as any) || {};
 
   const getOverallMood = () => {
     if (moodDistribution.length === 0) return { emoji: "😌", label: "No data yet" };
@@ -212,7 +212,7 @@ export default function Insights() {
                 <span className="text-sm text-foreground">Log mood daily</span>
               </div>
               <span className="text-xs text-green-600 font-medium">
-                {weeklyData.length}/7 days
+                {dailyEntries}/7 days
               </span>
             </div>
 

@@ -676,11 +676,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         percentage: Math.round((count as number / total) * 100)
       }));
 
+      // Group mood entries by day and get the most recent mood for each day
+      const dailyMoods = new Map<string, any>();
+      moodEntries.forEach((entry: any) => {
+        const dateKey = new Date(entry.timestamp).toDateString();
+        if (!dailyMoods.has(dateKey) || new Date(entry.timestamp) > new Date(dailyMoods.get(dateKey).timestamp)) {
+          dailyMoods.set(dateKey, entry);
+        }
+      });
+
+      const weeklyData = Array.from(dailyMoods.values())
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+        .slice(-7);
+
       res.json({
         insights,
         moodDistribution,
         totalEntries: moodEntries.length,
-        weeklyData: moodEntries.slice(0, 7).reverse()
+        dailyEntries: dailyMoods.size,
+        weeklyData
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to generate insights" });
