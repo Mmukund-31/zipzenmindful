@@ -1075,14 +1075,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
-        // Real users: explicitly marked demo users or with demo emails (swapped logic)
-        if (user.id === 'demo_user_1' || 
-            (user.email && user.email.includes('demo@')) ||
-            user.firstName === 'Demo') {
+        // Real users: Users with proper onboarding data (name, firstName, or meaningful email)
+        if ((user.firstName && user.firstName.trim() && user.firstName !== 'Demo' && user.firstName !== 'Wellness') ||
+            (user.name && user.name.trim() && user.name !== 'Demo' && user.name !== 'Wellness')) {
           return true;
         }
         
-        // Real users: users with external authentication (non-mindease emails or phone numbers) (swapped logic)
+        // Real users: users with external authentication (non-mindease emails or phone numbers)
         const hasExternalAuth = (user.email && user.email.includes('@') && 
                                 !user.email.includes('mindease.app') && 
                                 !user.email.includes('user@mindease.app')) || 
@@ -1092,18 +1091,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return true;
         }
         
-        // Demo users: Current system users with isolated IDs (swapped logic)
+        // Demo users: explicitly marked demo users
+        if (user.id === 'demo_user_1' || 
+            (user.email && user.email.includes('demo@')) ||
+            user.firstName === 'Demo') {
+          return false;
+        }
+        
+        // Demo users: System-generated users with mindease emails and generic names
+        if (user.id && user.id.startsWith('user_') && 
+            user.email && user.email.includes('mindease.app') &&
+            (user.firstName === 'Wellness' || !user.firstName)) {
+          return false;
+        }
+        
+        // Demo users: Current system users with isolated IDs
         if (user.id && (user.id.startsWith('mindease_user_') || user.id.startsWith('user_device_'))) {
           return false;
         }
         
-        // Demo users: Legacy users with proper session IDs (swapped logic)
-        if (user.id && user.id.startsWith('user_') && user.email && user.email.includes('mindease.app')) {
-          return false;
-        }
-        
-        // Default to real for safety (swapped logic)
-        return true;
+        // Default to demo for safety
+        return false;
       };
 
       // Separate real and demo users
@@ -1185,21 +1193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const usersWithData = Array.from(userDataMap.values());
 
-      // Debug specific user classification
-      const devarUser = allUsers.find(u => u.firstName === 'Devar' || (u.name && u.name.includes('Devar')));
-      if (devarUser) {
-        console.log('Devar user debug:', {
-          id: devarUser.id,
-          firstName: devarUser.firstName,
-          lastName: devarUser.lastName,
-          name: devarUser.name,
-          email: devarUser.email,
-          phoneNumber: devarUser.phoneNumber,
-          isRealUser: isRealUser(devarUser)
-        });
-      }
-
-      // Clean debug logging for production
+      // Production logging
       console.log('Database Admin Summary:');
       console.log(`Total users: ${allUsers.length} (Real: ${realUsers.length}, Demo: ${demoUsers.length})`);
       console.log(`Total data: ${allMoodEntries.length} moods, ${allMemories.length} memories`);
