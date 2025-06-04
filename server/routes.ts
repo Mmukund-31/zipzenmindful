@@ -1075,18 +1075,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
-        // Real users: Users with NO email ID
-        if (!user.email || user.email === null || user.email.trim() === '') {
+        // Real users: Users who completed onboarding with actual names
+        if ((user.name && user.name.trim() && user.name !== 'New User' && user.name !== 'Demo') ||
+            (user.firstName && user.firstName.trim() && user.firstName !== 'New User' && user.firstName !== 'Demo' && user.firstName !== 'Wellness')) {
           return true;
         }
         
-        // Real users: Users with auto-generated mindease.app emails (these should be real users)
-        if (user.email && user.email.includes('@mindease.app') && 
-            user.email.startsWith('user_') || user.email.startsWith('mindease_user_')) {
-          return true;
-        }
-        
-        // Demo users: Users with external email addresses
+        // Demo users: Users without proper onboarding data
         return false;
       };
 
