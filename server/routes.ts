@@ -1075,42 +1075,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
-        // Real users: Users with proper onboarding data (name, firstName, or meaningful email)
-        if ((user.firstName && user.firstName.trim() && user.firstName !== 'Demo' && user.firstName !== 'Wellness') ||
-            (user.name && user.name.trim() && user.name !== 'Demo' && user.name !== 'Wellness')) {
+        // Real users: Users with NO email ID
+        if (!user.email || user.email === null || user.email.trim() === '') {
           return true;
         }
         
-        // Real users: users with external authentication (non-mindease emails or phone numbers)
-        const hasExternalAuth = (user.email && user.email.includes('@') && 
-                                !user.email.includes('mindease.app') && 
-                                !user.email.includes('user@mindease.app')) || 
-                               (user.phoneNumber && user.phoneNumber.length >= 10);
-        
-        if (hasExternalAuth) {
-          return true;
-        }
-        
-        // Demo users: explicitly marked demo users
-        if (user.id === 'demo_user_1' || 
-            (user.email && user.email.includes('demo@')) ||
-            user.firstName === 'Demo') {
-          return false;
-        }
-        
-        // Demo users: System-generated users with mindease emails and generic names
-        if (user.id && user.id.startsWith('user_') && 
-            user.email && user.email.includes('mindease.app') &&
-            (user.firstName === 'Wellness' || !user.firstName)) {
-          return false;
-        }
-        
-        // Demo users: Current system users with isolated IDs
-        if (user.id && (user.id.startsWith('mindease_user_') || user.id.startsWith('user_device_'))) {
-          return false;
-        }
-        
-        // Default to demo for safety
+        // Demo users: Users with any email ID
         return false;
       };
 
