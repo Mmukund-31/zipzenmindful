@@ -33,7 +33,7 @@ function Router() {
     ctx?.fillText('MindEase', 10, 10);
     const canvasFingerprint = canvas.toDataURL();
     
-    // Generate a more complex fingerprint with timestamp for absolute uniqueness
+    // Generate a stable device fingerprint (remove timestamp and random for consistency)
     const deviceData = {
       userAgent: navigator.userAgent,
       language: navigator.language,
@@ -44,16 +44,14 @@ function Router() {
       memory: (navigator as any).deviceMemory || 'unknown',
       hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
       canvas: canvasFingerprint.slice(-30),
-      touchSupport: 'ontouchstart' in window,
-      timestamp: Date.now(),
-      random: Math.random().toString(36).substring(2, 15)
+      touchSupport: 'ontouchstart' in window
     };
     
     // Create a unique hash from all device characteristics
     const deviceString = JSON.stringify(deviceData);
     const hash = btoa(deviceString).replace(/[^a-zA-Z0-9]/g, '');
     
-    return `mindease_user_${hash.substring(0, 20)}_${Date.now()}`;
+    return `mindease_user_${hash.substring(0, 30)}`;
   };
 
   // Initialize user session for completely isolated data storage
