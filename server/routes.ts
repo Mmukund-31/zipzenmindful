@@ -294,10 +294,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Unique device ID is required' });
       }
       
-      // Create a completely new user with the unique device ID
+      // Create a completely new user with the unique device ID (no email for real users)
       const user = await storage.upsertUser({
         id: uniqueDeviceId,
-        email: `${uniqueDeviceId}@mindease.app`,
+        email: null, // No email to classify as real user
         firstName: 'New User',
         lastName: '',
         profileImageUrl: null
@@ -335,10 +335,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `Welcome back! Your personal data has been restored.`
         });
       } else {
-        // If user doesn't exist, create new one
+        // If user doesn't exist, create new one (no email for real users)
         const newUser = await storage.upsertUser({
           id: uniqueDeviceId,
-          email: `${uniqueDeviceId}@mindease.app`,
+          email: null, // No email to classify as real user
           firstName: 'New User',
           lastName: '',
           profileImageUrl: null
@@ -1080,7 +1080,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return true;
         }
         
-        // Demo users: Users with any email ID
+        // Real users: Users with auto-generated mindease.app emails (these should be real users)
+        if (user.email && user.email.includes('@mindease.app') && 
+            user.email.startsWith('user_') || user.email.startsWith('mindease_user_')) {
+          return true;
+        }
+        
+        // Demo users: Users with external email addresses
         return false;
       };
 
