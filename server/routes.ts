@@ -357,6 +357,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile with onboarding data endpoint
+  app.post('/api/auth/update-user-profile', async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'No active session' });
+      }
+      
+      const { name, age, wellnessGoals, preferredTime, motivation } = req.body;
+      
+      // Update user with onboarding information
+      const updatedUser = await storage.upsertUser({
+        id: userId,
+        email: `${userId}@mindease.app`,
+        firstName: name || 'User',
+        lastName: '',
+        profileImageUrl: null
+      });
+      
+      res.json({ 
+        success: true, 
+        user: updatedUser,
+        message: 'User profile updated successfully'
+      });
+    } catch (error) {
+      console.error('Update user profile error:', error);
+      res.status(500).json({ error: 'Failed to update user profile' });
+    }
+  });
+
   // Reset user data endpoint - completely wipes all user data
   app.post('/api/auth/reset-user', async (req: any, res) => {
     try {
