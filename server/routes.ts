@@ -1122,14 +1122,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const lastName = user.lastName && user.lastName.trim() ? ` ${user.lastName}` : '';
           displayName = `${user.firstName}${lastName}`;
         }
-        // Priority 2: Extract name from email if it's not a system email
+        // Priority 2: Use the 'name' field (onboarding data for older users)
+        else if (user.name && user.name.trim() && user.name !== 'New User') {
+          displayName = user.name;
+        }
+        // Priority 3: Extract name from email if it's not a system email
         else if (user.email && user.email.includes('@')) {
           const emailName = user.email.split('@')[0];
           if (!emailName.includes('user_') && !emailName.includes('mindease') && emailName !== 'demo') {
             displayName = emailName;
           }
         }
-        // Priority 3: For system users, create a readable identifier
+        // Priority 4: For system users, create a readable identifier
         else if (user.id && user.id.includes('user_')) {
           const parts = user.id.split('_');
           const userNum = parts[parts.length - 1].slice(0, 4);
@@ -1184,13 +1188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Total users in DB:', allUsers.length);
       console.log('Real users count:', realUsers.length);
       console.log('Demo users count:', demoUsers.length);
-      console.log('Sample real users with all fields:', realUsers.slice(0, 3).map(u => ({ 
-        id: u.id, 
-        firstName: u.firstName, 
-        lastName: u.lastName,
-        email: u.email,
-        allFields: Object.keys(u)
-      })));
+      console.log('Sample real users with COMPLETE data:', realUsers.slice(0, 2).map(u => u));
+      console.log('Specific user data for mvsslnmukund:', realUsers.find(u => u.email === 'mvsslnmukund@gmail.com'));
       console.log('Sample demo users:', demoUsers.slice(0, 3).map(u => ({ id: u.id, firstName: u.firstName, email: u.email })));
       console.log('Total mood entries:', allMoodEntries.length);
       console.log('Total memories:', allMemories.length);
