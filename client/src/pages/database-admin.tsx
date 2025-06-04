@@ -243,8 +243,9 @@ export default function DatabaseAdmin() {
 
         {/* Data Tables */}
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="users">Real Users</TabsTrigger>
+            <TabsTrigger value="incomplete">Incomplete</TabsTrigger>
             <TabsTrigger value="moods">Mood Entries</TabsTrigger>
             <TabsTrigger value="memories">Memories</TabsTrigger>
             <TabsTrigger value="chat">Chat Messages</TabsTrigger>
@@ -335,6 +336,67 @@ export default function DatabaseAdmin() {
                               <div>📸 {userData.memories?.length || 0}</div>
                               <div>💬 {userData.chatMessages?.length || 0}</div>
                               <div>🙏 {userData.gratitudeEntries?.length || 0}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {userData.user?.createdAt ? new Date(userData.user.createdAt).toLocaleDateString() : '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Incomplete Users Table */}
+          <TabsContent value="incomplete" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Incomplete Users ({users?.filter((u: any) => !u.user?.isRealUser && (u.user?.firstName || u.user?.name) && u.user?.firstName !== 'New User').length || 0})</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Users who provided names but didn't complete onboarding (missing age, wellness goals, etc.)
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User ID</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Missing Data</TableHead>
+                        <TableHead>Created</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users?.filter((userData: any) => 
+                        !userData.user?.isRealUser && 
+                        ((userData.user?.firstName && userData.user.firstName !== 'New User' && userData.user.firstName !== 'Demo' && userData.user.firstName !== 'Wellness') ||
+                         (userData.user?.name && userData.user.name !== 'New User' && userData.user.name !== 'Demo'))
+                      ).map((userData: any, index: number) => (
+                        <TableRow key={userData.user?.id || index} className="bg-yellow-50 border-yellow-200">
+                          <TableCell className="font-mono text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                              {userData.user?.id || 'N/A'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getUserName(userData.user)}
+                              <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">Incomplete</Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs">{userData.user?.email || '-'}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1 text-xs">
+                              {!userData.user?.age && <Badge variant="destructive" className="text-xs">No Age</Badge>}
+                              {!userData.user?.wellnessGoals && <Badge variant="destructive" className="text-xs">No Goals</Badge>}
+                              {!userData.user?.motivation && <Badge variant="destructive" className="text-xs">No Motivation</Badge>}
+                              {!userData.user?.preferredTime && <Badge variant="destructive" className="text-xs">No Time Pref</Badge>}
                             </div>
                           </TableCell>
                           <TableCell className="text-xs">
