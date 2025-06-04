@@ -63,12 +63,16 @@ export default function Onboarding() {
 
   const handleComplete = () => {
     if (canComplete) {
+      // Get the device ID from localStorage
+      const deviceId = localStorage.getItem('mindease_unique_device_id') || localStorage.getItem('mindease_current_user_id');
+      
       const userData = {
         name,
         age,
         wellnessGoals: selectedGoals,
         preferredTime,
         motivation,
+        deviceId, // Include device ID for proper user identification
         onboardingDate: new Date().toISOString()
       };
       

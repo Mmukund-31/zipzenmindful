@@ -360,13 +360,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user profile with onboarding data endpoint
   app.post('/api/auth/update-user-profile', async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      // Get userId from session or from request body (for device-based users)
+      let userId = req.session.userId;
+      
+      // If no session, try to get device ID from request body
+      if (!userId && req.body.deviceId) {
+        userId = req.body.deviceId;
+        req.session.userId = userId; // Set session for future requests
+      }
       
       if (!userId) {
-        return res.status(401).json({ error: 'No active session' });
+        return res.status(401).json({ error: 'No user ID provided' });
       }
       
       const { name, age, wellnessGoals, preferredTime, motivation } = req.body;
+      
+      console.log('Updating user profile:', { userId, name, age, wellnessGoals, preferredTime, motivation });
       
       // Update user with complete onboarding information
       const updatedUser = await storage.upsertUser({
@@ -378,8 +387,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         preferredTime: preferredTime || null,
         motivation: motivation || null,
         name: name || null, // Store in name field for backward compatibility
+        email: null, // Don't auto-generate emails for real users
         profileImageUrl: null
       });
+      
+      console.log('User profile updated successfully:', updatedUser);
       
       res.json({ 
         success: true, 
