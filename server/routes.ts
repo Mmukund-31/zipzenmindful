@@ -1130,7 +1130,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else if (user.email && user.email.includes('@')) {
           const emailName = user.email.split('@')[0];
           if (!emailName.includes('user_') && !emailName.includes('mindease') && emailName !== 'demo') {
-            displayName = emailName;
+            // Convert email username to more readable format
+            const cleanName = emailName.replace(/[0-9]/g, '').replace(/[._-]/g, ' ').trim();
+            displayName = cleanName || emailName;
           }
         }
         // Priority 4: For system users, create a readable identifier
@@ -1183,16 +1185,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const usersWithData = Array.from(userDataMap.values());
 
-      // Debug logging to understand data state and user name fields
-      console.log('Database Admin Debug:');
-      console.log('Total users in DB:', allUsers.length);
-      console.log('Real users count:', realUsers.length);
-      console.log('Demo users count:', demoUsers.length);
-      console.log('Sample real users with COMPLETE data:', realUsers.slice(0, 2).map(u => u));
-      console.log('Specific user data for mvsslnmukund:', realUsers.find(u => u.email === 'mvsslnmukund@gmail.com'));
-      console.log('Sample demo users:', demoUsers.slice(0, 3).map(u => ({ id: u.id, firstName: u.firstName, email: u.email })));
-      console.log('Total mood entries:', allMoodEntries.length);
-      console.log('Total memories:', allMemories.length);
+      // Clean debug logging for production
+      console.log('Database Admin Summary:');
+      console.log(`Total users: ${allUsers.length} (Real: ${realUsers.length}, Demo: ${demoUsers.length})`);
+      console.log(`Total data: ${allMoodEntries.length} moods, ${allMemories.length} memories`);
 
       // Get counts for real users only
       const realUserData = usersWithData.filter(userData => userData.user.isRealUser);
