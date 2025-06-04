@@ -1185,6 +1185,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const usersWithData = Array.from(userDataMap.values());
 
+      // Debug specific user classification
+      const devarUser = allUsers.find(u => u.firstName === 'Devar' || (u.name && u.name.includes('Devar')));
+      if (devarUser) {
+        console.log('Devar user debug:', {
+          id: devarUser.id,
+          firstName: devarUser.firstName,
+          lastName: devarUser.lastName,
+          name: devarUser.name,
+          email: devarUser.email,
+          phoneNumber: devarUser.phoneNumber,
+          isRealUser: isRealUser(devarUser)
+        });
+      }
+
       // Clean debug logging for production
       console.log('Database Admin Summary:');
       console.log(`Total users: ${allUsers.length} (Real: ${realUsers.length}, Demo: ${demoUsers.length})`);
