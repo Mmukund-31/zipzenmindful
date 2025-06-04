@@ -1164,10 +1164,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const usersWithData = Array.from(userDataMap.values());
 
-      // Production logging
+      // Enhanced logging to track demo user creation patterns
+      const recentDemoUsers = demoUsers
+        .filter(user => user.createdAt && new Date(user.createdAt) > new Date(Date.now() - 24 * 60 * 60 * 1000))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5);
+        
       console.log('Database Admin Summary:');
       console.log(`Total users: ${allUsers.length} (Real: ${realUsers.length}, Demo: ${demoUsers.length})`);
       console.log(`Total data: ${allMoodEntries.length} moods, ${allMemories.length} memories`);
+      console.log('Recent demo users (last 24h):', recentDemoUsers.map(u => ({
+        id: u.id,
+        firstName: u.firstName,
+        email: u.email,
+        createdAt: u.createdAt
+      })));
 
       // Get counts for real users only
       const realUserData = usersWithData.filter(userData => userData.user.isRealUser);
