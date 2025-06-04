@@ -112,20 +112,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Firebase UID is required' });
       }
       
-      // Create or update user in our database
+      console.log('=== FIREBASE SYNC DEBUG ===');
+      console.log('Creating user with name but NO onboarding data:', { uid, firstName, lastName });
+      console.log('This creates incomplete users who need onboarding!');
+      console.log('===========================');
+      
+      // Create or update user in our database - NO ONBOARDING DATA YET
       const user = await storage.upsertUser({
         id: uid,
-        email,
         firstName,
         lastName,
         profileImageUrl,
         phoneNumber
+        // Note: No email, age, wellnessGoals, motivation, preferredTime
+        // User will be incomplete until they complete onboarding
       });
       
       // Set session
       req.session.userId = uid;
       
-      res.json({ success: true, user });
+      res.json({ success: true, user, needsOnboarding: true });
     } catch (error) {
       console.error('Firebase sync error:', error);
       res.status(500).json({ error: 'Failed to sync user data' });
