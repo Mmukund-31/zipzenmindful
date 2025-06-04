@@ -449,7 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create minimal user profile - actual name will be set during onboarding
       const user = await storage.upsertUser({
         id: userId,
-        email: `${userId}@mindease.app`,
+        email: null, // Don't auto-generate emails
         firstName: 'New User',
         lastName: '',
         profileImageUrl: null
@@ -496,10 +496,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user exists in database
       let user = await storage.getUser(userId);
       if (!user && userId !== 'undefined') {
-        // Create minimal user profile - actual name will be set during onboarding
+        // Create minimal user profile - NO AUTO EMAIL
         user = await storage.upsertUser({
           id: userId,
-          email: `${userId}@mindease.app`,
+          email: null, // Don't auto-generate emails
           firstName: 'New User',
           lastName: '',
           profileImageUrl: null
@@ -513,7 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         user = await storage.upsertUser({
           id: newUserId,
-          email: `${newUserId}@mindease.app`,
+          email: null, // Don't auto-generate emails
           firstName: 'New User',
           lastName: '',
           profileImageUrl: null
@@ -1091,7 +1091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
-        // Real users must have BOTH a name AND completed onboarding data
+        // Real users must have completed onboarding data regardless of email
         
         // Check if user has a valid name (either firstName or name field)
         const hasValidName = (
@@ -1104,21 +1104,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
            user.name !== 'Demo')
         );
         
-        // Check if user has completed onboarding data - ALL fields required
-        const hasOnboardingData = (
-          (user.age && user.age.trim()) && 
-          (user.wellnessGoals && user.wellnessGoals.trim()) &&
-          (user.motivation && user.motivation.trim()) &&
-          (user.preferredTime && user.preferredTime.trim())
+        // Check if user has completed ALL onboarding fields
+        const hasCompleteOnboarding = (
+          user.age && user.age.trim() && 
+          user.wellnessGoals && user.wellnessGoals.trim() &&
+          user.motivation && user.motivation.trim() &&
+          user.preferredTime && user.preferredTime.trim()
         );
         
-        // Real users need both valid name AND onboarding data
-        return hasValidName && hasOnboardingData;
+        // Real users must have complete onboarding data
+        // Email is irrelevant (can be null or auto-generated)
+        return hasValidName && hasCompleteOnboarding;
       };
 
-      // Separate real and demo users
+      // Helper function to identify incomplete users (have name but missing onboarding)
+      const isIncompleteUser = (user: any) => {
+        // Has a real name but missing onboarding data
+        const hasValidName = (
+          (user.firstName && user.firstName.trim() && 
+           user.firstName !== 'New User' && 
+           user.firstName !== 'Demo' && 
+           user.firstName !== 'Wellness') ||
+          (user.name && user.name.trim() && 
+           user.name !== 'New User' && 
+           user.name !== 'Demo')
+        );
+        
+        // Missing any onboarding field
+        const missingOnboarding = (
+          !user.age || !user.age.trim() || 
+          !user.wellnessGoals || !user.wellnessGoals.trim() ||
+          !user.motivation || !user.motivation.trim() ||
+          !user.preferredTime || !user.preferredTime.trim()
+        );
+        
+        return hasValidName && missingOnboarding;
+      };
+
+      // Separate users into categories
       const realUsers = allUsers.filter(isRealUser);
-      const demoUsers = allUsers.filter(user => !isRealUser(user));
+      const incompleteUsers = allUsers.filter(user => !isRealUser(user) && isIncompleteUser(user));
+      const demoUsers = allUsers.filter(user => !isRealUser(user) && !isIncompleteUser(user));
 
       // Group data by user for easier viewing
       const userDataMap = new Map();
@@ -1198,10 +1224,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const usersWithData = Array.from(userDataMap.values());
 
       // Production logging
-      console.log(`Database Admin: ${allUsers.length} total users (Real: ${realUsers.length}, Demo: ${demoUsers.length})`);
+      console.log(`Database Admin: ${allUsers.length} total users (Real: ${realUsers.length}, Incomplete: ${incompleteUsers.length}, Demo: ${demoUsers.length})`);
 
-      // Get counts for real users only
-      const realUserData = usersWithData.filter(userData => userData.user.isRealUser);
+      // Get counts for different user types
+      const realUserData = usersWithData.filter(userData => realUsers.some(ru => ru.id === userData.user.id));
+      const incompleteUserData = usersWithData.filter(userData => incompleteUsers.some(iu => iu.id === userData.user.id));
+      const demoUserData = usersWithData.filter(userData => demoUsers.some(du => du.id === userData.user.id));
       const realUserMoodEntries = allMoodEntries.filter(entry => {
         const userData = userDataMap.get(entry.userId);
         return userData && userData.user.isRealUser;
@@ -1227,19 +1255,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalChatMessages: realUserChatMessages.length,
         totalGratitudeEntries: realUserGratitudeEntries.length,
         
-        // Demo user counts (for comparison)
-        demoStats: {
-          totalDemoUsers: demoUsers.length,
-          totalDemoMoodEntries: allMoodEntries.length - realUserMoodEntries.length,
-          totalDemoMemories: allMemories.length - realUserMemories.length,
-          totalDemoChatMessages: allChatMessages.length - realUserChatMessages.length,
-          totalDemoGratitudeEntries: allGratitudeEntries.length - realUserGratitudeEntries.length
+        // User category data
+        realUsers: realUserData,
+        incompleteUsers: incompleteUserData,
+        demoUsers: demoUserData,
+        
+        // Stats for all categories
+        stats: {
+          realCount: realUsers.length,
+          incompleteCount: incompleteUsers.length,
+          demoCount: demoUsers.length,
+          totalCount: allUsers.length
         },
         
         users: usersWithData.sort((a, b) => {
-          // Sort real users first, then by creation date (newest first)
-          if (a.user.isRealUser && !b.user.isRealUser) return -1;
-          if (!a.user.isRealUser && b.user.isRealUser) return 1;
           return new Date(b.user.createdAt).getTime() - new Date(a.user.createdAt).getTime();
         }),
         recentActivity: {
