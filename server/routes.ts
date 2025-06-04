@@ -1075,31 +1075,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
-        // Real users: Users who completed onboarding with actual names
-        // Check new data structure (firstName/lastName)
-        if (user.firstName && user.firstName.trim() && 
-            user.firstName !== 'New User' && 
-            user.firstName !== 'Demo' && 
-            user.firstName !== 'Wellness') {
-          return true;
-        }
+        // Real users must have BOTH a name AND completed onboarding data
         
-        // Check old data structure (name field)
-        if (user.name && user.name.trim() && 
-            user.name !== 'New User' && 
-            user.name !== 'Demo') {
-          return true;
-        }
+        // Check if user has a valid name (either firstName or name field)
+        const hasValidName = (
+          (user.firstName && user.firstName.trim() && 
+           user.firstName !== 'New User' && 
+           user.firstName !== 'Demo' && 
+           user.firstName !== 'Wellness') ||
+          (user.name && user.name.trim() && 
+           user.name !== 'New User' && 
+           user.name !== 'Demo')
+        );
         
-        // Check for users with actual onboarding data (age, wellness goals, etc.)
-        if ((user.age && user.age.trim()) || 
-            (user.wellnessGoals && user.wellnessGoals.trim()) ||
-            (user.motivation && user.motivation.trim())) {
-          return true;
-        }
+        // Check if user has completed onboarding data
+        const hasOnboardingData = (
+          (user.age && user.age.trim()) || 
+          (user.wellnessGoals && user.wellnessGoals.trim()) ||
+          (user.motivation && user.motivation.trim()) ||
+          (user.preferredTime && user.preferredTime.trim())
+        );
         
-        // Demo users: Users without proper onboarding data
-        return false;
+        // Real users need both valid name AND onboarding data
+        return hasValidName && hasOnboardingData;
       };
 
       // Separate real and demo users
