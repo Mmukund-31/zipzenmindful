@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useEffect } from "react";
 import { apiRequest } from "./lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 
 import Navigation from "@/components/navigation";
 import Dashboard from "@/pages/dashboard";
@@ -84,10 +85,14 @@ function Router() {
     sessionInitMutation.mutate();
   }, []);
 
+  // Check Firebase auth status for onboarding requirements
+  const { isAuthenticated, needsOnboarding } = useAuth();
+
   // Check if user has completed onboarding
   const hasCompletedOnboarding = localStorage.getItem('wellness_onboarding_complete') === 'true';
 
-  if (!hasCompletedOnboarding) {
+  // Firebase users who need onboarding OR users who haven't completed onboarding locally
+  if (!hasCompletedOnboarding || needsOnboarding) {
     return <Onboarding />;
   }
 

@@ -50,9 +50,10 @@ export function useAuth() {
   });
 
   return {
-    user: backendUser,
+    user: backendUser?.user || backendUser,
     firebaseUser,
     isLoading,
     isAuthenticated: !!firebaseUser,
+    needsOnboarding: backendUser?.needsOnboarding || false,
   };
 }
