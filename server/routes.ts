@@ -1075,22 +1075,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
-        // Real users are the session-based users (current system behavior)
-        // Demo users are those with authentication credentials
+        // Current system creates users with IDs starting with 'mindease_user_' or 'user_device_'
+        // These are all real users from the new isolated system
+        if (user.id && (user.id.startsWith('mindease_user_') || user.id.startsWith('user_device_'))) {
+          return true;
+        }
         
-        // Real users have session-based IDs or undefined IDs
-        const hasSessionId = user.id === 'undefined' || (user.id && user.id.startsWith('user_'));
+        // Legacy real users with session-based IDs
+        if (user.id && user.id.startsWith('user_') && !user.id.includes('@')) {
+          return true;
+        }
         
-        // Real users typically don't have email/phone authentication in current system
-        const hasNoAuth = !user.email && !user.phoneNumber;
+        // Users with external authentication (email/phone) are demo/test users
+        const hasExternalAuth = (user.email && user.email.includes('@') && !user.email.includes('mindease.app')) || 
+                               (user.phoneNumber && user.phoneNumber.length >= 10);
         
-        // Users with authentication are actually demo/test accounts
-        const hasAuth = (user.email && user.email.includes('@')) || 
-                       (user.phoneNumber && user.phoneNumber.length >= 10);
-        
-        // Real users: session-based without authentication OR with session ID
-        // Demo users: those with email/phone authentication
-        return hasSessionId || (hasNoAuth && !hasAuth);
+        return !hasExternalAuth;
       };
 
       // Separate real and demo users
@@ -1146,6 +1146,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const usersWithData = Array.from(userDataMap.values());
+
+      // Debug logging to understand data state
+      console.log('Database Admin Debug:');
+      console.log('Total users in DB:', allUsers.length);
+      console.log('Sample user IDs:', allUsers.slice(0, 5).map(u => ({ id: u.id, firstName: u.firstName, email: u.email })));
+      console.log('Total mood entries:', allMoodEntries.length);
+      console.log('Total memories:', allMemories.length);
 
       // Get counts for real users only
       const realUserData = usersWithData.filter(userData => userData.user.isRealUser);
