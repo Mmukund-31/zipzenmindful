@@ -1114,8 +1114,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userDataMap = new Map();
       
       allUsers.forEach(user => {
-        // Display actual user name from database, fallback to "Anonymous User" if no name
-        const displayName = user.firstName || 'Anonymous User';
+        // Generate proper display name from available user data
+        let displayName = 'Anonymous User';
+        
+        // Priority 1: Use firstName and lastName if available
+        if (user.firstName && user.firstName.trim() && user.firstName !== 'New User') {
+          const lastName = user.lastName && user.lastName.trim() ? ` ${user.lastName}` : '';
+          displayName = `${user.firstName}${lastName}`;
+        }
+        // Priority 2: Extract name from email if it's not a system email
+        else if (user.email && user.email.includes('@')) {
+          const emailName = user.email.split('@')[0];
+          if (!emailName.includes('user_') && !emailName.includes('mindease') && emailName !== 'demo') {
+            displayName = emailName;
+          }
+        }
+        // Priority 3: For system users, create a readable identifier
+        else if (user.id && user.id.includes('user_')) {
+          const parts = user.id.split('_');
+          const userNum = parts[parts.length - 1].slice(0, 4);
+          displayName = `User ${userNum}`;
+        }
         
         userDataMap.set(user.id, {
           user: {
