@@ -55,16 +55,20 @@ export default function Onboarding() {
     },
     onError: (error) => {
       console.error('Failed to update user profile:', error);
-      // Fallback to completing onboarding locally
-      localStorage.setItem('wellness_onboarding_complete', 'true');
-      window.location.href = '/';
+      alert('Failed to save your information. Please try again.');
+      // DO NOT mark onboarding as complete if API fails
     }
   });
 
   const handleComplete = () => {
     if (canComplete) {
-      // Get the device ID from localStorage
-      const deviceId = localStorage.getItem('mindease_unique_device_id') || localStorage.getItem('mindease_current_user_id');
+      // Get the device ID from localStorage (consistent with App.tsx)
+      const deviceId = localStorage.getItem('mindease_unique_device_id');
+      
+      if (!deviceId) {
+        alert('Device ID not found. Please refresh the page and try again.');
+        return;
+      }
       
       const userData = {
         name,

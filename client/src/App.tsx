@@ -27,13 +27,7 @@ import NotFound from "@/pages/not-found";
 function Router() {
   // Create a truly unique device fingerprint for complete data isolation
   const generateUniqueDeviceId = () => {
-    // Create a comprehensive device fingerprint
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    ctx?.fillText('MindEase', 10, 10);
-    const canvasFingerprint = canvas.toDataURL();
-    
-    // Generate a stable device fingerprint (remove timestamp and random for consistency)
+    // Generate a stable device fingerprint using consistent data only
     const deviceData = {
       userAgent: navigator.userAgent,
       language: navigator.language,
@@ -43,8 +37,9 @@ function Router() {
       screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
       memory: (navigator as any).deviceMemory || 'unknown',
       hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
-      canvas: canvasFingerprint.slice(-30),
-      touchSupport: 'ontouchstart' in window
+      touchSupport: 'ontouchstart' in window,
+      // Use a stable canvas fingerprint
+      canvasStable: 'mindease_stable_canvas'
     };
     
     // Create a unique hash from all device characteristics

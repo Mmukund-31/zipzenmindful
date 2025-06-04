@@ -360,18 +360,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user profile with onboarding data endpoint
   app.post('/api/auth/update-user-profile', async (req: any, res) => {
     try {
-      // Get userId from session or from request body (for device-based users)
-      let userId = req.session.userId;
-      
-      // If no session, try to get device ID from request body
-      if (!userId && req.body.deviceId) {
-        userId = req.body.deviceId;
-        req.session.userId = userId; // Set session for future requests
-      }
+      // Get userId from deviceId in request body (primary) or session (fallback)
+      let userId = req.body.deviceId || req.session.userId;
       
       if (!userId) {
-        return res.status(401).json({ error: 'No user ID provided' });
+        return res.status(401).json({ error: 'No device ID or user ID provided. Please refresh and try again.' });
       }
+      
+      // Always set session for consistency
+      req.session.userId = userId;
       
       const { name, age, wellnessGoals, preferredTime, motivation } = req.body;
       
