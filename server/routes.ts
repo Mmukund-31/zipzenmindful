@@ -1075,22 +1075,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
-        // Current system creates users with IDs starting with 'mindease_user_' or 'user_device_'
-        // These are all real users from the new isolated system
+        // Demo users: explicitly marked demo users or with demo emails
+        if (user.id === 'demo_user_1' || 
+            (user.email && user.email.includes('demo@')) ||
+            user.firstName === 'Demo') {
+          return false;
+        }
+        
+        // Demo users: users with external authentication (non-mindease emails or phone numbers)
+        const hasExternalAuth = (user.email && user.email.includes('@') && 
+                                !user.email.includes('mindease.app') && 
+                                !user.email.includes('user@mindease.app')) || 
+                               (user.phoneNumber && user.phoneNumber.length >= 10);
+        
+        if (hasExternalAuth) {
+          return false;
+        }
+        
+        // Real users: Current system users with isolated IDs
         if (user.id && (user.id.startsWith('mindease_user_') || user.id.startsWith('user_device_'))) {
           return true;
         }
         
-        // Legacy real users with session-based IDs
-        if (user.id && user.id.startsWith('user_') && !user.id.includes('@')) {
+        // Real users: Legacy users with proper session IDs
+        if (user.id && user.id.startsWith('user_') && user.email && user.email.includes('mindease.app')) {
           return true;
         }
         
-        // Users with external authentication (email/phone) are demo/test users
-        const hasExternalAuth = (user.email && user.email.includes('@') && !user.email.includes('mindease.app')) || 
-                               (user.phoneNumber && user.phoneNumber.length >= 10);
-        
-        return !hasExternalAuth;
+        // Default to demo for safety
+        return false;
       };
 
       // Separate real and demo users
@@ -1150,7 +1163,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Debug logging to understand data state
       console.log('Database Admin Debug:');
       console.log('Total users in DB:', allUsers.length);
-      console.log('Sample user IDs:', allUsers.slice(0, 5).map(u => ({ id: u.id, firstName: u.firstName, email: u.email })));
+      console.log('Real users count:', realUsers.length);
+      console.log('Demo users count:', demoUsers.length);
+      console.log('Sample real users:', realUsers.slice(0, 3).map(u => ({ id: u.id, firstName: u.firstName, email: u.email })));
+      console.log('Sample demo users:', demoUsers.slice(0, 3).map(u => ({ id: u.id, firstName: u.firstName, email: u.email })));
       console.log('Total mood entries:', allMoodEntries.length);
       console.log('Total memories:', allMemories.length);
 
