@@ -120,12 +120,15 @@ export default function DatabaseAdmin() {
 
   const { 
     users = [], 
+    realUsers = [],
+    incompleteUsers = [],
+    demoUsers = [],
+    stats = {},
     totalUsers = 0, 
     totalMoodEntries = 0, 
     totalMemories = 0, 
     totalChatMessages = 0, 
     totalGratitudeEntries = 0, 
-    demoStats = {},
     recentActivity = {} 
   } = dbData || {};
 
@@ -196,46 +199,32 @@ export default function DatabaseAdmin() {
           </div>
         </div>
 
-        {/* Demo User Statistics */}
+        {/* User Category Statistics */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4 text-gray-600 flex items-center gap-2">
             <span className="w-3 h-3 bg-gray-400 rounded-full"></span>
-            Demo/Test Data
+            User Categories
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="p-4 text-center">
+                <Users className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-blue-700">{stats.incompleteCount || 0}</div>
+                <div className="text-sm text-blue-500">Incomplete Users</div>
+              </CardContent>
+            </Card>
             <Card className="border-gray-200 bg-gray-50">
               <CardContent className="p-4 text-center">
                 <Users className="h-6 w-6 text-gray-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-gray-700">{demoStats.totalDemoUsers || 0}</div>
+                <div className="text-2xl font-bold text-gray-700">{stats.demoCount || 0}</div>
                 <div className="text-sm text-gray-500">Demo Users</div>
               </CardContent>
             </Card>
-            <Card className="border-gray-200 bg-gray-50">
+            <Card className="border-orange-200 bg-orange-50">
               <CardContent className="p-4 text-center">
-                <BarChart3 className="h-6 w-6 text-gray-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-gray-700">{demoStats.totalDemoMoodEntries || 0}</div>
-                <div className="text-sm text-gray-500">Demo Moods</div>
-              </CardContent>
-            </Card>
-            <Card className="border-gray-200 bg-gray-50">
-              <CardContent className="p-4 text-center">
-                <Camera className="h-6 w-6 text-gray-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-gray-700">{demoStats.totalDemoMemories || 0}</div>
-                <div className="text-sm text-gray-500">Demo Memories</div>
-              </CardContent>
-            </Card>
-            <Card className="border-gray-200 bg-gray-50">
-              <CardContent className="p-4 text-center">
-                <MessageSquare className="h-6 w-6 text-gray-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-gray-700">{demoStats.totalDemoChatMessages || 0}</div>
-                <div className="text-sm text-gray-500">Demo Messages</div>
-              </CardContent>
-            </Card>
-            <Card className="border-gray-200 bg-gray-50">
-              <CardContent className="p-4 text-center">
-                <Heart className="h-6 w-6 text-gray-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-gray-700">{demoStats.totalDemoGratitudeEntries || 0}</div>
-                <div className="text-sm text-gray-500">Demo Gratitude</div>
+                <Users className="h-6 w-6 text-orange-600 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-orange-700">{stats.totalCount || 0}</div>
+                <div className="text-sm text-orange-500">Total Users</div>
               </CardContent>
             </Card>
           </div>
@@ -257,9 +246,9 @@ export default function DatabaseAdmin() {
           <TabsContent value="users" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Real Users ({users?.filter((u: any) => u.user?.isRealUser).length || 0})</CardTitle>
+                <CardTitle>Real Users ({stats.realCount || 0})</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Users who completed onboarding with actual names. Demo users: {users?.filter((u: any) => !u.user?.isRealUser).length || 0}
+                  Users who completed full onboarding with all required fields filled
                 </p>
               </CardHeader>
               <CardContent>
