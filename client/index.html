@@ -2,48 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#4A90E2" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="MindEase" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="application-name" content="MindEase" />
-    <meta name="msapplication-TileColor" content="#4A90E2" />
-    <meta name="color-scheme" content="light dark" />
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>MindEase - Your Personal Wellness Companion</title>
     <meta name="description" content="Transform your mental wellness journey with MindEase - AI-powered mood tracking, personalized insights, and wellness tools designed for your daily well-being.">
-    
-    <!-- Performance optimizations -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    
-    <!-- Mobile and accessibility enhancements -->
-    <script>
-      // iOS viewport height fix
-      function setViewportHeight() {
-        const vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
-      }
-      
-      setViewportHeight();
-      window.addEventListener('resize', setViewportHeight);
-      window.addEventListener('orientationchange', setViewportHeight);
-      
-      // Android back button support
-      window.addEventListener('popstate', function(event) {
-        // Handle back navigation for better mobile experience
-        if (window.history.length <= 1) {
-          event.preventDefault();
-        }
-      });
-    </script>
-    
     <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
   </body>

@@ -6,28 +6,6 @@ import { Mic, MicOff, Volume2, VolumeX, MessageCircle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
-// Type declarations for Web Speech API
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
-}
-
-interface SpeechRecognitionEvent {
-  results: {
-    [index: number]: {
-      [index: number]: {
-        transcript: string;
-      };
-    };
-  };
-}
-
-interface SpeechRecognitionErrorEvent {
-  error: string;
-}
-
 interface VoiceAssistantProps {
   currentMood?: string;
 }
@@ -38,9 +16,8 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
   const [transcript, setTranscript] = useState("");
   const [lastResponse, setLastResponse] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [speechEnabled, setSpeechEnabled] = useState(false);
   
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const synthesisRef = useRef<SpeechSynthesis | null>(null);
   const queryClient = useQueryClient();
 
@@ -53,13 +30,13 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
       recognitionRef.current.interimResults = false;
       recognitionRef.current.lang = 'en-US';
 
-      recognitionRef.current.onresult = (event: any) => {
+      recognitionRef.current.onresult = (event) => {
         const speechToText = event.results[0][0].transcript;
         setTranscript(speechToText);
         handleVoiceMessage(speechToText);
       };
 
-      recognitionRef.current.onerror = (event: any) => {
+      recognitionRef.current.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
       };
@@ -71,28 +48,6 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
 
     if ('speechSynthesis' in window) {
       synthesisRef.current = window.speechSynthesis;
-      
-      // iOS Safari specific voice loading
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isIOS) {
-        // Force voices to load on iOS
-        const loadVoices = () => {
-          const voices = synthesisRef.current?.getVoices();
-          if (voices && voices.length > 0) {
-            console.log('Voices loaded for iOS:', voices.length);
-          } else {
-            // Retry loading voices
-            setTimeout(loadVoices, 100);
-          }
-        };
-        
-        if (synthesisRef.current.onvoiceschanged !== undefined) {
-          synthesisRef.current.onvoiceschanged = loadVoices;
-        }
-        
-        // Initial load attempt
-        loadVoices();
-      }
     }
 
     return () => {
@@ -133,120 +88,43 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // iOS Safari specific fixes
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+    // Choose voice based on mood
+    const voices = synthesisRef.current.getVoices();
+    let selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
     
-    if (isIOS || isSafari) {
-      // iOS Safari requires user interaction to enable speech synthesis
-      // Split long text into smaller chunks for better iOS compatibility
-      const maxLength = 200;
-      if (text.length > maxLength) {
-        const chunks = text.match(new RegExp(`.{1,${maxLength}}(?:\\s|$)`, 'g')) || [text];
-        
-        const speakChunks = (index: number) => {
-          if (index >= chunks.length) {
-            setIsSpeaking(false);
-            return;
-          }
-          
-          const chunkUtterance = new SpeechSynthesisUtterance(chunks[index]);
-          
-          // iOS Safari specific settings
-          chunkUtterance.volume = 1;
-          chunkUtterance.rate = 0.9; // Slightly slower for better iOS compatibility
-          chunkUtterance.pitch = 1;
-          
-          // Wait for voices to load on iOS
-          const voices = synthesisRef.current!.getVoices();
-          if (voices.length > 0) {
-            const englishVoice = voices.find(voice => 
-              voice.lang.includes('en') && !voice.name.includes('compact')
-            ) || voices[0];
-            chunkUtterance.voice = englishVoice;
-          }
-          
-          chunkUtterance.onend = () => {
-            setTimeout(() => speakChunks(index + 1), 100);
-          };
-          
-          chunkUtterance.onerror = (error) => {
-            console.error('Speech synthesis error on iOS:', error);
-            setIsSpeaking(false);
-          };
-          
-          if (index === 0) setIsSpeaking(true);
-          synthesisRef.current!.speak(chunkUtterance);
-        };
-        
-        speakChunks(0);
-        return;
+    if (currentMood) {
+      // Adjust voice characteristics based on mood
+      switch (currentMood.toLowerCase()) {
+        case 'anxious':
+        case 'stressed':
+          utterance.rate = 0.8; // Slower, calming pace
+          utterance.pitch = 0.8; // Lower, soothing pitch
+          break;
+        case 'excited':
+        case 'happy':
+          utterance.rate = 1.1; // Slightly faster
+          utterance.pitch = 1.1; // Higher, more energetic
+          break;
+        case 'sad':
+        case 'lonely':
+          utterance.rate = 0.9; // Gentle pace
+          utterance.pitch = 0.9; // Warm, comforting tone
+          break;
+        default:
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
       }
-      
-      // iOS Safari specific settings for shorter text
-      utterance.volume = 1;
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      
-      // Wait for voices to load
-      setTimeout(() => {
-        const voices = synthesisRef.current!.getVoices();
-        if (voices.length > 0) {
-          const englishVoice = voices.find(voice => 
-            voice.lang.includes('en') && !voice.name.includes('compact')
-          ) || voices[0];
-          utterance.voice = englishVoice;
-        }
-        
-        utterance.onstart = () => setIsSpeaking(true);
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = (error) => {
-          console.error('Speech synthesis error on iOS:', error);
-          setIsSpeaking(false);
-        };
-        
-        synthesisRef.current!.speak(utterance);
-      }, 100);
-      
-    } else {
-      // Standard implementation for other browsers
-      const voices = synthesisRef.current.getVoices();
-      let selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
-      
-      if (currentMood) {
-        // Adjust voice characteristics based on mood
-        switch (currentMood.toLowerCase()) {
-          case 'anxious':
-          case 'stressed':
-            utterance.rate = 0.8; // Slower, calming pace
-            utterance.pitch = 0.8; // Lower, soothing pitch
-            break;
-          case 'excited':
-          case 'happy':
-            utterance.rate = 1.1; // Slightly faster
-            utterance.pitch = 1.1; // Higher, more energetic
-            break;
-          case 'sad':
-          case 'lonely':
-            utterance.rate = 0.9; // Gentle pace
-            utterance.pitch = 0.9; // Warm, comforting tone
-            break;
-          default:
-            utterance.rate = 1.0;
-            utterance.pitch = 1.0;
-        }
-      }
-
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
-
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-
-      synthesisRef.current.speak(utterance);
     }
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    synthesisRef.current.speak(utterance);
   };
 
   const startListening = () => {
@@ -264,25 +142,7 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
     }
   };
 
-  const enableSpeechForIOS = () => {
-    // This function must be called from a user interaction on iOS Safari
-    if (synthesisRef.current) {
-      // Create a silent utterance to enable speech synthesis
-      const testUtterance = new SpeechSynthesisUtterance(' ');
-      testUtterance.volume = 0;
-      synthesisRef.current.speak(testUtterance);
-      setSpeechEnabled(true);
-    }
-  };
-
   const toggleVoice = () => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    
-    if (isIOS && !speechEnabled && !voiceEnabled) {
-      // For iOS, need user interaction to enable speech
-      enableSpeechForIOS();
-    }
-    
     setVoiceEnabled(!voiceEnabled);
     if (!voiceEnabled && synthesisRef.current) {
       synthesisRef.current.cancel();
@@ -345,23 +205,6 @@ export default function VoiceAssistant({ currentMood }: VoiceAssistantProps) {
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* iOS Safari Speech Notice */}
-        {/iPad|iPhone|iPod/.test(navigator.userAgent) && !speechEnabled && (
-          <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-            <p className="text-orange-800 text-sm mb-3">
-              On iOS Safari, you need to enable voice responses first:
-            </p>
-            <Button 
-              onClick={enableSpeechForIOS}
-              variant="outline" 
-              size="sm"
-              className="text-orange-700 border-orange-300 hover:bg-orange-100"
-            >
-              Enable Voice on iOS
-            </Button>
-          </div>
-        )}
-
         {/* Mood-based greeting */}
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-blue-800 text-sm leading-relaxed">

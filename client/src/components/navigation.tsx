@@ -1,37 +1,33 @@
-import { useLocation, Link } from "wouter";
-import { Home, MessageCircle, Camera, Heart, Trophy, BarChart3, Settings, Database } from "lucide-react";
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { Home, MessageCircle, Heart, TrendingUp, Settings, Brain, BookHeart, Trophy } from "lucide-react";
+
+const tabs = [
+  { id: "dashboard", label: "Home", icon: Home, path: "/" },
+  { id: "gratitude", label: "Gratitude", icon: BookHeart, path: "/gratitude" },
+  { id: "challenges", label: "Challenges", icon: Trophy, path: "/challenges" },
+  { id: "wellness", label: "Wellness", icon: Brain, path: "/wellness" },
+  { id: "settings", label: "Settings", icon: Settings, path: "/settings" },
+];
 
 export default function Navigation() {
   const [location] = useLocation();
 
-  const tabs = [
-    { id: "dashboard", label: "Home", icon: Home, path: "/" },
-    { id: "chat", label: "Chat", icon: MessageCircle, path: "/chat" },
-    { id: "memories", label: "Memories", icon: Camera, path: "/memories" },
-    { id: "gratitude", label: "Gratitude", icon: Heart, path: "/gratitude" },
-    { id: "challenges", label: "Challenges", icon: Trophy, path: "/challenges" },
-    { id: "insights", label: "Insights", icon: BarChart3, path: "/insights" },
-    { id: "settings", label: "Settings", icon: Settings, path: "/settings" },
-    { id: "database", label: "Database", icon: Database, path: "/database-admin" },
-  ];
-
   return (
-    <nav className="bg-white dark:bg-gray-950 border-b border-border p-4 sticky top-0 z-50">
+    <nav className="bg-white dark:bg-gray-950 border-b border-border px-2 sm:px-4 py-1 sm:py-2 sticky top-0 z-10">
       <div className="flex justify-around max-w-7xl mx-auto">
         {tabs.map(({ id, label, icon: Icon, path }) => {
           const isActive = location === path;
           return (
             <Link key={id} href={path}>
               <button
-                className={`flex flex-col items-center py-2 px-3 transition-colors min-w-0 flex-1 ${
+                className={`nav-tab flex flex-col items-center py-2 px-1 sm:px-3 transition-all duration-200 min-w-0 flex-1 active:scale-95 ${
                   isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-primary"
+                    ? "text-primary bg-primary/10 rounded-lg"
+                    : "text-muted-foreground hover:text-primary hover:bg-muted/50 rounded-lg"
                 }`}
-                aria-label={`Navigate to ${label}`}
-                aria-current={isActive ? "page" : undefined}
               >
-                <Icon className="w-5 h-5 mb-1" />
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" />
                 <span className="text-xs font-medium truncate">{label}</span>
               </button>
             </Link>
