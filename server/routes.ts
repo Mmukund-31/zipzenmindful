@@ -1236,7 +1236,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalDemoGratitudeEntries: allGratitudeEntries.length - realUserGratitudeEntries.length
         },
         
-        users: usersWithData,
+        users: usersWithData.sort((a, b) => {
+          // Sort real users first, then by creation date (newest first)
+          if (a.user.isRealUser && !b.user.isRealUser) return -1;
+          if (!a.user.isRealUser && b.user.isRealUser) return 1;
+          return new Date(b.user.createdAt).getTime() - new Date(a.user.createdAt).getTime();
+        }),
         recentActivity: {
           recentMoods: allMoodEntries.slice(0, 20),
           recentMemories: allMemories.slice(0, 10),
