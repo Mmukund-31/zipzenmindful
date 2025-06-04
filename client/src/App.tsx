@@ -25,56 +25,64 @@ import NotFound from "@/pages/not-found";
 
 
 function Router() {
-  // Create a unique device fingerprint for persistent user identity
-  const generateDeviceFingerprint = () => {
+  // Create a truly unique device fingerprint for complete data isolation
+  const generateUniqueDeviceId = () => {
+    // Create a comprehensive device fingerprint
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     ctx?.fillText('MindEase', 10, 10);
     const canvasFingerprint = canvas.toDataURL();
     
-    const fingerprint = btoa(JSON.stringify({
+    // Generate a more complex fingerprint with timestamp for absolute uniqueness
+    const deviceData = {
       userAgent: navigator.userAgent,
       language: navigator.language,
+      languages: navigator.languages?.join(',') || '',
       platform: navigator.platform,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      screen: `${screen.width}x${screen.height}`,
-      canvas: canvasFingerprint.slice(-50), // Last 50 chars for uniqueness
-    })).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
+      screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
+      memory: (navigator as any).deviceMemory || 'unknown',
+      hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+      canvas: canvasFingerprint.slice(-30),
+      touchSupport: 'ontouchstart' in window,
+      timestamp: Date.now(),
+      random: Math.random().toString(36).substring(2, 15)
+    };
     
-    return `user_device_${fingerprint}_${Date.now()}`;
+    // Create a unique hash from all device characteristics
+    const deviceString = JSON.stringify(deviceData);
+    const hash = btoa(deviceString).replace(/[^a-zA-Z0-9]/g, '');
+    
+    return `mindease_user_${hash.substring(0, 20)}_${Date.now()}`;
   };
 
-  // Initialize user session for personalized data storage
+  // Initialize user session for completely isolated data storage
   const sessionInitMutation = useMutation({
     mutationFn: async () => {
-      // Check if we have a stored session ID to restore
-      let storedSessionId = localStorage.getItem('mindease_session_id');
+      // Always generate a unique device ID for this session
+      let uniqueDeviceId = localStorage.getItem('mindease_unique_device_id');
       
-      // If no stored session, create one based on device fingerprint
-      if (!storedSessionId || storedSessionId === 'undefined') {
-        // Check if we have a device-specific ID
-        let deviceId = localStorage.getItem('mindease_device_id');
-        if (!deviceId) {
-          deviceId = generateDeviceFingerprint();
-          localStorage.setItem('mindease_device_id', deviceId);
-        }
+      // If no stored unique ID, create a new one (ensures complete data isolation)
+      if (!uniqueDeviceId || uniqueDeviceId === 'undefined') {
+        uniqueDeviceId = generateUniqueDeviceId();
+        localStorage.setItem('mindease_unique_device_id', uniqueDeviceId);
         
-        // Try to find existing user with this device ID
-        return apiRequest("POST", "/api/auth/device-login", { deviceId });
+        // Create completely new user with this unique ID
+        return apiRequest("POST", "/api/auth/create-unique-user", { uniqueDeviceId });
       } else {
-        // Validate existing session
-        return apiRequest("POST", "/api/auth/init", { sessionId: storedSessionId });
+        // Use existing unique device ID to maintain user identity
+        return apiRequest("POST", "/api/auth/restore-user", { uniqueDeviceId });
       }
     },
     onSuccess: (data: any) => {
-      // Store session ID for persistence across page refreshes
-      if (data.sessionId && data.sessionId !== 'undefined') {
-        localStorage.setItem('mindease_session_id', data.sessionId);
-        console.log('User session restored:', data.user.firstName, data.user.lastName);
+      // Store the unique user session
+      if (data.user?.id) {
+        localStorage.setItem('mindease_current_user_id', data.user.id);
+        console.log('User session initialized for:', data.user.firstName || 'New User');
       }
     },
     onError: (error) => {
-      console.error('Failed to initialize session:', error);
+      console.error('Failed to initialize unique user session:', error);
     }
   });
 

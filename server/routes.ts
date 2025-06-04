@@ -285,56 +285,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Device-based login endpoint for persistent user identity
-  app.post('/api/auth/device-login', async (req: any, res) => {
+  // Create completely unique user endpoint for data isolation
+  app.post('/api/auth/create-unique-user', async (req: any, res) => {
     try {
-      const { deviceId } = req.body;
+      const { uniqueDeviceId } = req.body;
       
-      if (!deviceId) {
-        return res.status(400).json({ error: 'Device ID is required' });
+      if (!uniqueDeviceId) {
+        return res.status(400).json({ error: 'Unique device ID is required' });
       }
       
-      // Look for existing user with this device fingerprint
-      let existingUser = null;
-      const allUsers = await db.select().from(users);
+      // Create a completely new user with the unique device ID
+      const user = await storage.upsertUser({
+        id: uniqueDeviceId,
+        email: `${uniqueDeviceId}@mindease.app`,
+        firstName: 'New User',
+        lastName: '',
+        profileImageUrl: null
+      });
       
-      // Check if any user has this device fingerprint in their email or ID
-      existingUser = allUsers.find(user => 
-        user.email?.includes(deviceId.split('_')[2]) || 
-        user.id.includes(deviceId.split('_')[2])
-      );
+      req.session.userId = uniqueDeviceId;
+      res.json({ 
+        success: true, 
+        user,
+        message: `Welcome! Your completely isolated wellness journey begins now.`
+      });
+    } catch (error) {
+      console.error('Create unique user error:', error);
+      res.status(500).json({ error: 'Failed to create unique user' });
+    }
+  });
+
+  // Restore existing user endpoint for data persistence
+  app.post('/api/auth/restore-user', async (req: any, res) => {
+    try {
+      const { uniqueDeviceId } = req.body;
       
-      if (existingUser) {
-        // Return existing user
-        req.session.userId = existingUser.id;
+      if (!uniqueDeviceId) {
+        return res.status(400).json({ error: 'Unique device ID is required' });
+      }
+      
+      // Look for exact user match with this unique device ID
+      const user = await storage.getUser(uniqueDeviceId);
+      
+      if (user) {
+        req.session.userId = uniqueDeviceId;
         res.json({ 
           success: true, 
-          user: existingUser,
-          sessionId: existingUser.id,
-          message: `Welcome back! Your data has been restored.`
+          user,
+          message: `Welcome back! Your personal data has been restored.`
         });
       } else {
-        // Create new user with device fingerprint
-        const userId = deviceId;
-        const user = await storage.upsertUser({
-          id: userId,
-          email: `${userId}@mindease.app`,
+        // If user doesn't exist, create new one
+        const newUser = await storage.upsertUser({
+          id: uniqueDeviceId,
+          email: `${uniqueDeviceId}@mindease.app`,
           firstName: 'New User',
           lastName: '',
           profileImageUrl: null
         });
         
-        req.session.userId = userId;
+        req.session.userId = uniqueDeviceId;
         res.json({ 
           success: true, 
-          user,
-          sessionId: userId,
-          message: `Welcome! Your personalized wellness journey begins now.`
+          user: newUser,
+          message: `Welcome! Your isolated wellness journey begins now.`
         });
       }
     } catch (error) {
-      console.error('Device login error:', error);
-      res.status(500).json({ error: 'Failed to authenticate device' });
+      console.error('Restore user error:', error);
+      res.status(500).json({ error: 'Failed to restore user' });
+    }
+  });
+
+  // Reset user data endpoint - completely wipes all user data
+  app.post('/api/auth/reset-user', async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'No active session' });
+      }
+      
+      // Delete all user data from all tables
+      await db.delete(moodEntries).where(eq(moodEntries.userId, userId));
+      await db.delete(memories).where(eq(memories.userId, userId));
+      await db.delete(chatMessages).where(eq(chatMessages.userId, userId));
+      await db.delete(gratitudeEntries).where(eq(gratitudeEntries.userId, userId));
+      await db.delete(challengeProgress).where(eq(challengeProgress.userId, userId));
+      await db.delete(users).where(eq(users.id, userId));
+      
+      // Clear session
+      req.session.destroy((err: any) => {
+        if (err) {
+          console.error('Session destroy error:', err);
+        }
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'All user data has been completely reset. You can start fresh now.'
+      });
+    } catch (error) {
+      console.error('Reset user error:', error);
+      res.status(500).json({ error: 'Failed to reset user data' });
     }
   });
 

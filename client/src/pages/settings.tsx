@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { User, LogOut, Shield, Bell, Palette, HelpCircle, Heart, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,10 +33,26 @@ export default function Settings() {
     select: (data: any) => Array.isArray(data) ? data.length : 0,
   });
 
+  const resetMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/auth/reset-user", {});
+    },
+    onSuccess: () => {
+      // Clear all local storage data for complete reset
+      localStorage.clear();
+      
+      // Reload the page to start fresh
+      window.location.reload();
+    },
+    onError: (error) => {
+      console.error('Reset failed:', error);
+    }
+  });
+
   const handleResetOnboarding = () => {
-    localStorage.removeItem('wellness_onboarding_complete');
-    localStorage.removeItem('wellness_user_profile');
-    window.location.reload();
+    if (confirm('Are you sure you want to reset all your data? This action cannot be undone.')) {
+      resetMutation.mutate();
+    }
   };
 
   const handleExportData = () => {
