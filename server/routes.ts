@@ -1179,12 +1179,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const usersWithData = Array.from(userDataMap.values());
 
-      // Debug logging to understand data state
+      // Debug logging to understand data state and user name fields
       console.log('Database Admin Debug:');
       console.log('Total users in DB:', allUsers.length);
       console.log('Real users count:', realUsers.length);
       console.log('Demo users count:', demoUsers.length);
-      console.log('Sample real users:', realUsers.slice(0, 3).map(u => ({ id: u.id, firstName: u.firstName, email: u.email })));
+      console.log('Sample real users with all fields:', realUsers.slice(0, 3).map(u => ({ 
+        id: u.id, 
+        firstName: u.firstName, 
+        lastName: u.lastName,
+        email: u.email,
+        allFields: Object.keys(u)
+      })));
       console.log('Sample demo users:', demoUsers.slice(0, 3).map(u => ({ id: u.id, firstName: u.firstName, email: u.email })));
       console.log('Total mood entries:', allMoodEntries.length);
       console.log('Total memories:', allMemories.length);
