@@ -1075,35 +1075,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
-        // Demo users: explicitly marked demo users or with demo emails
+        // Real users: explicitly marked demo users or with demo emails (swapped logic)
         if (user.id === 'demo_user_1' || 
             (user.email && user.email.includes('demo@')) ||
             user.firstName === 'Demo') {
-          return false;
+          return true;
         }
         
-        // Demo users: users with external authentication (non-mindease emails or phone numbers)
+        // Real users: users with external authentication (non-mindease emails or phone numbers) (swapped logic)
         const hasExternalAuth = (user.email && user.email.includes('@') && 
                                 !user.email.includes('mindease.app') && 
                                 !user.email.includes('user@mindease.app')) || 
                                (user.phoneNumber && user.phoneNumber.length >= 10);
         
         if (hasExternalAuth) {
+          return true;
+        }
+        
+        // Demo users: Current system users with isolated IDs (swapped logic)
+        if (user.id && (user.id.startsWith('mindease_user_') || user.id.startsWith('user_device_'))) {
           return false;
         }
         
-        // Real users: Current system users with isolated IDs
-        if (user.id && (user.id.startsWith('mindease_user_') || user.id.startsWith('user_device_'))) {
-          return true;
-        }
-        
-        // Real users: Legacy users with proper session IDs
+        // Demo users: Legacy users with proper session IDs (swapped logic)
         if (user.id && user.id.startsWith('user_') && user.email && user.email.includes('mindease.app')) {
-          return true;
+          return false;
         }
         
-        // Default to demo for safety
-        return false;
+        // Default to real for safety (swapped logic)
+        return true;
       };
 
       // Separate real and demo users
