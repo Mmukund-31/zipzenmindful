@@ -387,7 +387,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         preferredTime: preferredTime || null,
         motivation: motivation || null,
         name: name || null, // Store in name field for backward compatibility
-        email: null, // Don't auto-generate emails for real users
         profileImageUrl: null
       });
       
@@ -449,7 +448,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create minimal user profile - actual name will be set during onboarding
       const user = await storage.upsertUser({
         id: userId,
-        email: null, // Don't auto-generate emails
         firstName: 'New User',
         lastName: '',
         profileImageUrl: null
@@ -496,10 +494,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user exists in database
       let user = await storage.getUser(userId);
       if (!user && userId !== 'undefined') {
-        // Create minimal user profile - NO AUTO EMAIL
+        // Create minimal user profile - NO EMAIL AT ALL
         user = await storage.upsertUser({
           id: userId,
-          email: null, // Don't auto-generate emails
           firstName: 'New User',
           lastName: '',
           profileImageUrl: null
@@ -513,7 +510,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         user = await storage.upsertUser({
           id: newUserId,
-          email: null, // Don't auto-generate emails
           firstName: 'New User',
           lastName: '',
           profileImageUrl: null
@@ -1089,37 +1085,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         db.select().from(gratitudeEntries).orderBy(desc(gratitudeEntries.timestamp))
       ]);
 
-      // Helper function to identify real vs demo users
+      // Helper function to identify real users (completed onboarding)
       const isRealUser = (user: any) => {
-        // Real users must have completed onboarding data regardless of email
-        
-        // Check if user has a valid name (either firstName or name field)
-        const hasValidName = (
-          (user.firstName && user.firstName.trim() && 
-           user.firstName !== 'New User' && 
-           user.firstName !== 'Demo' && 
-           user.firstName !== 'Wellness') ||
-          (user.name && user.name.trim() && 
-           user.name !== 'New User' && 
-           user.name !== 'Demo')
-        );
-        
-        // Check if user has completed ALL onboarding fields
-        const hasCompleteOnboarding = (
+        // Real users = those who completed ALL onboarding fields
+        // regardless of name source or email presence
+        return (
           user.age && user.age.trim() && 
           user.wellnessGoals && user.wellnessGoals.trim() &&
           user.motivation && user.motivation.trim() &&
           user.preferredTime && user.preferredTime.trim()
         );
-        
-        // Real users must have complete onboarding data
-        // Email is irrelevant (can be null or auto-generated)
-        return hasValidName && hasCompleteOnboarding;
       };
 
-      // Helper function to identify incomplete users (have name but missing onboarding)
+      // Helper function to identify incomplete users (have name but incomplete onboarding)
       const isIncompleteUser = (user: any) => {
-        // Has a real name but missing onboarding data
+        // Has a real name but missing some onboarding fields
         const hasValidName = (
           (user.firstName && user.firstName.trim() && 
            user.firstName !== 'New User' && 
@@ -1130,15 +1110,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
            user.name !== 'Demo')
         );
         
-        // Missing any onboarding field
-        const missingOnboarding = (
+        // Missing any required onboarding field means incomplete
+        const hasIncompleteOnboarding = (
           !user.age || !user.age.trim() || 
           !user.wellnessGoals || !user.wellnessGoals.trim() ||
           !user.motivation || !user.motivation.trim() ||
           !user.preferredTime || !user.preferredTime.trim()
         );
         
-        return hasValidName && missingOnboarding;
+        return hasValidName && hasIncompleteOnboarding;
       };
 
       // Separate users into categories
