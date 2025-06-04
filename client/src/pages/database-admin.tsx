@@ -69,35 +69,32 @@ export default function DatabaseAdmin() {
     }
   };
 
-  // Helper function to get user name by ID from onboarding data
-  const getUserName = (userId: string) => {
-    const userData = users.find((u: any) => u.user?.id === userId);
+  // Helper function to get actual user name from database
+  const getUserName = (user: any) => {
+    if (!user) return 'Unknown User';
     
-    if (userData?.user) {
-      // First priority: full name from onboarding
-      if (userData.user.name && userData.user.name.trim() && userData.user.name !== 'New User') {
-        return userData.user.name;
-      }
-      
-      // Second priority: firstName/lastName combination (this shows "Mukund")
-      if (userData.user.firstName && userData.user.firstName.trim() && userData.user.firstName !== 'New User') {
-        const lastName = userData.user.lastName && userData.user.lastName.trim() ? 
-          ` ${userData.user.lastName}` : '';
-        return `${userData.user.firstName}${lastName}`;
-      }
-      
-      // Fall back to email username if available
-      if (userData.user.email && userData.user.email.includes('@')) {
-        const emailName = userData.user.email.split('@')[0];
-        if (!emailName.includes('user_')) {
-          return emailName;
-        }
+    // Use displayName from backend if available
+    if (user.displayName && user.displayName !== 'Anonymous User') {
+      return user.displayName;
+    }
+    
+    // Use firstName from database if available
+    if (user.firstName && user.firstName.trim() && user.firstName !== 'New User') {
+      const lastName = user.lastName && user.lastName.trim() ? ` ${user.lastName}` : '';
+      return `${user.firstName}${lastName}`;
+    }
+    
+    // Fall back to email username if available
+    if (user.email && user.email.includes('@')) {
+      const emailName = user.email.split('@')[0];
+      if (!emailName.includes('user_') && !emailName.includes('mindease')) {
+        return emailName;
       }
     }
     
-    // Extract user number for anonymous users
-    if (userId.includes('user_')) {
-      const parts = userId.split('_');
+    // Extract user number for system-generated users
+    if (user.id && user.id.includes('user_')) {
+      const parts = user.id.split('_');
       const userNum = parts[parts.length - 1].slice(0, 4);
       return `User ${userNum}`;
     }
@@ -288,7 +285,7 @@ export default function DatabaseAdmin() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              {getUserName(userData.user?.id)}
+                              {getUserName(userData.user)}
                               {userData.user?.isRealUser && <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-300">Real</Badge>}
                               {!userData.user?.isRealUser && <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300">Demo</Badge>}
                             </div>

@@ -1101,9 +1101,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userDataMap = new Map();
       
       allUsers.forEach(user => {
+        // Display actual user name from database, fallback to "Anonymous User" if no name
+        const displayName = user.firstName || 'Anonymous User';
+        
         userDataMap.set(user.id, {
           user: {
             ...user,
+            displayName,
             isRealUser: isRealUser(user)
           },
           moodEntries: [],
