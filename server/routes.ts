@@ -1076,8 +1076,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Helper function to identify real vs demo users
       const isRealUser = (user: any) => {
         // Real users: Users who completed onboarding with actual names
-        if ((user.name && user.name.trim() && user.name !== 'New User' && user.name !== 'Demo') ||
-            (user.firstName && user.firstName.trim() && user.firstName !== 'New User' && user.firstName !== 'Demo' && user.firstName !== 'Wellness')) {
+        // Check new data structure (firstName/lastName)
+        if (user.firstName && user.firstName.trim() && 
+            user.firstName !== 'New User' && 
+            user.firstName !== 'Demo' && 
+            user.firstName !== 'Wellness') {
+          return true;
+        }
+        
+        // Check old data structure (name field)
+        if (user.name && user.name.trim() && 
+            user.name !== 'New User' && 
+            user.name !== 'Demo') {
+          return true;
+        }
+        
+        // Check for users with actual onboarding data (age, wellness goals, etc.)
+        if ((user.age && user.age.trim()) || 
+            (user.wellnessGoals && user.wellnessGoals.trim()) ||
+            (user.motivation && user.motivation.trim())) {
           return true;
         }
         
@@ -1096,29 +1113,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Generate proper display name from available user data
         let displayName = 'Anonymous User';
         
-        // Priority 1: Use firstName and lastName if available
-        if (user.firstName && user.firstName.trim() && user.firstName !== 'New User') {
+        // Priority 1: Use firstName and lastName if available (new data structure)
+        if (user.firstName && user.firstName.trim() && 
+            user.firstName !== 'New User' && 
+            user.firstName !== 'Demo' && 
+            user.firstName !== 'Wellness') {
           const lastName = user.lastName && user.lastName.trim() ? ` ${user.lastName}` : '';
           displayName = `${user.firstName}${lastName}`;
         }
-        // Priority 2: Use the 'name' field (onboarding data for older users)
-        else if (user.name && user.name.trim() && user.name !== 'New User') {
+        // Priority 2: Use the 'name' field (old data structure for onboarding users)
+        else if (user.name && user.name.trim() && 
+                 user.name !== 'New User' && 
+                 user.name !== 'Demo') {
           displayName = user.name;
         }
-        // Priority 3: Extract name from email if it's not a system email
-        else if (user.email && user.email.includes('@')) {
-          const emailName = user.email.split('@')[0];
-          if (!emailName.includes('user_') && !emailName.includes('mindease') && emailName !== 'demo') {
-            // Convert email username to more readable format
-            const cleanName = emailName.replace(/[0-9]/g, '').replace(/[._-]/g, ' ').trim();
-            displayName = cleanName || emailName;
+        // Priority 3: For demo users, create a readable identifier
+        else if (user.id) {
+          if (user.id.includes('user_')) {
+            const parts = user.id.split('_');
+            const userNum = parts[parts.length - 1].slice(0, 4);
+            displayName = `Demo User ${userNum}`;
+          } else if (user.id.includes('mindease_user_')) {
+            const parts = user.id.split('_');
+            const userNum = parts[parts.length - 1].slice(0, 4);
+            displayName = `Demo User ${userNum}`;
           }
-        }
-        // Priority 4: For system users, create a readable identifier
-        else if (user.id && user.id.includes('user_')) {
-          const parts = user.id.split('_');
-          const userNum = parts[parts.length - 1].slice(0, 4);
-          displayName = `User ${userNum}`;
         }
         
         userDataMap.set(user.id, {
