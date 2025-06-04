@@ -372,7 +372,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { name, age, wellnessGoals, preferredTime, motivation } = req.body;
       
-      console.log('Updating user profile:', { userId, name, age, wellnessGoals, preferredTime, motivation });
+      console.log('=== ONBOARDING DEBUG ===');
+      console.log('Full request body:', JSON.stringify(req.body, null, 2));
+      console.log('Extracted data:', { userId, name, age, wellnessGoals, preferredTime, motivation });
+      console.log('========================');
       
       // Update user with complete onboarding information
       const updatedUser = await storage.upsertUser({
@@ -1101,11 +1104,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
            user.name !== 'Demo')
         );
         
-        // Check if user has completed onboarding data
+        // Check if user has completed onboarding data - ALL fields required
         const hasOnboardingData = (
-          (user.age && user.age.trim()) || 
-          (user.wellnessGoals && user.wellnessGoals.trim()) ||
-          (user.motivation && user.motivation.trim()) ||
+          (user.age && user.age.trim()) && 
+          (user.wellnessGoals && user.wellnessGoals.trim()) &&
+          (user.motivation && user.motivation.trim()) &&
           (user.preferredTime && user.preferredTime.trim())
         );
         
