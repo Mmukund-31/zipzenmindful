@@ -256,7 +256,10 @@ export default function DatabaseAdmin() {
           <TabsContent value="users" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>All Users ({totalUsers})</CardTitle>
+                <CardTitle>Real Users ({users?.filter((u: any) => u.user?.isRealUser).length || 0})</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Users who completed onboarding with actual names. Demo users: {users?.filter((u: any) => !u.user?.isRealUser).length || 0}
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -275,19 +278,18 @@ export default function DatabaseAdmin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((userData: any, index: number) => (
-                        <TableRow key={userData.user?.id || index} className={userData.user?.isRealUser ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}>
+                      {users.filter((userData: any) => userData.user?.isRealUser).map((userData: any, index: number) => (
+                        <TableRow key={userData.user?.id || index} className="bg-green-50 border-green-200">
                           <TableCell className="font-mono text-xs">
                             <div className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${userData.user?.isRealUser ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                              <span className="w-2 h-2 rounded-full bg-green-500"></span>
                               {userData.user?.id || 'N/A'}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {getUserName(userData.user)}
-                              {userData.user?.isRealUser && <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-300">Real</Badge>}
-                              {!userData.user?.isRealUser && <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300">Demo</Badge>}
+                              <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-300">Real</Badge>
                             </div>
                           </TableCell>
                           <TableCell>{userData.user?.age || '-'}</TableCell>
