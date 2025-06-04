@@ -368,12 +368,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { name, age, wellnessGoals, preferredTime, motivation } = req.body;
       
-      // Update user with onboarding information
+      // Update user with complete onboarding information
       const updatedUser = await storage.upsertUser({
         id: userId,
-        email: `${userId}@mindease.app`,
-        firstName: name || 'User',
-        lastName: '',
+        firstName: name?.split(' ')[0] || name || 'User',
+        lastName: name?.split(' ').slice(1).join(' ') || '',
+        age: age || null,
+        wellnessGoals: Array.isArray(wellnessGoals) ? JSON.stringify(wellnessGoals) : wellnessGoals || null,
+        preferredTime: preferredTime || null,
+        motivation: motivation || null,
+        name: name || null, // Store in name field for backward compatibility
         profileImageUrl: null
       });
       
