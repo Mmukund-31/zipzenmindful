@@ -54,7 +54,7 @@ export const moodEntries = pgTable("mood_entries", {
 
 export const memories = pgTable("memories", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description"),
   imageUrl: text("image_url").notNull(),
@@ -65,7 +65,7 @@ export const memories = pgTable("memories", {
 
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   message: text("message").notNull(),
   isFromUser: boolean("is_from_user").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
@@ -73,7 +73,7 @@ export const chatMessages = pgTable("chat_messages", {
 
 export const gratitudeEntries = pgTable("gratitude_entries", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   date: timestamp("date").defaultNow(),
   timestamp: timestamp("timestamp").defaultNow(),
@@ -81,7 +81,7 @@ export const gratitudeEntries = pgTable("gratitude_entries", {
 
 export const challenges = pgTable("challenges", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   challengeId: varchar("challenge_id").notNull(),
   title: varchar("title").notNull(),
   description: text("description"),
@@ -98,7 +98,7 @@ export const challenges = pgTable("challenges", {
 export const challengeProgress = pgTable("challenge_progress", {
   id: serial("id").primaryKey(),
   challengeId: varchar("challenge_id").notNull(),
-  userId: varchar("user_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   completed: integer("completed").default(0),
   startDate: timestamp("start_date").defaultNow(),
   lastActivityDate: timestamp("last_activity_date"),

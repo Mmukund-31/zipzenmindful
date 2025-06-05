@@ -568,31 +568,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Mood tracking endpoints
-  app.post("/api/mood", requireAuth, async (req: any, res) => {
+  // Mood tracking endpoints - FIXED: Proper session-based authentication
+  app.post("/api/mood", async (req: any, res) => {
     try {
-      const userId = getCurrentUserId(req);
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
+      
       const moodData = insertMoodEntrySchema.parse({ ...req.body, userId });
       const moodEntry = await storage.createMoodEntry(moodData);
       res.json(moodEntry);
     } catch (error) {
+      console.error("Mood creation error:", error);
       res.status(400).json({ error: "Invalid mood data" });
     }
   });
 
-  app.get("/api/mood", requireAuth, async (req: any, res) => {
+  app.get("/api/mood", async (req: any, res) => {
     try {
-      const userId = getCurrentUserId(req);
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
+      
       const entries = await storage.getMoodEntriesByUser(userId);
       res.json(entries);
     } catch (error) {
+      console.error("Mood fetch error:", error);
       res.status(500).json({ error: "Failed to fetch mood entries" });
     }
   });
 
-  app.get("/api/mood/recent", requireAuth, async (req: any, res) => {
+  app.get("/api/mood/recent", async (req: any, res) => {
     try {
-      const userId = getCurrentUserId(req);
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
+      
       const entry = await storage.getRecentMoodEntry(userId);
       res.json(entry || null);
     } catch (error) {
@@ -600,10 +614,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Chat endpoints
-  app.post("/api/chat", requireAuth, async (req: any, res) => {
+  // Chat endpoints - FIXED: Proper session-based authentication
+  app.post("/api/chat", async (req: any, res) => {
     try {
-      const userId = getCurrentUserId(req);
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
+      
       const { message } = req.body;
       
       if (!message || typeof message !== 'string') {
@@ -637,27 +655,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/chat", requireAuth, async (req: any, res) => {
+  app.get("/api/chat", async (req: any, res) => {
     try {
-      const userId = getCurrentUserId(req);
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
+      
       const messages = await storage.getChatMessagesByUser(userId);
       res.json(messages);
     } catch (error) {
+      console.error("Chat fetch error:", error);
       res.status(500).json({ error: "Failed to fetch chat messages" });
     }
   });
 
-  // Memory endpoints
-  app.post("/api/memories", requireAuth, upload.single('image'), async (req: any, res) => {
+  // Memory endpoints - FIXED: Proper session-based authentication
+  app.post("/api/memories", upload.single('image'), async (req: any, res) => {
     try {
-      const userId = getCurrentUserId(req);
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
+
       if (!req.file) {
         return res.status(400).json({ error: "Image file is required" });
       }
 
       const { title, description, category } = req.body;
       
-      // Convert image to base64 for storage (in a real app, you'd upload to cloud storage)
+      // Convert image to base64 for storage
       const imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
       const memoryData = insertMemorySchema.parse({
@@ -677,9 +704,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/memories", requireAuth, async (req: any, res) => {
+  app.get("/api/memories", async (req: any, res) => {
     try {
-      const userId = getCurrentUserId(req);
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
+
       const { category } = req.query;
       let memories;
       
@@ -691,6 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(memories);
     } catch (error) {
+      console.error("Memory fetch error:", error);
       res.status(500).json({ error: "Failed to fetch memories" });
     }
   });
