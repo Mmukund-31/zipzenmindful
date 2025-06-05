@@ -50,33 +50,31 @@ function Router() {
     return `mindease_user_${hash.substring(0, 30)}`;
   };
 
-  // Initialize user session for completely isolated data storage
+  // Initialize user session for completely isolated data storage - FIXED
   const sessionInitMutation = useMutation({
     mutationFn: async () => {
-      // Always generate a unique device ID for this session
-      let uniqueDeviceId = localStorage.getItem('mindease_unique_device_id');
+      // Always generate a truly unique device ID for complete data isolation
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 15);
+      const uniqueDeviceId = `mindease_user_${timestamp}_${random}`;
       
-      // If no stored unique ID, create a new one (ensures complete data isolation)
-      if (!uniqueDeviceId || uniqueDeviceId === 'undefined') {
-        uniqueDeviceId = generateUniqueDeviceId();
-        localStorage.setItem('mindease_unique_device_id', uniqueDeviceId);
-        
-        // Create completely new user with this unique ID
-        return apiRequest("POST", "/api/auth/create-unique-user", { uniqueDeviceId });
-      } else {
-        // Use existing unique device ID to maintain user identity
-        return apiRequest("POST", "/api/auth/restore-user", { uniqueDeviceId });
-      }
+      console.log('=== CREATING NEW ISOLATED USER ===');
+      console.log('Generated unique ID:', uniqueDeviceId);
+      
+      // Always create a completely new user for each session to ensure isolation
+      localStorage.setItem('mindease_unique_device_id', uniqueDeviceId);
+      
+      return apiRequest("POST", "/api/auth/create-unique-user", { uniqueDeviceId });
     },
     onSuccess: (data: any) => {
       // Store the unique user session
       if (data.user?.id) {
         localStorage.setItem('mindease_current_user_id', data.user.id);
-        console.log('User session initialized for:', data.user.firstName || 'New User');
+        console.log('NEW ISOLATED USER CREATED:', data.user.id);
       }
     },
     onError: (error) => {
-      console.error('Failed to initialize unique user session:', error);
+      console.error('Failed to create isolated user session:', error);
     }
   });
 

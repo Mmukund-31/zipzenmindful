@@ -57,10 +57,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  // Authentication middleware - FIXED: Proper error handling and session management
+  // Authentication middleware - CRITICAL FIX: Only use session for user isolation
   const requireAuth = (req: any, res: any, next: any) => {
-    // Get user ID from session or headers
-    const userId = req.headers['x-user-id'] || req.session?.userId;
+    // ONLY use session userId - no headers to prevent data leakage
+    const userId = req.session?.userId;
+    
+    console.log('=== AUTH CHECK ===');
+    console.log('Session userId:', userId);
+    console.log('Session ID:', req.sessionID);
     
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required. Please log in.' });
@@ -71,9 +75,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   const getCurrentUserId = (req: any): string => {
-    const userId = req.userId || req.session?.userId || req.headers['x-user-id'];
+    // CRITICAL: Only use session-based userId for complete isolation
+    const userId = req.session?.userId;
+    
+    console.log('=== GET CURRENT USER ===');
+    console.log('Retrieved userId from session:', userId);
+    
     if (!userId) {
-      throw new Error('User ID not found in session or headers');
+      throw new Error('User ID not found in session - authentication required');
     }
     return userId;
   };
@@ -587,15 +596,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/mood", async (req: any, res) => {
     try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
-      }
+      const userId = getCurrentUserId(req);
+      
+      console.log('=== MOOD FETCH ===');
+      console.log('Fetching moods for userId:', userId);
       
       const entries = await storage.getMoodEntriesByUser(userId);
+      
+      console.log('Found mood entries:', entries.length);
       res.json(entries);
     } catch (error) {
       console.error("Mood fetch error:", error);
+      if (error.message?.includes('User ID not found')) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
       res.status(500).json({ error: "Failed to fetch mood entries" });
     }
   });
