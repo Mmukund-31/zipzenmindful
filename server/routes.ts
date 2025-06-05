@@ -577,19 +577,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Mood tracking endpoints - FIXED: Proper session-based authentication
+  // Mood tracking endpoints - CRITICAL FIX: Consistent authentication
   app.post("/api/mood", async (req: any, res) => {
     try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
-      }
+      const userId = getCurrentUserId(req);
+      
+      console.log('=== MOOD CREATE ===');
+      console.log('Creating mood for userId:', userId);
+      console.log('Mood data:', req.body);
       
       const moodData = insertMoodEntrySchema.parse({ ...req.body, userId });
       const moodEntry = await storage.createMoodEntry(moodData);
+      
+      console.log('Mood entry created:', moodEntry.id);
       res.json(moodEntry);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Mood creation error:", error);
+      if (error?.message?.includes('User ID not found')) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
       res.status(400).json({ error: "Invalid mood data" });
     }
   });
@@ -616,14 +622,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/mood/recent", async (req: any, res) => {
     try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
-      }
+      const userId = getCurrentUserId(req);
+      
+      console.log('=== RECENT MOOD FETCH ===');
+      console.log('Fetching recent mood for userId:', userId);
       
       const entry = await storage.getRecentMoodEntry(userId);
+      
+      console.log('Recent mood entry found:', entry ? 'yes' : 'no');
       res.json(entry || null);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Recent mood fetch error:", error);
+      if (error?.message?.includes('User ID not found')) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
       res.status(500).json({ error: "Failed to fetch recent mood" });
     }
   });
