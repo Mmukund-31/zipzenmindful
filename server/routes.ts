@@ -75,14 +75,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   const getCurrentUserId = (req: any): string => {
-    // CRITICAL: Only use session-based userId for complete isolation
-    const userId = req.session?.userId;
+    // Enhanced session-based userId retrieval with header fallback
+    let userId = req.session?.userId || req.headers['x-user-id'];
     
     console.log('=== GET CURRENT USER ===');
-    console.log('Retrieved userId from session:', userId);
+    console.log('Session userId:', req.session?.userId);
+    console.log('Header userId:', req.headers['x-user-id']);
+    console.log('Using userId:', userId);
     
     if (!userId) {
-      throw new Error('User ID not found in session - authentication required');
+      throw new Error('User ID not found in session or headers - authentication required');
     }
     return userId;
   };
@@ -291,6 +293,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Google auth error:', error);
       res.status(500).json({ error: 'Google authentication failed' });
+    }
+  });
+
+  // Establish stable session endpoint for comprehensive data persistence
+  app.post('/api/auth/establish-session', async (req: any, res) => {
+    try {
+      const { deviceId, fingerprint } = req.body;
+      
+      console.log('=== SESSION ESTABLISHMENT ===');
+      console.log('Device ID:', deviceId);
+      console.log('Fingerprint:', fingerprint);
+      
+      if (!deviceId) {
+        return res.status(400).json({ error: 'Device ID is required' });
+      }
+      
+      // Check if user exists with this device ID
+      let user = await storage.getUser(deviceId);
+      
+      if (user) {
+        // Restore existing user session
+        req.session.userId = deviceId;
+        console.log('EXISTING USER RESTORED:', deviceId);
+        res.json({ 
+          success: true, 
+          user,
+          isReturning: true,
+          message: `Welcome back ${user.firstName}! Your data is ready.`
+        });
+      } else {
+        // Create new stable user
+        user = await storage.upsertUser({
+          id: deviceId,
+          email: null,
+          firstName: 'New User',
+          lastName: '',
+          profileImageUrl: null
+        });
+        
+        req.session.userId = deviceId;
+        console.log('NEW STABLE USER CREATED:', deviceId);
+        res.json({ 
+          success: true, 
+          user,
+          isReturning: false,
+          message: 'Welcome! Your personalized wellness journey begins.'
+        });
+      }
+    } catch (error) {
+      console.error('Session establishment error:', error);
+      res.status(500).json({ error: 'Failed to establish session' });
+    }
+  });
+
+  // Simplified user management endpoints - REBUILT FROM SCRATCH
+  app.post('/api/user/create', async (req: any, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+      
+      console.log('=== CREATING NEW USER ===');
+      console.log('User ID:', userId);
+      
+      // Create new user in database
+      const user = await storage.upsertUser({
+        id: userId,
+        firstName: 'New User',
+        lastName: '',
+        email: null,
+        profileImageUrl: null
+      });
+      
+      // Set session for authentication
+      req.session.userId = userId;
+      
+      console.log('USER CREATED AND SESSION SET:', userId);
+      res.json({ success: true, userId, user });
+    } catch (error) {
+      console.error('User creation error:', error);
+      res.status(500).json({ error: 'Failed to create user' });
+    }
+  });
+
+  app.post('/api/user/verify-session', async (req: any, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+      
+      console.log('=== VERIFYING USER SESSION ===');
+      console.log('User ID:', userId);
+      
+      // Check if user exists
+      const user = await storage.getUser(userId);
+      
+      if (user) {
+        // Set session for existing user
+        req.session.userId = userId;
+        console.log('USER SESSION VERIFIED:', userId);
+        res.json({ success: true, userId, user });
+      } else {
+        console.log('USER NOT FOUND, CREATING NEW ONE');
+        // User doesn't exist, create new one
+        const newUser = await storage.upsertUser({
+          id: userId,
+          firstName: 'New User',
+          lastName: '',
+          email: null,
+          profileImageUrl: null
+        });
+        
+        req.session.userId = userId;
+        res.json({ success: true, userId, user: newUser });
+      }
+    } catch (error) {
+      console.error('Session verification error:', error);
+      res.status(500).json({ error: 'Failed to verify session' });
     }
   });
 

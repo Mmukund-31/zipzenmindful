@@ -26,76 +26,42 @@ import NotFound from "@/pages/not-found";
 
 
 function Router() {
-  // Create a truly unique device fingerprint for complete data isolation
-  const generateUniqueDeviceId = () => {
-    // Generate a stable device fingerprint using consistent data only
-    const deviceData = {
-      userAgent: navigator.userAgent,
-      language: navigator.language,
-      languages: navigator.languages?.join(',') || '',
-      platform: navigator.platform,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
-      memory: (navigator as any).deviceMemory || 'unknown',
-      hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
-      touchSupport: 'ontouchstart' in window,
-      // Use a stable canvas fingerprint
-      canvasStable: 'mindease_stable_canvas'
-    };
-    
-    // Create a unique hash from all device characteristics
-    const deviceString = JSON.stringify(deviceData);
-    const hash = btoa(deviceString).replace(/[^a-zA-Z0-9]/g, '');
-    
-    return `mindease_user_${hash.substring(0, 30)}`;
-  };
-
-  // Initialize stable user session with proper persistence - COMPREHENSIVE FIX
-  const sessionInitMutation = useMutation({
+  // Simplified stable user authentication - COMPLETELY REBUILT
+  const initializeUser = useMutation({
     mutationFn: async () => {
-      // Generate stable device fingerprint for consistent user identification
-      const deviceFingerprint = generateUniqueDeviceId();
-      let storedUserId = localStorage.getItem('mindease_current_user_id');
+      // Check if we have an existing user session
+      const existingUserId = localStorage.getItem('mindease_user_id');
       
-      // Always use device fingerprint as primary identifier for persistence
-      const stableUserId = storedUserId || deviceFingerprint;
-      
-      console.log('=== ESTABLISHING USER SESSION ===');
-      console.log('Device fingerprint:', deviceFingerprint);
-      console.log('Stored user ID:', storedUserId);
-      console.log('Using stable ID:', stableUserId);
-      
-      // Create or restore user with stable device-based ID
-      return apiRequest("POST", "/api/auth/establish-session", { 
-        deviceId: stableUserId,
-        fingerprint: deviceFingerprint 
-      });
+      if (existingUserId) {
+        console.log('Restoring user session:', existingUserId);
+        // Verify user exists and restore session
+        return apiRequest("POST", "/api/user/verify-session", { userId: existingUserId });
+      } else {
+        // Create new user with timestamp-based ID for uniqueness
+        const newUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        console.log('Creating new user:', newUserId);
+        return apiRequest("POST", "/api/user/create", { userId: newUserId });
+      }
     },
     onSuccess: (data: any) => {
-      // Ensure user session persistence
-      if (data.user?.id) {
-        localStorage.setItem('mindease_current_user_id', data.user.id);
-        localStorage.setItem('mindease_session_established', 'true');
-        console.log('STABLE SESSION ESTABLISHED:', data.user.id);
+      if (data.success && data.userId) {
+        localStorage.setItem('mindease_user_id', data.userId);
+        console.log('User session ready:', data.userId);
       }
     },
     onError: (error) => {
-      console.error('Session establishment failed:', error);
-      // Clear corrupted session data
-      localStorage.removeItem('mindease_current_user_id');
-      localStorage.removeItem('mindease_session_established');
+      console.error('User initialization failed:', error);
+      localStorage.removeItem('mindease_user_id');
     }
   });
 
   useEffect(() => {
-    // Initialize session when app loads
-    sessionInitMutation.mutate();
+    initializeUser.mutate();
   }, []);
 
-  // Check if user has completed onboarding (simplified logic)
+  // Check onboarding status
   const hasCompletedOnboarding = localStorage.getItem('wellness_onboarding_complete') === 'true';
 
-  // Redirect to onboarding if not completed
   if (!hasCompletedOnboarding) {
     return <Onboarding />;
   }
