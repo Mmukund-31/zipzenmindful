@@ -1320,7 +1320,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (a.isComplete !== b.isComplete) {
             return a.isComplete ? -1 : 1;
           }
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          const dateA = a.createdAt ? new Date(a.createdAt as any).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt as any).getTime() : 0;
+          return dateB - dateA;
         })
       });
     } catch (error) {
