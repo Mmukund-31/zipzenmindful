@@ -26,27 +26,33 @@ import NotFound from "@/pages/not-found";
 
 
 function Router() {
-  // Simplified stable user authentication - COMPLETELY REBUILT
+  // Enhanced persistent user authentication system
   const initializeUser = useMutation({
     mutationFn: async () => {
-      // Check if we have an existing user session
+      // Check for existing user ID in localStorage
       const existingUserId = localStorage.getItem('mindease_user_id');
       
       if (existingUserId) {
         console.log('Restoring user session:', existingUserId);
-        // Verify user exists and restore session
+        // Verify existing user and restore session
         return apiRequest("POST", "/api/user/verify-session", { userId: existingUserId });
       } else {
-        // Create new user with timestamp-based ID for uniqueness
+        // Create new user with unique timestamp-based ID
         const newUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         console.log('Creating new user:', newUserId);
+        // Store immediately to prevent duplicate creation
+        localStorage.setItem('mindease_user_id', newUserId);
         return apiRequest("POST", "/api/user/create", { userId: newUserId });
       }
     },
     onSuccess: (data: any) => {
       if (data.success && data.userId) {
+        // Ensure userId is stored in localStorage
         localStorage.setItem('mindease_user_id', data.userId);
-        console.log('User session ready:', data.userId);
+        console.log('User session established:', data.userId);
+        
+        // Force cache invalidation to refresh all queries with new auth
+        queryClient.invalidateQueries();
       }
     },
     onError: (error) => {

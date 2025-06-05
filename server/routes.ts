@@ -75,8 +75,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   const getCurrentUserId = (req: any): string => {
-    // Enhanced session-based userId retrieval with header fallback
-    let userId = req.session?.userId || req.headers['x-user-id'];
+    // Try session first, then headers, and establish session from headers if needed
+    let userId = req.session?.userId;
+    
+    if (!userId && req.headers['x-user-id']) {
+      userId = req.headers['x-user-id'];
+      // Establish session from header authentication
+      req.session.userId = userId;
+    }
     
     console.log('=== GET CURRENT USER ===');
     console.log('Session userId:', req.session?.userId);
@@ -344,6 +350,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Session establishment error:', error);
       res.status(500).json({ error: 'Failed to establish session' });
+    }
+  });
+
+  // Session verification endpoint for persistent user identification
+  app.post('/api/user/verify-session', async (req: any, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+      
+      console.log('=== VERIFYING USER SESSION ===');
+      console.log('User ID:', userId);
+      
+      // Check if user exists in database
+      const existingUser = await storage.getUser(userId);
+      
+      if (existingUser) {
+        // Restore session for existing user
+        req.session.userId = userId;
+        console.log('SESSION RESTORED FOR EXISTING USER:', userId);
+        res.json({ 
+          success: true, 
+          userId,
+          user: existingUser,
+          isReturning: true 
+        });
+      } else {
+        // User doesn't exist, create new one
+        const user = await storage.upsertUser({
+          id: userId,
+          email: null,
+          firstName: 'New User',
+          lastName: '',
+          profileImageUrl: null
+        });
+        
+        req.session.userId = userId;
+        console.log('NEW USER CREATED WITH EXISTING ID:', userId);
+        res.json({ 
+          success: true, 
+          userId,
+          user,
+          isReturning: false 
+        });
+      }
+    } catch (error) {
+      console.error('Session verification error:', error);
+      res.status(500).json({ error: 'Failed to verify session' });
     }
   });
 
