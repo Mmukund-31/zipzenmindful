@@ -44,7 +44,7 @@ export const users = pgTable("users", {
 
 export const moodEntries = pgTable("mood_entries", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   mood: text("mood").notNull(), // 'happy', 'sad', 'anxious', 'calm', 'excited'
   emoji: text("emoji").notNull(),
   note: text("note"),

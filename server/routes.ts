@@ -57,22 +57,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  // Authentication middleware
+  // Authentication middleware - FIXED: Proper error handling and session management
   const requireAuth = (req: any, res: any, next: any) => {
-    // Only create new session if no existing session and no user header provided
-    if (!req.session.userId && !req.headers['x-user-id']) {
-      // Create a consistent user ID that persists across sessions
-      const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substr(2, 9);
-      req.session.userId = `user_${timestamp}_${randomId}`;
+    // Get user ID from session or headers
+    const userId = req.headers['x-user-id'] || req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required. Please log in.' });
     }
-    // Prefer user header over session for authenticated users
-    req.userId = req.headers['x-user-id'] || req.session.userId;
+    
+    req.userId = userId;
     next();
   };
 
   const getCurrentUserId = (req: any): string => {
-    return req.userId || req.session?.userId;
+    const userId = req.userId || req.session?.userId || req.headers['x-user-id'];
+    if (!userId) {
+      throw new Error('User ID not found in session or headers');
+    }
+    return userId;
   };
 
   // Onboarding data endpoint

@@ -85,14 +85,11 @@ function Router() {
     sessionInitMutation.mutate();
   }, []);
 
-  // Check Firebase auth status for onboarding requirements
-  const { isAuthenticated, needsOnboarding } = useAuth();
-
-  // Check if user has completed onboarding
+  // Check if user has completed onboarding (simplified logic)
   const hasCompletedOnboarding = localStorage.getItem('wellness_onboarding_complete') === 'true';
 
-  // Firebase users who need onboarding OR users who haven't completed onboarding locally
-  if (!hasCompletedOnboarding || needsOnboarding) {
+  // Redirect to onboarding if not completed
+  if (!hasCompletedOnboarding) {
     return <Onboarding />;
   }
 
