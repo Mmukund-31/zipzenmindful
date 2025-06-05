@@ -91,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/onboarding/complete', async (req: any, res) => {
     try {
       const { name, age, wellnessGoals, preferredTime, motivation } = req.body;
-      const userId = req.headers['x-user-id'] || getCurrentUserId(req);
+      const userId = getCurrentUserId(req);
       
       if (!userId || userId === 'undefined') {
         return res.status(400).json({ error: 'Valid user ID is required' });

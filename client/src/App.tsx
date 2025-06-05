@@ -50,36 +50,46 @@ function Router() {
     return `mindease_user_${hash.substring(0, 30)}`;
   };
 
-  // Initialize user session for completely isolated data storage - FIXED
+  // Initialize user session with persistence for data storage - FIXED
   const sessionInitMutation = useMutation({
     mutationFn: async () => {
-      // Always generate a truly unique device ID for complete data isolation
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(2, 15);
-      const uniqueDeviceId = `mindease_user_${timestamp}_${random}`;
+      // Check if user already exists in localStorage
+      let existingUserId = localStorage.getItem('mindease_current_user_id');
       
-      console.log('=== CREATING NEW ISOLATED USER ===');
-      console.log('Generated unique ID:', uniqueDeviceId);
-      
-      // Always create a completely new user for each session to ensure isolation
-      localStorage.setItem('mindease_unique_device_id', uniqueDeviceId);
-      
-      return apiRequest("POST", "/api/auth/create-unique-user", { uniqueDeviceId });
+      if (existingUserId) {
+        console.log('=== RESTORING EXISTING USER ===');
+        console.log('Found existing user ID:', existingUserId);
+        
+        // Restore existing user session
+        return apiRequest("POST", "/api/auth/restore-user-session", { userId: existingUserId });
+      } else {
+        // Create new user only if none exists
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 15);
+        const uniqueDeviceId = `mindease_user_${timestamp}_${random}`;
+        
+        console.log('=== CREATING NEW USER ===');
+        console.log('Generated unique ID:', uniqueDeviceId);
+        
+        localStorage.setItem('mindease_unique_device_id', uniqueDeviceId);
+        
+        return apiRequest("POST", "/api/auth/create-unique-user", { uniqueDeviceId });
+      }
     },
     onSuccess: (data: any) => {
-      // Store the unique user session
+      // Store the user session for persistence
       if (data.user?.id) {
         localStorage.setItem('mindease_current_user_id', data.user.id);
-        console.log('NEW ISOLATED USER CREATED:', data.user.id);
+        console.log('USER SESSION ESTABLISHED:', data.user.id);
       }
     },
     onError: (error) => {
-      console.error('Failed to create isolated user session:', error);
+      console.error('Failed to establish user session:', error);
     }
   });
 
   useEffect(() => {
-    // Initialize session when app loads to ensure personalized data storage
+    // Initialize session when app loads
     sessionInitMutation.mutate();
   }, []);
 
