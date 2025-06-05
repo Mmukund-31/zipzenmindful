@@ -326,12 +326,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { uniqueDeviceId } = req.body;
       
+      console.log('=== USER RESTORATION DEBUG ===');
+      console.log('Received deviceId:', uniqueDeviceId);
+      console.log('Request body:', JSON.stringify(req.body, null, 2));
+      
       if (!uniqueDeviceId) {
+        console.log('ERROR: No device ID provided');
         return res.status(400).json({ error: 'Unique device ID is required' });
       }
       
       // Look for exact user match with this unique device ID
       const user = await storage.getUser(uniqueDeviceId);
+      console.log('Found existing user:', user ? 'YES' : 'NO');
+      if (user) {
+        console.log('User details:', { id: user.id, firstName: user.firstName, hasOnboarding: !!user.age });
+      }
       
       if (user) {
         req.session.userId = uniqueDeviceId;
@@ -341,14 +350,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `Welcome back! Your personal data has been restored.`
         });
       } else {
+        console.log('Creating new user with deviceId:', uniqueDeviceId);
         // If user doesn't exist, create new one (no email for real users)
         const newUser = await storage.upsertUser({
           id: uniqueDeviceId,
-          email: null, // No email to classify as real user
           firstName: 'New User',
           lastName: '',
           profileImageUrl: null
         });
+        
+        console.log('New user created:', { id: newUser.id, firstName: newUser.firstName });
         
         req.session.userId = uniqueDeviceId;
         res.json({ 
@@ -357,6 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `Welcome! Your isolated wellness journey begins now.`
         });
       }
+      console.log('=== END RESTORATION DEBUG ===');
     } catch (error) {
       console.error('Restore user error:', error);
       res.status(500).json({ error: 'Failed to restore user' });
