@@ -1317,12 +1317,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({
-        // Real user counts
-        totalUsers: realUsers.length,
-        totalMoodEntries: realUserMoodEntries.length,
-        totalMemories: realUserMemories.length,
-        totalChatMessages: realUserChatMessages.length,
-        totalGratitudeEntries: realUserGratitudeEntries.length,
+        // FIXED: Show actual database totals, not just real user counts
+        totalUsers: allUsers.length,
+        totalMoodEntries: allMoodEntries.length,
+        totalMemories: allMemories.length,
+        totalChatMessages: allChatMessages.length,
+        totalGratitudeEntries: allGratitudeEntries.length,
         
         // User category data
         realUsers: realUserData,
@@ -1334,7 +1334,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           realCount: realUsers.length,
           incompleteCount: incompleteUsers.length,
           demoCount: demoUsers.length,
-          totalCount: allUsers.length
+          totalCount: allUsers.length,
+          // Additional stats for verification
+          realUserMoodEntries: realUserMoodEntries.length,
+          realUserMemories: realUserMemories.length,
+          realUserChats: realUserChatMessages.length,
+          realUserGratitude: realUserGratitudeEntries.length
         },
         
         users: usersWithData.sort((a, b) => {
