@@ -1276,210 +1276,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Database admin endpoint for viewing all user data
+  // Clean admin database endpoint - onboarding data only
   app.get("/api/admin/database", async (req: any, res) => {
     try {
-      // Get all data from database
-      const [
-        allUsers,
-        allMoodEntries,
-        allMemories,
-        allChatMessages,
-        allGratitudeEntries
-      ] = await Promise.all([
-        db.select().from(users),
-        db.select().from(moodEntries).orderBy(desc(moodEntries.timestamp)),
-        db.select().from(memories).orderBy(desc(memories.timestamp)),
-        db.select().from(chatMessages).orderBy(desc(chatMessages.timestamp)),
-        db.select().from(gratitudeEntries).orderBy(desc(gratitudeEntries.timestamp))
-      ]);
+      // Get only users for onboarding analysis
+      const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
 
-      // Helper function to identify real users (completed onboarding) - RESTORED
-      const isRealUser = (user: any) => {
-        // Real users = those who completed ALL onboarding fields
-        const hasCompleteOnboarding = (
-          user.age && user.age.trim() && 
-          user.wellnessGoals && user.wellnessGoals.trim() &&
-          user.motivation && user.motivation.trim() &&
-          user.preferredTime && user.preferredTime.trim()
-        );
-        
-        return hasCompleteOnboarding;
+      // Simple onboarding completion check
+      const isOnboardingComplete = (user: any) => {
+        return !!(user.age && user.wellnessGoals && user.motivation && user.preferredTime);
       };
 
-      // Helper function to identify incomplete users (have name but incomplete onboarding) - FIXED
-      const isIncompleteUser = (user: any) => {
-        // Skip users who already have complete onboarding
-        if (isRealUser(user)) {
-          return false;
-        }
-        
-        // Has a real name in either firstName or name field
-        const hasValidName = (
-          (user.firstName && user.firstName.trim() && 
-           user.firstName !== 'New User' && 
-           user.firstName !== 'Demo' && 
-           user.firstName !== 'Wellness') ||
-          (user.name && user.name.trim() && 
-           user.name !== 'New User' && 
-           user.name !== 'Demo')
-        );
-        
-        // Missing any required onboarding field means incomplete
-        const hasIncompleteOnboarding = (
-          !user.age || !user.age.trim() || 
-          !user.wellnessGoals || !user.wellnessGoals.trim() ||
-          !user.motivation || !user.motivation.trim() ||
-          !user.preferredTime || !user.preferredTime.trim()
-        );
-        
-        return hasValidName && hasIncompleteOnboarding;
-      };
+      // Clean user reports focusing only on onboarding data
+      const onboardingReports = allUsers.map(user => ({
+        id: user.id,
+        firstName: user.firstName || 'Unnamed',
+        lastName: user.lastName || '',
+        email: user.email || 'No email',
+        isComplete: isOnboardingComplete(user),
+        onboardingData: {
+          age: user.age || 'Not provided',
+          wellnessGoals: user.wellnessGoals || 'Not provided',
+          motivation: user.motivation || 'Not provided',
+          preferredTime: user.preferredTime || 'Not provided'
+        },
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }));
 
-      // Separate users into categories
-      const realUsers = allUsers.filter(isRealUser);
-      const incompleteUsers = allUsers.filter(user => !isRealUser(user) && isIncompleteUser(user));
-      const demoUsers = allUsers.filter(user => !isRealUser(user) && !isIncompleteUser(user));
+      // Count completion status
+      const completeUsers = onboardingReports.filter(u => u.isComplete);
+      const incompleteUsers = onboardingReports.filter(u => !u.isComplete);
 
-      // Group data by user for easier viewing
-      const userDataMap = new Map();
-      
-      allUsers.forEach(user => {
-        // Generate proper display name from available user data
-        let displayName = 'Anonymous User';
-        
-        // Priority 1: Use firstName and lastName if available (new data structure)
-        if (user.firstName && user.firstName.trim() && 
-            user.firstName !== 'New User' && 
-            user.firstName !== 'Demo' && 
-            user.firstName !== 'Wellness') {
-          const lastName = user.lastName && user.lastName.trim() ? ` ${user.lastName}` : '';
-          displayName = `${user.firstName}${lastName}`;
-        }
-        // Priority 2: Use the 'name' field (old data structure for onboarding users)
-        else if (user.name && user.name.trim() && 
-                 user.name !== 'New User' && 
-                 user.name !== 'Demo') {
-          displayName = user.name;
-        }
-        // Priority 3: For demo users, create a readable identifier
-        else if (user.id) {
-          if (user.id.includes('user_')) {
-            const parts = user.id.split('_');
-            const userNum = parts[parts.length - 1].slice(0, 4);
-            displayName = `Demo User ${userNum}`;
-          } else if (user.id.includes('mindease_user_')) {
-            const parts = user.id.split('_');
-            const userNum = parts[parts.length - 1].slice(0, 4);
-            displayName = `Demo User ${userNum}`;
-          }
-        }
-        
-        userDataMap.set(user.id, {
-          user: {
-            ...user,
-            displayName,
-            isRealUser: isRealUser(user)
-          },
-          moodEntries: [],
-          memories: [],
-          chatMessages: [],
-          gratitudeEntries: []
-        });
-      });
-
-      // Add mood entries
-      allMoodEntries.forEach(entry => {
-        if (userDataMap.has(entry.userId)) {
-          userDataMap.get(entry.userId).moodEntries.push(entry);
-        }
-      });
-
-      // Add memories
-      allMemories.forEach(memory => {
-        if (userDataMap.has(memory.userId)) {
-          userDataMap.get(memory.userId).memories.push(memory);
-        }
-      });
-
-      // Add chat messages
-      allChatMessages.forEach(message => {
-        if (userDataMap.has(message.userId)) {
-          userDataMap.get(message.userId).chatMessages.push(message);
-        }
-      });
-
-      // Add gratitude entries
-      allGratitudeEntries.forEach(entry => {
-        if (userDataMap.has(entry.userId)) {
-          userDataMap.get(entry.userId).gratitudeEntries.push(entry);
-        }
-      });
-
-      const usersWithData = Array.from(userDataMap.values());
-
-      // Production logging
-      console.log(`Database Admin: ${allUsers.length} total users (Real: ${realUsers.length}, Incomplete: ${incompleteUsers.length}, Demo: ${demoUsers.length})`);
-
-      // Get counts for different user types
-      const realUserData = usersWithData.filter(userData => realUsers.some(ru => ru.id === userData.user.id));
-      const incompleteUserData = usersWithData.filter(userData => incompleteUsers.some(iu => iu.id === userData.user.id));
-      const demoUserData = usersWithData.filter(userData => demoUsers.some(du => du.id === userData.user.id));
-      const realUserMoodEntries = allMoodEntries.filter(entry => {
-        const userData = userDataMap.get(entry.userId);
-        return userData && userData.user.isRealUser;
-      });
-      const realUserMemories = allMemories.filter(memory => {
-        const userData = userDataMap.get(memory.userId);
-        return userData && userData.user.isRealUser;
-      });
-      const realUserChatMessages = allChatMessages.filter(message => {
-        const userData = userDataMap.get(message.userId);
-        return userData && userData.user.isRealUser;
-      });
-      const realUserGratitudeEntries = allGratitudeEntries.filter(entry => {
-        const userData = userDataMap.get(entry.userId);
-        return userData && userData.user.isRealUser;
-      });
+      console.log(`Clean Admin: ${allUsers.length} total users (Complete: ${completeUsers.length}, Incomplete: ${incompleteUsers.length})`);
 
       res.json({
-        // FIXED: Show actual database totals, not just real user counts
         totalUsers: allUsers.length,
-        totalMoodEntries: allMoodEntries.length,
-        totalMemories: allMemories.length,
-        totalChatMessages: allChatMessages.length,
-        totalGratitudeEntries: allGratitudeEntries.length,
-        
-        // User category data
-        realUsers: realUserData,
-        incompleteUsers: incompleteUserData,
-        demoUsers: demoUserData,
-        
-        // Stats for all categories
-        stats: {
-          realCount: realUsers.length,
-          incompleteCount: incompleteUsers.length,
-          demoCount: demoUsers.length,
-          totalCount: allUsers.length,
-          // Additional stats for verification
-          realUserMoodEntries: realUserMoodEntries.length,
-          realUserMemories: realUserMemories.length,
-          realUserChats: realUserChatMessages.length,
-          realUserGratitude: realUserGratitudeEntries.length
-        },
-        
-        users: usersWithData.sort((a, b) => {
-          return new Date(b.user.createdAt).getTime() - new Date(a.user.createdAt).getTime();
-        }),
-        recentActivity: {
-          recentMoods: allMoodEntries.slice(0, 20),
-          recentMemories: allMemories.slice(0, 10),
-          recentChat: allChatMessages.slice(0, 10)
-        }
+        completedOnboarding: completeUsers.length,
+        incompleteOnboarding: incompleteUsers.length,
+        completionRate: allUsers.length ? Math.round((completeUsers.length / allUsers.length) * 100) : 0,
+        users: onboardingReports.sort((a, b) => {
+          // Sort by completion status first, then by creation date
+          if (a.isComplete !== b.isComplete) {
+            return a.isComplete ? -1 : 1;
+          }
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        })
       });
     } catch (error) {
-      console.error("Database admin error:", error);
-      res.status(500).json({ error: "Failed to fetch database data" });
+      console.error("Admin database error:", error);
+      res.status(500).json({ error: "Failed to fetch onboarding data" });
     }
   });
 
