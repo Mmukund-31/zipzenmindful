@@ -605,9 +605,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Found mood entries:', entries.length);
       res.json(entries);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Mood fetch error:", error);
-      if (error.message?.includes('User ID not found')) {
+      if (error?.message?.includes('User ID not found')) {
         return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
       }
       res.status(500).json({ error: "Failed to fetch mood entries" });
@@ -628,13 +628,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Chat endpoints - FIXED: Proper session-based authentication
+  // Chat endpoints - CRITICAL FIX: Secure session-based authentication
   app.post("/api/chat", async (req: any, res) => {
     try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
-      }
+      const userId = getCurrentUserId(req);
+      
+      console.log('=== CHAT POST ===');
+      console.log('Creating chat for userId:', userId);
       
       const { message } = req.body;
       
@@ -662,21 +662,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isFromUser: false
       });
 
+      console.log('Chat messages saved for user:', userId);
       res.json({ response: aiResponse, messageId: aiMessage.id });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat error:", error);
+      if (error?.message?.includes('User ID not found')) {
+        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
+      }
       res.status(500).json({ error: "Failed to process chat message" });
     }
   });
 
   app.get("/api/chat", async (req: any, res) => {
     try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
-      }
+      const userId = getCurrentUserId(req);
+      
+      console.log('=== CHAT FETCH ===');
+      console.log('Fetching chats for userId:', userId);
       
       const messages = await storage.getChatMessagesByUser(userId);
+      
+      console.log('Found chat messages:', messages.length);
       res.json(messages);
     } catch (error) {
       console.error("Chat fetch error:", error);
