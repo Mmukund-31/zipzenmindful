@@ -61,7 +61,7 @@ function Router() {
         console.log('Found existing user ID:', existingUserId);
         
         // Restore existing user session
-        return apiRequest("POST", "/api/auth/restore-user-session", { userId: existingUserId });
+        return apiRequest("POST", "/api/auth/restore-user", { uniqueDeviceId: existingUserId });
       } else {
         // Create new user only if none exists
         const timestamp = Date.now();
