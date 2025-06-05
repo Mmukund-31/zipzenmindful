@@ -573,7 +573,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get userId from deviceId in request body (primary) or session (fallback)
       let userId = req.body.deviceId || req.session.userId;
       
+      console.log('=== ONBOARDING PROFILE UPDATE ===');
+      console.log('Request deviceId:', req.body.deviceId);
+      console.log('Session userId:', req.session.userId);
+      console.log('Final userId:', userId);
+      
       if (!userId) {
+        console.log('ERROR: No user ID found');
         return res.status(401).json({ error: 'No device ID or user ID provided. Please refresh and try again.' });
       }
       

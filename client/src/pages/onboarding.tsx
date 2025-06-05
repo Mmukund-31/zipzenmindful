@@ -62,13 +62,17 @@ export default function Onboarding() {
 
   const handleComplete = () => {
     if (canComplete) {
-      // Get the device ID from localStorage (consistent with App.tsx)
-      const deviceId = localStorage.getItem('mindease_unique_device_id');
+      // Get the user ID from localStorage (consistent with App.tsx authentication)
+      const deviceId = localStorage.getItem('mindease_user_id');
       
       if (!deviceId) {
-        alert('Device ID not found. Please refresh the page and try again.');
-        return;
+        // Fallback: generate a new device ID if none exists
+        const newDeviceId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('mindease_user_id', newDeviceId);
+        console.log('Generated new device ID for onboarding:', newDeviceId);
       }
+      
+      const finalDeviceId = deviceId || localStorage.getItem('mindease_user_id');
       
       const userData = {
         name,
@@ -76,7 +80,7 @@ export default function Onboarding() {
         wellnessGoals: selectedGoals,
         preferredTime,
         motivation,
-        deviceId, // Include device ID for proper user identification
+        deviceId: finalDeviceId, // Include device ID for proper user identification
         onboardingDate: new Date().toISOString()
       };
       
