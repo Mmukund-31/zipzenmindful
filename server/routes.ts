@@ -1138,21 +1138,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         db.select().from(gratitudeEntries).orderBy(desc(gratitudeEntries.timestamp))
       ]);
 
-      // Helper function to identify real users (completed onboarding)
+      // Helper function to identify real users (completed onboarding) - FIXED
       const isRealUser = (user: any) => {
-        // Real users = those who completed ALL onboarding fields
-        // regardless of name source or email presence
-        return (
+        // Real users = those who completed ALL onboarding fields regardless of firstName
+        const hasCompleteOnboarding = (
           user.age && user.age.trim() && 
           user.wellnessGoals && user.wellnessGoals.trim() &&
           user.motivation && user.motivation.trim() &&
           user.preferredTime && user.preferredTime.trim()
         );
+        
+        console.log(`User ${user.id} classification:`, {
+          firstName: user.firstName,
+          name: user.name,
+          hasAge: !!user.age,
+          hasGoals: !!user.wellnessGoals,
+          hasMotivation: !!user.motivation,
+          hasTime: !!user.preferredTime,
+          isComplete: hasCompleteOnboarding
+        });
+        
+        return hasCompleteOnboarding;
       };
 
-      // Helper function to identify incomplete users (have name but incomplete onboarding)
+      // Helper function to identify incomplete users (have name but incomplete onboarding) - FIXED
       const isIncompleteUser = (user: any) => {
-        // Has a real name but missing some onboarding fields
+        // Skip users who already have complete onboarding
+        if (isRealUser(user)) {
+          return false;
+        }
+        
+        // Has a real name in either firstName or name field
         const hasValidName = (
           (user.firstName && user.firstName.trim() && 
            user.firstName !== 'New User' && 
