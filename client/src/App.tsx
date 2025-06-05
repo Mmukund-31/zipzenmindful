@@ -50,41 +50,40 @@ function Router() {
     return `mindease_user_${hash.substring(0, 30)}`;
   };
 
-  // Initialize user session with persistence for data storage - FIXED
+  // Initialize stable user session with proper persistence - COMPREHENSIVE FIX
   const sessionInitMutation = useMutation({
     mutationFn: async () => {
-      // Check if user already exists in localStorage
-      let existingUserId = localStorage.getItem('mindease_current_user_id');
+      // Generate stable device fingerprint for consistent user identification
+      const deviceFingerprint = generateUniqueDeviceId();
+      let storedUserId = localStorage.getItem('mindease_current_user_id');
       
-      if (existingUserId) {
-        console.log('=== RESTORING EXISTING USER ===');
-        console.log('Found existing user ID:', existingUserId);
-        
-        // Restore existing user session
-        return apiRequest("POST", "/api/auth/restore-user", { uniqueDeviceId: existingUserId });
-      } else {
-        // Create new user only if none exists
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2, 15);
-        const uniqueDeviceId = `mindease_user_${timestamp}_${random}`;
-        
-        console.log('=== CREATING NEW USER ===');
-        console.log('Generated unique ID:', uniqueDeviceId);
-        
-        localStorage.setItem('mindease_unique_device_id', uniqueDeviceId);
-        
-        return apiRequest("POST", "/api/auth/create-unique-user", { uniqueDeviceId });
-      }
+      // Always use device fingerprint as primary identifier for persistence
+      const stableUserId = storedUserId || deviceFingerprint;
+      
+      console.log('=== ESTABLISHING USER SESSION ===');
+      console.log('Device fingerprint:', deviceFingerprint);
+      console.log('Stored user ID:', storedUserId);
+      console.log('Using stable ID:', stableUserId);
+      
+      // Create or restore user with stable device-based ID
+      return apiRequest("POST", "/api/auth/establish-session", { 
+        deviceId: stableUserId,
+        fingerprint: deviceFingerprint 
+      });
     },
     onSuccess: (data: any) => {
-      // Store the user session for persistence
+      // Ensure user session persistence
       if (data.user?.id) {
         localStorage.setItem('mindease_current_user_id', data.user.id);
-        console.log('USER SESSION ESTABLISHED:', data.user.id);
+        localStorage.setItem('mindease_session_established', 'true');
+        console.log('STABLE SESSION ESTABLISHED:', data.user.id);
       }
     },
     onError: (error) => {
-      console.error('Failed to establish user session:', error);
+      console.error('Session establishment failed:', error);
+      // Clear corrupted session data
+      localStorage.removeItem('mindease_current_user_id');
+      localStorage.removeItem('mindease_session_established');
     }
   });
 
