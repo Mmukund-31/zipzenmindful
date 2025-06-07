@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Send, Mic, MicOff, Volume2, VolumeX, Bot, User } from "lucide-react";
+import { Send, Mic, MicOff, Volume2, VolumeX, Bot, User, Globe, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -218,7 +219,7 @@ export default function Chat() {
 
   return (
     <div className="h-screen flex flex-col pb-16 sm:pb-20 max-w-4xl mx-auto">
-      {/* Chat Header */}
+      {/* Enhanced Multilingual Chat Header */}
       <div className="bg-white dark:bg-gray-950 border-b border-border p-3 sm:p-4 flex items-center justify-between">
         <div className="flex items-center space-x-2 sm:space-x-3">
           <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
@@ -228,19 +229,39 @@ export default function Chat() {
             <h3 className="text-sm sm:text-base font-medium text-foreground">MindEase Assistant</h3>
             <div className="flex items-center text-xs text-green-600">
               <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse-gentle"></span>
-              Online
+              Multilingual Support Active
             </div>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleVoice}
-          className="w-8 h-8 sm:w-10 sm:h-10 p-0"
-          title={voiceEnabled ? "Disable voice" : "Enable voice"}
-        >
-          {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-        </Button>
+        
+        <div className="flex items-center space-x-2">
+          {/* Language Selector */}
+          <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+            <SelectTrigger className="w-20 h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {supportedLanguages.map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  <span className="flex items-center space-x-1">
+                    <span>{lang.flag}</span>
+                    <span className="hidden sm:inline">{lang.name}</span>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleVoice}
+            className="w-8 h-8 sm:w-10 sm:h-10 p-0"
+            title={voiceEnabled ? "Disable voice" : "Enable voice"}
+          >
+            {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </Button>
+        </div>
       </div>
 
       {/* Chat Messages */}
@@ -381,16 +402,16 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Quick Responses */}
+        {/* Multilingual Quick Responses */}
         <div className="flex space-x-2 overflow-x-auto pb-1 scrollbar-hide">
-          {quickResponses.map((response, index) => (
+          {multilingualQuickResponses.map((responseObj, index) => (
             <Badge
               key={index}
               variant="secondary"
               className="cursor-pointer hover:bg-secondary/80 transition-colors flex-shrink-0"
-              onClick={() => handleQuickResponse(response)}
+              onClick={() => handleQuickResponse(responseObj[selectedLanguage as keyof typeof responseObj] || responseObj.en)}
             >
-              {response}
+              {responseObj[selectedLanguage as keyof typeof responseObj] || responseObj.en}
             </Badge>
           ))}
         </div>
