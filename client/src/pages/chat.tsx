@@ -10,23 +10,66 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 const multilingualQuickResponses = [
-  { en: "I'm feeling anxious", es: "Me siento ansioso", fr: "Je me sens anxieux", hi: "मैं चिंतित महसूस कर रहा हूं" },
-  { en: "Need motivation", es: "Necesito motivación", fr: "J'ai besoin de motivation", hi: "प्रेरणा चाहिए" },
-  { en: "Tell me a joke", es: "Cuéntame un chiste", fr: "Raconte-moi une blague", hi: "मुझे एक जोक सुनाओ" },
-  { en: "Help me relax", es: "Ayúdame a relajarme", fr: "Aide-moi à me détendre", hi: "आराम करने में मदद करो" },
+  { 
+    en: "I'm feeling anxious", hi: "मैं चिंतित महसूस कर रहा हूं", 
+    bn: "আমি উদ্বিগ্ন বোধ করছি", ta: "நான் கவலையாக உணர்கிறேன்", 
+    te: "నేను ఆందోళనగా అనిపిస్తుంది", ml: "എനിക്ക് ഉത്കണ്ഠ തോന്നുന്നു",
+    kn: "ನಾನು ಚಿಂತೆಯಿಂದ ಭಾವಿಸುತ್ತಿದ್ದೇನೆ", gu: "મને ચિંતા લાગી રહી છે",
+    mr: "मला चिंता वाटत आहे", pa: "ਮੈਂ ਚਿੰਤਾ ਮਹਿਸੂਸ ਕਰ ਰਿਹਾ ਹਾਂ",
+    or: "ମୁଁ ଚିନ୍ତିତ ଅନୁଭବ କରୁଛି", as: "মই দুঃচিন্তিত অনুভব কৰিছো"
+  },
+  { 
+    en: "Need motivation", hi: "प्रेरणा चाहिए", 
+    bn: "অনুপ্রেরণা দরকার", ta: "உந்துதல் தேவை", 
+    te: "ప్రేరణ అవసరం", ml: "പ്രചോദനം വേണം",
+    kn: "ಪ್ರೇರಣೆ ಬೇಕು", gu: "પ્રેરણાની જરૂર છે",
+    mr: "प्रेरणा हवी", pa: "ਪ੍ਰੇਰਣਾ ਚਾਹੀਦੀ ਹੈ",
+    or: "ପ୍ରେରଣା ଦରକାର", as: "প্ৰেৰণাৰ প্ৰয়োজন"
+  },
+  { 
+    en: "Tell me a joke", hi: "मुझे एक जोक सुनाओ", 
+    bn: "আমাকে একটা জোক বলো", ta: "எனக்கு ஒரு நகைச்சுவை சொல்லுங்கள்", 
+    te: "నాకు ఒక జోక్ చెప్పండి", ml: "എനിക്ക് ഒരു തമാശ പറയൂ",
+    kn: "ನನಗೆ ಒಂದು ಹಾಸ್ಯ ಹೇಳಿ", gu: "મને એક મજાક કહો",
+    mr: "मला एक विनोद सांगा", pa: "ਮੈਨੂੰ ਇੱਕ ਮਜ਼ਾਕ ਸੁਣਾਓ",
+    or: "ମୋତେ ଏକ ରସିକତା କୁହ", as: "মোক এটা ৰসিকতা কোৱা"
+  },
+  { 
+    en: "Help me relax", hi: "आराम करने में मदद करो", 
+    bn: "আমাকে শিথিল হতে সাহায্য করো", ta: "எனக்கு ஓய்வெடுக்க உதவுங்கள்", 
+    te: "నాకు విశ్రాంతి తీసుకోవడంలో సహాయం చేయండి", ml: "എന്നെ വിശ്രമിക്കാൻ സഹായിക്കൂ",
+    kn: "ನನಗೆ ವಿಶ್ರಾಂತಿ ಪಡೆಯಲು ಸಹಾಯ ಮಾಡಿ", gu: "મને આરામ કરવામાં મદદ કરો",
+    mr: "मला आराम करण्यात मदत करा", pa: "ਮੈਨੂੰ ਆਰਾਮ ਕਰਨ ਵਿੱਚ ਮਦਦ ਕਰੋ",
+    or: "ମୋତେ ଆରାମ କରିବାରେ ସାହାଯ୍ୟ କର", as: "মোক জিৰণি ল'বলৈ সহায় কৰা"
+  },
 ];
 
 const supportedLanguages = [
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵' },
-  { code: 'ko', name: '한국어', flag: '🇰🇷' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
-  { code: 'pt', name: 'Português', flag: '🇧🇷' },
+  // Global Languages
+  { code: 'en', name: 'English', flag: '🇺🇸', region: 'Global' },
+  { code: 'es', name: 'Español', flag: '🇪🇸', region: 'Global' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷', region: 'Global' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪', region: 'Global' },
+  { code: 'zh', name: '中文', flag: '🇨🇳', region: 'Global' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵', region: 'Global' },
+  { code: 'ko', name: '한국어', flag: '🇰🇷', region: 'Global' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦', region: 'Global' },
+  { code: 'pt', name: 'Português', flag: '🇧🇷', region: 'Global' },
+  
+  // Indian Languages - North to South
+  { code: 'hi', name: 'हिंदी', flag: '🇮🇳', region: 'North India', native: 'Hindi' },
+  { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: '🇮🇳', region: 'North India', native: 'Punjabi' },
+  { code: 'ur', name: 'اردو', flag: '🇮🇳', region: 'North India', native: 'Urdu' },
+  { code: 'ks', name: 'कॉशुर', flag: '🇮🇳', region: 'North India', native: 'Kashmiri' },
+  { code: 'bn', name: 'বাংলা', flag: '🇮🇳', region: 'East India', native: 'Bengali' },
+  { code: 'as', name: 'অসমীয়া', flag: '🇮🇳', region: 'East India', native: 'Assamese' },
+  { code: 'or', name: 'ଓଡ଼ିଆ', flag: '🇮🇳', region: 'East India', native: 'Odia' },
+  { code: 'gu', name: 'ગુજરાતી', flag: '🇮🇳', region: 'West India', native: 'Gujarati' },
+  { code: 'mr', name: 'मराठी', flag: '🇮🇳', region: 'West India', native: 'Marathi' },
+  { code: 'kn', name: 'ಕನ್ನಡ', flag: '🇮🇳', region: 'South India', native: 'Kannada' },
+  { code: 'te', name: 'తెలుగు', flag: '🇮🇳', region: 'South India', native: 'Telugu' },
+  { code: 'ta', name: 'தமிழ்', flag: '🇮🇳', region: 'South India', native: 'Tamil' },
+  { code: 'ml', name: 'മലയാളം', flag: '🇮🇳', region: 'South India', native: 'Malayalam' },
 ];
 
 export default function Chat() {
@@ -88,7 +131,33 @@ export default function Chat() {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-US';
+      // Set language based on selected language with proper locale codes for Indian languages
+      const languageMap: { [key: string]: string } = {
+        'en': 'en-US',
+        'hi': 'hi-IN',
+        'bn': 'bn-IN',
+        'ta': 'ta-IN',
+        'te': 'te-IN',
+        'ml': 'ml-IN',
+        'kn': 'kn-IN',
+        'gu': 'gu-IN',
+        'mr': 'mr-IN',
+        'pa': 'pa-IN',
+        'or': 'or-IN',
+        'as': 'as-IN',
+        'ur': 'ur-IN',
+        'ks': 'ks-IN',
+        'es': 'es-ES',
+        'fr': 'fr-FR',
+        'de': 'de-DE',
+        'zh': 'zh-CN',
+        'ja': 'ja-JP',
+        'ko': 'ko-KR',
+        'ar': 'ar-SA',
+        'pt': 'pt-BR'
+      };
+      
+      recognitionRef.current.lang = languageMap[selectedLanguage] || 'en-US';
 
       recognitionRef.current.onresult = (event: any) => {
         const speechToText = event.results[0][0].transcript;
@@ -134,7 +203,45 @@ export default function Chat() {
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Adjust voice based on current mood
+    // Set language for speech synthesis based on selected language
+    const speechLanguageMap: { [key: string]: string } = {
+      'en': 'en-US',
+      'hi': 'hi-IN',
+      'bn': 'bn-IN',
+      'ta': 'ta-IN',
+      'te': 'te-IN',
+      'ml': 'ml-IN',
+      'kn': 'kn-IN',
+      'gu': 'gu-IN',
+      'mr': 'mr-IN',
+      'pa': 'pa-Guru-IN',
+      'or': 'or-IN',
+      'as': 'as-IN',
+      'ur': 'ur-IN',
+      'es': 'es-ES',
+      'fr': 'fr-FR',
+      'de': 'de-DE',
+      'zh': 'zh-CN',
+      'ja': 'ja-JP',
+      'ko': 'ko-KR',
+      'ar': 'ar-SA',
+      'pt': 'pt-BR'
+    };
+    
+    utterance.lang = speechLanguageMap[selectedLanguage] || 'en-US';
+    
+    // Try to find a voice that matches the selected language
+    const voices = synthesisRef.current.getVoices();
+    const preferredVoice = voices.find(voice => 
+      voice.lang.startsWith(utterance.lang.split('-')[0]) || 
+      voice.lang === utterance.lang
+    );
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    
+    // Adjust voice based on current mood and language
     const currentMood = (recentMood as any)?.mood;
     if (currentMood) {
       switch (currentMood.toLowerCase()) {
@@ -168,6 +275,16 @@ export default function Chat() {
 
   const startListening = () => {
     if (recognitionRef.current && !isListening && !isTyping) {
+      // Update recognition language dynamically when starting
+      const languageMap: { [key: string]: string } = {
+        'en': 'en-US', 'hi': 'hi-IN', 'bn': 'bn-IN', 'ta': 'ta-IN', 'te': 'te-IN',
+        'ml': 'ml-IN', 'kn': 'kn-IN', 'gu': 'gu-IN', 'mr': 'mr-IN', 'pa': 'pa-IN',
+        'or': 'or-IN', 'as': 'as-IN', 'ur': 'ur-IN', 'ks': 'ks-IN', 'es': 'es-ES',
+        'fr': 'fr-FR', 'de': 'de-DE', 'zh': 'zh-CN', 'ja': 'ja-JP', 'ko': 'ko-KR',
+        'ar': 'ar-SA', 'pt': 'pt-BR'
+      };
+      
+      recognitionRef.current.lang = languageMap[selectedLanguage] || 'en-US';
       setMessage("");
       setIsListening(true);
       recognitionRef.current.start();
@@ -235,13 +352,62 @@ export default function Chat() {
         </div>
         
         <div className="flex items-center space-x-2">
-          {/* Language Selector */}
-          <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-            <SelectTrigger className="w-20 h-8 text-xs">
+          {/* Enhanced Language Selector with Grouping */}
+          <Select value={selectedLanguage} onValueChange={(newLang) => {
+            setSelectedLanguage(newLang);
+            toast({
+              title: `Language changed to ${supportedLanguages.find(l => l.code === newLang)?.name}`,
+              description: "Voice recognition and AI responses will now use this language",
+            });
+          }}>
+            <SelectTrigger className="w-24 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              {supportedLanguages.map((lang) => (
+            <SelectContent className="max-h-64 overflow-y-auto">
+              {/* Global Languages */}
+              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Global</div>
+              {supportedLanguages.filter(lang => lang.region === 'Global').map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  <span className="flex items-center space-x-1">
+                    <span>{lang.flag}</span>
+                    <span className="hidden sm:inline">{lang.name}</span>
+                  </span>
+                </SelectItem>
+              ))}
+              
+              {/* Indian Languages by Region */}
+              <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">North India</div>
+              {supportedLanguages.filter(lang => lang.region === 'North India').map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  <span className="flex items-center space-x-1">
+                    <span>{lang.flag}</span>
+                    <span className="hidden sm:inline">{lang.name}</span>
+                  </span>
+                </SelectItem>
+              ))}
+              
+              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">East India</div>
+              {supportedLanguages.filter(lang => lang.region === 'East India').map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  <span className="flex items-center space-x-1">
+                    <span>{lang.flag}</span>
+                    <span className="hidden sm:inline">{lang.name}</span>
+                  </span>
+                </SelectItem>
+              ))}
+              
+              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">West India</div>
+              {supportedLanguages.filter(lang => lang.region === 'West India').map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  <span className="flex items-center space-x-1">
+                    <span>{lang.flag}</span>
+                    <span className="hidden sm:inline">{lang.name}</span>
+                  </span>
+                </SelectItem>
+              ))}
+              
+              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">South India</div>
+              {supportedLanguages.filter(lang => lang.region === 'South India').map((lang) => (
                 <SelectItem key={lang.code} value={lang.code}>
                   <span className="flex items-center space-x-1">
                     <span>{lang.flag}</span>
