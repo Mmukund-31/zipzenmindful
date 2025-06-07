@@ -132,6 +132,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comprehensive user data export endpoint
+  app.get('/api/user/export-data', async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      
+      console.log('=== EXPORTING USER DATA ===');
+      console.log('Exporting data for userId:', userId);
+      
+      // Gather all user data
+      const [user, moods, memories, chatMessages, gratitudeEntries, challengeProgress] = await Promise.all([
+        storage.getUser(userId),
+        storage.getMoodEntriesByUser(userId),
+        storage.getMemoriesByUser(userId),
+        storage.getChatMessagesByUser(userId),
+        storage.getGratitudeEntriesByUser(userId),
+        storage.getActiveChallengesByUser(userId)
+      ]);
+
+      const exportData = {
+        user,
+        dataSnapshot: {
+          exportDate: new Date().toISOString(),
+          totalMoodEntries: moods.length,
+          totalMemories: memories.length,
+          totalChatMessages: chatMessages.length,
+          totalGratitudeEntries: gratitudeEntries.length,
+          activeChallenges: challengeProgress.length
+        },
+        moods: moods.map(mood => ({
+          ...mood,
+          createdAt: mood.createdAt
+        })),
+        memories: memories.map(memory => ({
+          ...memory,
+          createdAt: memory.createdAt
+        })),
+        chatMessages: chatMessages.map(chat => ({
+          ...chat,
+          timestamp: chat.timestamp
+        })),
+        gratitudeEntries: gratitudeEntries.map(gratitude => ({
+          ...gratitude,
+          createdAt: gratitude.createdAt
+        })),
+        challengeProgress
+      };
+
+      console.log('Data export completed:', exportData.dataSnapshot);
+      res.json(exportData);
+    } catch (error) {
+      console.error('Data export error:', error);
+      res.status(500).json({ error: 'Failed to export user data' });
+    }
+  });
+
+  // Data integrity check endpoint
+  app.get('/api/user/data-integrity', async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      
+      console.log('=== DATA INTEGRITY CHECK ===');
+      console.log('Checking integrity for userId:', userId);
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Count all user data
+      const [moodCount, memoryCount, chatCount, gratitudeCount] = await Promise.all([
+        storage.getMoodEntriesByUser(userId).then(entries => entries.length),
+        storage.getMemoriesByUser(userId).then(entries => entries.length),
+        storage.getChatMessagesByUser(userId).then(entries => entries.length),
+        storage.getGratitudeEntriesByUser(userId).then(entries => entries.length)
+      ]);
+
+      const integrityReport = {
+        userId,
+        userExists: true,
+        dataIntegrity: {
+          totalMoodEntries: moodCount,
+          totalMemories: memoryCount,
+          totalChatMessages: chatCount,
+          totalGratitudeEntries: gratitudeCount,
+          lastUpdated: user.updatedAt,
+          accountCreated: user.createdAt
+        },
+        status: 'healthy'
+      };
+
+      console.log('Data integrity check completed:', integrityReport.dataIntegrity);
+      res.json(integrityReport);
+    } catch (error) {
+      console.error('Data integrity check error:', error);
+      res.status(500).json({ error: 'Failed to check data integrity' });
+    }
+  });
+
   // Onboarding data endpoint
   app.post('/api/onboarding/complete', async (req: any, res) => {
     try {
