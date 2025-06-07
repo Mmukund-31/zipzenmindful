@@ -414,7 +414,7 @@ export default function Chat() {
               <p className="text-gray-600 dark:text-gray-300 mt-1">Your multilingual wellness companion</p>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center">
               <Select value={selectedLanguage} onValueChange={(newLang) => {
                 setSelectedLanguage(newLang);
                 toast({
@@ -451,19 +451,6 @@ export default function Chat() {
                   ))}
                 </SelectContent>
               </Select>
-              
-              <Button
-                variant="outline"
-                onClick={toggleVoice}
-                className={`h-11 px-4 rounded-lg transition-all duration-200 ${
-                  voiceEnabled 
-                    ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-700" 
-                    : "bg-gray-50 text-gray-400 border-gray-200 dark:bg-gray-700/50 dark:text-gray-500 dark:border-gray-600"
-                }`}
-              >
-                {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                <span className="ml-2 hidden sm:inline font-medium">Voice</span>
-              </Button>
             </div>
           </div>
         </div>
@@ -551,26 +538,13 @@ export default function Chat() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={`Type your message in ${supportedLanguages.find(l => l.code === selectedLanguage)?.name}...`}
-                disabled={chatMutation.isPending || isListening}
+                disabled={chatMutation.isPending}
                 className="flex-1 h-12 bg-white/80 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 rounded-xl px-4 text-sm font-medium placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-200"
               />
               
               <Button
-                onClick={() => isListening ? stopListening() : startListening()}
-                variant={isListening ? "destructive" : "outline"}
-                disabled={!recognitionRef.current || isTyping}
-                className={`h-12 px-4 rounded-xl transition-all duration-200 ${
-                  isListening 
-                    ? "bg-red-500 hover:bg-red-600 text-white shadow-lg" 
-                    : "bg-white/80 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
-                }`}
-              >
-                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              </Button>
-              
-              <Button
                 onClick={() => handleSendMessage()}
-                disabled={!message.trim() || chatMutation.isPending || isListening}
+                disabled={!message.trim() || chatMutation.isPending}
                 className="h-12 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {chatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
