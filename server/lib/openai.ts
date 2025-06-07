@@ -81,21 +81,34 @@ Return your response in this exact JSON format:
   }
 }
 
-export async function generateAIResponse(userMessage: string, currentMood?: string): Promise<string> {
+// Enhanced multilingual AI response generation with automatic language detection
+export async function generateAIResponse(userMessage: string, currentMood?: string, preferredLanguage?: string): Promise<string> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    const systemPrompt = `You are MindEase Assistant, a compassionate AI companion focused on mental wellness and emotional support. 
+    // Enhanced multilingual system prompt
+    const systemPrompt = `You are MindEase Assistant, a compassionate AI companion focused on mental wellness and emotional support. You can communicate fluently in multiple languages including English, Spanish, French, German, Italian, Portuguese, Hindi, Chinese, Japanese, Korean, Arabic, and many others.
+    
+    IMPORTANT LANGUAGE INSTRUCTIONS:
+    - Automatically detect the language of the user's message
+    - Respond in the SAME language the user is communicating in
+    - If the user switches languages mid-conversation, adapt immediately
+    - Maintain the same empathetic, supportive tone regardless of language
+    - Use culturally appropriate expressions and idioms for each language
+    - If unsure about the language, default to English but ask if they'd prefer another language
+    
     ${currentMood ? `The user's current mood is: ${currentMood}. Tailor your response to be supportive and appropriate for their emotional state.` : ''}
+    ${preferredLanguage ? `User's preferred language preference: ${preferredLanguage}` : ''}
     
     Guidelines:
-    - Be empathetic, warm, and supportive
-    - Provide practical wellness advice when appropriate
+    - Be empathetic, warm, and supportive in their native language
+    - Provide practical wellness advice culturally appropriate to their context
     - Ask thoughtful follow-up questions to encourage reflection
-    - Suggest healthy coping strategies
+    - Suggest healthy coping strategies relevant to their culture
     - Keep responses conversational and not overly clinical
     - If the user seems distressed, gently suggest professional help
-    - Encourage positive activities like connecting with loved ones or viewing happy memories`;
+    - Encourage positive activities like connecting with loved ones or viewing happy memories
+    - Respect cultural differences in expressing emotions and seeking help`;
 
     const prompt = `${systemPrompt}\n\nUser message: ${userMessage}`;
     
