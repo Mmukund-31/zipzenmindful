@@ -287,6 +287,15 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async updateUserLanguage(userId: string, language: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ preferredLanguage: language, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
   async updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<ChallengeProgress> {
     try {
       const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];

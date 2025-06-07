@@ -38,7 +38,7 @@ export const users = pgTable("users", {
   wellnessGoals: text("wellness_goals"), // JSON string of selected goals
   preferredTime: varchar("preferred_time"), // When they prefer wellness activities
   motivation: text("motivation"), // Their wellness motivation
-  preferredLanguage: varchar("preferred_language").default("english"), // User's preferred language for conversations
+  preferredLanguage: varchar("preferred_language").default("en"), // User's preferred language code for conversations
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
