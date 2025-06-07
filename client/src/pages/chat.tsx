@@ -402,157 +402,156 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Header - Fixed */}
-      <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="flex justify-between items-center max-w-4xl mx-auto">
-          <div>
-            <h1 className="text-xl font-bold text-gray-800 dark:text-white">AI Chat Assistant</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300">Your multilingual wellness companion</p>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Select value={selectedLanguage} onValueChange={(newLang) => {
-              setSelectedLanguage(newLang);
-              toast({
-                title: `Language changed to ${supportedLanguages.find(l => l.code === newLang)?.name}`,
-                description: "Voice recognition and AI responses will now use this language",
-              });
-            }}>
-              <SelectTrigger className="w-28 h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-64 overflow-y-auto">
-                <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Global</div>
-                {supportedLanguages.filter(lang => lang.region === 'Global').map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    <span className="flex items-center space-x-1">
-                      <span className="text-xs">{lang.flag}</span>
-                      <span className="text-xs">{lang.name}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-                
-                <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">India</div>
-                {supportedLanguages.filter(lang => lang.region === 'India').map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    <span className="flex items-center space-x-1">
-                      <span className="text-xs">{lang.flag}</span>
-                      <span className="text-xs">{lang.name}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto p-4 max-w-4xl">
+        {/* Header */}
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800 dark:text-white">AI Chat Assistant</h1>
+              <p className="text-gray-600 dark:text-gray-300">Your multilingual wellness companion</p>
+            </div>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleVoice}
-              className={`h-8 px-2 ${voiceEnabled ? "text-blue-600 border-blue-600" : "text-gray-400"} transition-colors`}
-            >
-              {voiceEnabled ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
-            </Button>
+            <div className="flex items-center gap-3">
+              <Select value={selectedLanguage} onValueChange={(newLang) => {
+                setSelectedLanguage(newLang);
+                toast({
+                  title: `Language changed to ${supportedLanguages.find(l => l.code === newLang)?.name}`,
+                  description: "Voice recognition and AI responses will now use this language",
+                });
+              }}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent className="max-h-64 overflow-y-auto z-50">
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Global Languages</div>
+                  {supportedLanguages.filter(lang => lang.region === 'Global').map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      <div className="flex items-center gap-2">
+                        <span>{lang.flag}</span>
+                        <span>{lang.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">Indian Languages</div>
+                  {supportedLanguages.filter(lang => lang.region === 'India').map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      <div className="flex items-center gap-2">
+                        <span>{lang.flag}</span>
+                        <span>{lang.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Button
+                variant="outline"
+                onClick={toggleVoice}
+                className={`${voiceEnabled ? "text-blue-600 border-blue-600" : "text-gray-400"} transition-colors`}
+              >
+                {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                <span className="ml-2 hidden sm:inline">Voice</span>
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Chat Area - Flexible */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
-        {/* Messages Area - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages && Array.isArray(messages) && messages.length > 0 ? (
-            messages.map((msg: any, index: number) => (
-              <div key={`conversation-${index}`} className="space-y-3">
-                {/* User Message - Right side */}
-                <div className="flex justify-end">
-                  <div className="bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-2 max-w-xs sm:max-w-sm lg:max-w-md shadow-sm">
-                    <p className="text-sm leading-relaxed">{msg.message}</p>
+        {/* Chat Container */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          {/* Messages Area */}
+          <div className="h-96 overflow-y-auto p-4 space-y-4">
+            {messages && Array.isArray(messages) && messages.length > 0 ? (
+              messages.map((msg: any, index: number) => (
+                <div key={`conversation-${index}`} className="space-y-4">
+                  {/* User Message */}
+                  <div className="flex justify-end">
+                    <div className="bg-blue-600 text-white rounded-lg px-4 py-2 max-w-md shadow-sm">
+                      <p className="text-sm">{msg.message}</p>
+                    </div>
+                  </div>
+                  
+                  {/* AI Response */}
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-2 max-w-md shadow-sm">
+                      <p className="text-sm whitespace-pre-wrap">{msg.response}</p>
+                    </div>
                   </div>
                 </div>
-                
-                {/* AI Response - Left side */}
-                <div className="flex justify-start">
-                  <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl rounded-bl-md px-4 py-2 max-w-xs sm:max-w-sm lg:max-w-md shadow-sm border border-gray-200 dark:border-gray-700">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.response}</p>
+              ))
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <div className="text-4xl mb-4">💬</div>
+                  <p className="text-lg font-medium">Start a conversation</p>
+                  <p className="text-sm">Choose a language and begin chatting</p>
+                </div>
+              </div>
+            )}
+            
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2 shadow-sm">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center text-gray-500 dark:text-gray-400">
-                <div className="text-4xl mb-4">💬</div>
-                <p className="text-lg font-medium">Start a conversation</p>
-                <p className="text-sm">Choose a language and begin chatting</p>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Quick Responses */}
+          {(!messages || !Array.isArray(messages) || messages.length === 0) && (
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Quick starters:</div>
+              <div className="flex flex-wrap gap-2">
+                {quickResponses.slice(0, 3).map((responseObj, index) => (
+                  <Badge
+                    key={index}
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300 transition-colors"
+                    onClick={() => handleQuickResponse(responseObj[selectedLanguage as keyof typeof responseObj] || responseObj.en)}
+                  >
+                    {responseObj[selectedLanguage as keyof typeof responseObj] || responseObj.en}
+                  </Badge>
+                ))}
               </div>
             </div>
           )}
-          
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-md px-4 py-2 shadow-sm border border-gray-200 dark:border-gray-700">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
 
-        {/* Quick Responses - Only when no messages */}
-        {(!messages || !Array.isArray(messages) || messages.length === 0) && (
-          <div className="flex-shrink-0 px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Quick starters:</div>
-            <div className="flex flex-wrap gap-2">
-              {quickResponses.slice(0, 3).map((responseObj, index) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="cursor-pointer hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300 transition-colors text-xs"
-                  onClick={() => handleQuickResponse(responseObj[selectedLanguage as keyof typeof responseObj] || responseObj.en)}
-                >
-                  {responseObj[selectedLanguage as keyof typeof responseObj] || responseObj.en}
-                </Badge>
-              ))}
+          {/* Input Area */}
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex gap-2">
+              <Input
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={`Type your message in ${supportedLanguages.find(l => l.code === selectedLanguage)?.name}...`}
+                disabled={chatMutation.isPending || isListening}
+                className="flex-1"
+              />
+              
+              <Button
+                onClick={() => isListening ? stopListening() : startListening()}
+                variant={isListening ? "destructive" : "outline"}
+                disabled={!recognitionRef.current || isTyping}
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+              
+              <Button
+                onClick={() => handleSendMessage()}
+                disabled={!message.trim() || chatMutation.isPending || isListening}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {chatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
             </div>
-          </div>
-        )}
-
-        {/* Input Area - Fixed at bottom */}
-        <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="flex space-x-2">
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={`Type in ${supportedLanguages.find(l => l.code === selectedLanguage)?.name}...`}
-              disabled={chatMutation.isPending || isListening}
-              className="flex-1 rounded-full border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500"
-            />
-            
-            <Button
-              onClick={() => isListening ? stopListening() : startListening()}
-              variant={isListening ? "destructive" : "outline"}
-              size="sm"
-              disabled={!recognitionRef.current || isTyping}
-              className="rounded-full px-3 h-10"
-            >
-              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </Button>
-            
-            <Button
-              onClick={() => handleSendMessage()}
-              disabled={!message.trim() || chatMutation.isPending || isListening}
-              size="sm"
-              className="rounded-full px-4 h-10 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-            >
-              {chatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
           </div>
         </div>
       </div>
