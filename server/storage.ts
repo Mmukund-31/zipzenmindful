@@ -51,6 +51,8 @@ export interface IStorage {
   getCompletedChallengesByUser(userId: string): Promise<Challenge[]>;
   joinChallenge(userId: string, challengeId: string): Promise<ChallengeProgress>;
   updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<ChallengeProgress>;
+  
+  updateUserLanguage(userId: string, language: string): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
