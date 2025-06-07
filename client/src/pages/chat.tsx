@@ -1,30 +1,58 @@
-import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Send, Mic, MicOff, Volume2, VolumeX, Bot, User, Globe, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Mic, MicOff, Volume2, VolumeX, Send, Loader2 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-const multilingualQuickResponses = [
+interface ChatMessage {
+  id: number;
+  message: string;
+  response: string;
+  isUser: boolean;
+  timestamp: string;
+}
+
+const supportedLanguages = [
+  // Global Languages
+  { code: 'en', name: 'English', flag: '🇺🇸', region: 'Global' },
+  { code: 'es', name: 'Español', flag: '🇪🇸', region: 'Global' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷', region: 'Global' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪', region: 'Global' },
+  { code: 'zh', name: '中文', flag: '🇨🇳', region: 'Global' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵', region: 'Global' },
+  { code: 'ko', name: '한국어', flag: '🇰🇷', region: 'Global' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦', region: 'Global' },
+  { code: 'pt', name: 'Português', flag: '🇧🇷', region: 'Global' },
+  
+  // Indian Languages
+  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳', region: 'India' },
+  { code: 'bn', name: 'বাংলা', flag: '🇮🇳', region: 'India' },
+  { code: 'ta', name: 'தமிழ்', flag: '🇮🇳', region: 'India' },
+  { code: 'te', name: 'తెలుగు', flag: '🇮🇳', region: 'India' },
+  { code: 'ml', name: 'മലയാളം', flag: '🇮🇳', region: 'India' },
+  { code: 'kn', name: 'ಕನ್ನಡ', flag: '🇮🇳', region: 'India' },
+  { code: 'gu', name: 'ગુજરાતી', flag: '🇮🇳', region: 'India' },
+  { code: 'mr', name: 'मराठी', flag: '🇮🇳', region: 'India' },
+  { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: '🇮🇳', region: 'India' },
+  { code: 'ur', name: 'اردو', flag: '🇮🇳', region: 'India' },
+  { code: 'or', name: 'ଓଡ଼ିଆ', flag: '🇮🇳', region: 'India' },
+  { code: 'as', name: 'অসমীয়া', flag: '🇮🇳', region: 'India' },
+  { code: 'ks', name: 'कॉशुर / کٲشُر', flag: '🇮🇳', region: 'India' }
+];
+
+const quickResponses = [
   { 
-    en: "I'm feeling anxious", hi: "मैं चिंतित महसूस कर रहा हूं", 
-    bn: "আমি উদ্বিগ্ন বোধ করছি", ta: "நான் கவலையாக உணர்கிறேன்", 
-    te: "నేను ఆందోళనగా అనిపిస్తుంది", ml: "എനിക്ക് ഉത്കണ്ഠ തോന്നുന്നു",
-    kn: "ನಾನು ಚಿಂತೆಯಿಂದ ಭಾವಿಸುತ್ತಿದ್ದೇನೆ", gu: "મને ચિંતા લાગી રહી છે",
-    mr: "मला चिंता वाटत आहे", pa: "ਮੈਂ ਚਿੰਤਾ ਮਹਿਸੂਸ ਕਰ ਰਿਹਾ ਹਾਂ",
-    or: "ମୁଁ ଚିନ୍ତିତ ଅନୁଭବ କରୁଛି", as: "মই দুঃচিন্তিত অনুভব কৰিছো"
-  },
-  { 
-    en: "Need motivation", hi: "प्रेरणा चाहिए", 
-    bn: "অনুপ্রেরণা দরকার", ta: "உந்துதல் தேவை", 
-    te: "ప్రేరణ అవసరం", ml: "പ്രചോദനം വേണം",
-    kn: "ಪ್ರೇರಣೆ ಬೇಕು", gu: "પ્રેરણાની જરૂર છે",
-    mr: "प्रेरणा हवी", pa: "ਪ੍ਰੇਰਣਾ ਚਾਹੀਦੀ ਹੈ",
-    or: "ପ୍ରେରଣା ଦରକାର", as: "প্ৰেৰণাৰ প্ৰয়োজন"
+    en: "How are you feeling today?", hi: "आज आप कैसा महसूस कर रहे हैं?", 
+    bn: "আজ আপনি কেমন বোধ করছেন?", ta: "இன்று நீங்கள் எப்படி உணர்கிறீர்கள்?", 
+    te: "ఈరోజు మీరు ఎలా అనిపిస్తోంది?", ml: "ഇന്ന് നിങ്ങൾക്ക് എങ്ങനെ തോന്നുന്നു?",
+    kn: "ಇಂದು ನೀವು ಹೇಗೆ ಅನಿಸುತ್ತಿದೆ?", gu: "આજે તમને કેવું લાગે છે?",
+    mr: "आज तुम्हाला कसे वाटते?", pa: "ਅੱਜ ਤੁਸੀਂ ਕਿਵੇਂ ਮਹਿਸੂਸ ਕਰ ਰਹੇ ਹੋ?",
+    or: "ଆଜି ତୁମେ କିପରି ଅନୁଭବ କରୁଛ?", as: "আজি তুমি কেনে অনুভৱ কৰিছা?"
   },
   { 
     en: "Tell me a joke", hi: "मुझे एक जोक सुनाओ", 
@@ -44,207 +72,114 @@ const multilingualQuickResponses = [
   },
 ];
 
-const supportedLanguages = [
-  // Global Languages
-  { code: 'en', name: 'English', flag: '🇺🇸', region: 'Global' },
-  { code: 'es', name: 'Español', flag: '🇪🇸', region: 'Global' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷', region: 'Global' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪', region: 'Global' },
-  { code: 'zh', name: '中文', flag: '🇨🇳', region: 'Global' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵', region: 'Global' },
-  { code: 'ko', name: '한국어', flag: '🇰🇷', region: 'Global' },
-  { code: 'ar', name: 'العربية', flag: '🇸🇦', region: 'Global' },
-  { code: 'pt', name: 'Português', flag: '🇧🇷', region: 'Global' },
-  
-  // Indian Languages - North to South
-  { code: 'hi', name: 'हिंदी', flag: '🇮🇳', region: 'North India', native: 'Hindi' },
-  { code: 'pa', name: 'ਪੰਜਾਬੀ', flag: '🇮🇳', region: 'North India', native: 'Punjabi' },
-  { code: 'ur', name: 'اردو', flag: '🇮🇳', region: 'North India', native: 'Urdu' },
-  { code: 'ks', name: 'कॉशुर', flag: '🇮🇳', region: 'North India', native: 'Kashmiri' },
-  { code: 'bn', name: 'বাংলা', flag: '🇮🇳', region: 'East India', native: 'Bengali' },
-  { code: 'as', name: 'অসমীয়া', flag: '🇮🇳', region: 'East India', native: 'Assamese' },
-  { code: 'or', name: 'ଓଡ଼ିଆ', flag: '🇮🇳', region: 'East India', native: 'Odia' },
-  { code: 'gu', name: 'ગુજરાતી', flag: '🇮🇳', region: 'West India', native: 'Gujarati' },
-  { code: 'mr', name: 'मराठी', flag: '🇮🇳', region: 'West India', native: 'Marathi' },
-  { code: 'kn', name: 'ಕನ್ನಡ', flag: '🇮🇳', region: 'South India', native: 'Kannada' },
-  { code: 'te', name: 'తెలుగు', flag: '🇮🇳', region: 'South India', native: 'Telugu' },
-  { code: 'ta', name: 'தமிழ்', flag: '🇮🇳', region: 'South India', native: 'Tamil' },
-  { code: 'ml', name: 'മലയാളം', flag: '🇮🇳', region: 'South India', native: 'Malayalam' },
-];
-
 export default function Chat() {
   const [message, setMessage] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
-  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  
   const recognitionRef = useRef<any>(null);
   const synthesisRef = useRef<SpeechSynthesis | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: messages = [], isLoading } = useQuery({
+  // Initialize speech synthesis and recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      synthesisRef.current = window.speechSynthesis;
+      
+      if ('webkitSpeechRecognition' in window) {
+        recognitionRef.current = new (window as any).webkitSpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        
+        recognitionRef.current.onresult = (event: any) => {
+          const speechToText = event.results[0][0].transcript;
+          setMessage(speechToText);
+          // Auto-send voice messages
+          setTimeout(() => {
+            if (speechToText.trim()) {
+              chatMutation.mutate(speechToText);
+            }
+          }, 500);
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+        };
+      }
+    }
+  }, []);
+
+  // Load saved language preference
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('selectedLanguage');
+    if (savedLanguage) {
+      setSelectedLanguage(savedLanguage);
+    }
+  }, []);
+
+  // Fetch messages
+  const { data: messages, isLoading } = useQuery({
     queryKey: ["/api/chat"],
   });
 
+  // Fetch recent mood for context
   const { data: recentMood } = useQuery({
     queryKey: ["/api/mood/recent"],
   });
 
+  // Chat mutation
   const chatMutation = useMutation({
     mutationFn: async (userMessage: string) => {
-      const response = await apiRequest("POST", "/api/chat", { 
-        message: userMessage,
-        preferredLanguage: selectedLanguage 
-      });
-      return response.json();
-    },
-    onMutate: () => {
       setIsTyping(true);
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          message: userMessage,
+          preferredLanguage: selectedLanguage 
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+      
+      return await response.json();
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+    onSuccess: (data: any) => {
       setMessage("");
       setIsTyping(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
       
       // Speak the AI response if voice is enabled
-      if (voiceEnabled && data.response && synthesisRef.current) {
-        speakResponse(data.response);
+      if (voiceEnabled && data.response) {
+        speakText(data.response);
       }
     },
     onError: () => {
+      setIsTyping(false);
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
         variant: "destructive",
       });
-      setIsTyping(false);
     },
   });
 
-  // Initialize speech recognition and synthesis
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      // Set language based on selected language with proper locale codes for Indian languages
-      const languageMap: { [key: string]: string } = {
-        'en': 'en-US',
-        'hi': 'hi-IN',
-        'bn': 'bn-IN',
-        'ta': 'ta-IN',
-        'te': 'te-IN',
-        'ml': 'ml-IN',
-        'kn': 'kn-IN',
-        'gu': 'gu-IN',
-        'mr': 'mr-IN',
-        'pa': 'pa-IN',
-        'or': 'or-IN',
-        'as': 'as-IN',
-        'ur': 'ur-IN',
-        'ks': 'ks-IN',
-        'es': 'es-ES',
-        'fr': 'fr-FR',
-        'de': 'de-DE',
-        'zh': 'zh-CN',
-        'ja': 'ja-JP',
-        'ko': 'ko-KR',
-        'ar': 'ar-SA',
-        'pt': 'pt-BR'
-      };
-      
-      recognitionRef.current.lang = languageMap[selectedLanguage] || 'en-US';
-
-      recognitionRef.current.onresult = (event: any) => {
-        const speechToText = event.results[0][0].transcript;
-        setMessage(speechToText);
-        // Auto-send voice messages
-        setTimeout(() => {
-          if (speechToText.trim()) {
-            chatMutation.mutate(speechToText);
-          }
-        }, 500);
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-        toast({
-          title: "Voice Error",
-          description: "Could not recognize speech. Please try again.",
-          variant: "destructive",
-        });
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-    }
-
-    if ('speechSynthesis' in window) {
-      synthesisRef.current = window.speechSynthesis;
-      
-      // Load voices when they become available
-      const loadVoices = () => {
-        const voices = synthesisRef.current?.getVoices() || [];
-        console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
-      };
-      
-      // Voices may load asynchronously
-      if (synthesisRef.current.getVoices().length > 0) {
-        loadVoices();
-      } else {
-        synthesisRef.current.addEventListener('voiceschanged', loadVoices);
-      }
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
-      if (synthesisRef.current) {
-        synthesisRef.current.cancel();
-      }
-    };
-  }, []);
-
-  const detectLanguageFromText = (text: string): string => {
-    // Enhanced language detection patterns for Indian languages
-    const languagePatterns = {
-      'hi': /[\u0900-\u097F]/, // Hindi (Devanagari)
-      'bn': /[\u0980-\u09FF]/, // Bengali
-      'ta': /[\u0B80-\u0BFF]/, // Tamil
-      'te': /[\u0C00-\u0C7F]/, // Telugu
-      'ml': /[\u0D00-\u0D7F]/, // Malayalam
-      'kn': /[\u0C80-\u0CFF]/, // Kannada
-      'gu': /[\u0A80-\u0AFF]/, // Gujarati
-      'mr': /[\u0900-\u097F]/, // Marathi (Devanagari, same as Hindi)
-      'pa': /[\u0A00-\u0A7F]/, // Punjabi (Gurmukhi)
-      'or': /[\u0B00-\u0B7F]/, // Odia
-      'as': /[\u0980-\u09FF]/, // Assamese (same as Bengali)
-      'ur': /[\u0600-\u06FF]/, // Urdu (Arabic script)
-      'ar': /[\u0600-\u06FF]/, // Arabic
-      'zh': /[\u4e00-\u9fff]/, // Chinese
-      'ja': /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff]/, // Japanese
-      'ko': /[\uac00-\ud7af]/, // Korean
-    };
-
-    // Check for specific language patterns in the text
-    for (const [lang, pattern] of Object.entries(languagePatterns)) {
-      if (pattern.test(text)) {
-        return lang;
-      }
-    }
-
-    // Fallback to selected language or English
-    return selectedLanguage || 'en';
-  };
-
-  const speakResponse = (text: string) => {
+  // Enhanced multilingual voice synthesis with automatic language detection
+  const speakText = (text: string) => {
     if (!synthesisRef.current || !voiceEnabled) return;
 
     // Cancel any ongoing speech
@@ -253,53 +188,84 @@ export default function Chat() {
     const speak = () => {
       const utterance = new SpeechSynthesisUtterance(text);
       
-      // Detect the actual language of the AI response
-      const detectedLanguage = detectLanguageFromText(text);
-      
-      // Set language for speech synthesis based on detected language
-      const speechLanguageMap: { [key: string]: string } = {
-        'en': 'en-US',
-        'hi': 'hi-IN',
-        'bn': 'bn-IN',
-        'ta': 'ta-IN',
-        'te': 'te-IN',
-        'ml': 'ml-IN',
-        'kn': 'kn-IN',
-        'gu': 'gu-IN',
-        'mr': 'mr-IN',
-        'pa': 'pa-IN',
-        'or': 'or-IN',
-        'as': 'as-IN',
-        'ur': 'ur-IN',
-        'es': 'es-ES',
-        'fr': 'fr-FR',
-        'de': 'de-DE',
-        'zh': 'zh-CN',
-        'ja': 'ja-JP',
-        'ko': 'ko-KR',
-        'ar': 'ar-SA',
-        'pt': 'pt-BR'
+      // Enhanced language detection for proper voice selection
+      const detectLanguageFromText = (text: string): string => {
+        // Unicode ranges for different scripts
+        const patterns = {
+          'hi': /[\u0900-\u097F]/, // Devanagari (Hindi)
+          'bn': /[\u0980-\u09FF]/, // Bengali
+          'ta': /[\u0B80-\u0BFF]/, // Tamil
+          'te': /[\u0C00-\u0C7F]/, // Telugu
+          'ml': /[\u0D00-\u0D7F]/, // Malayalam
+          'kn': /[\u0C80-\u0CFF]/, // Kannada
+          'gu': /[\u0A80-\u0AFF]/, // Gujarati
+          'mr': /[\u0900-\u097F]/, // Marathi (Devanagari)
+          'pa': /[\u0A00-\u0A7F]/, // Punjabi (Gurmukhi)
+          'or': /[\u0B00-\u0B7F]/, // Odia
+          'as': /[\u0980-\u09FF]/, // Assamese (Bengali script)
+          'ur': /[\u0600-\u06FF]/, // Arabic script (Urdu)
+          'ar': /[\u0600-\u06FF]/, // Arabic
+          'zh': /[\u4e00-\u9fff]/, // Chinese
+          'ja': /[\u3040-\u309F\u30A0-\u30FF\u4e00-\u9fff]/, // Japanese
+          'ko': /[\uAC00-\uD7AF]/, // Korean
+        };
+
+        for (const [lang, pattern] of Object.entries(patterns)) {
+          if (pattern.test(text)) {
+            return lang;
+          }
+        }
+        
+        // If no specific script detected, use selected language
+        return selectedLanguage;
       };
-      
-      utterance.lang = speechLanguageMap[detectedLanguage] || 'en-US';
-      
-      // Get fresh voices list and find the best match
+
+      const detectedLanguage = detectLanguageFromText(text);
+      console.log(`Detected language: ${detectedLanguage} for text: ${text.substring(0, 50)}...`);
+
+      // Enhanced voice mapping with better fallbacks
+      const voiceLanguageMap: { [key: string]: string[] } = {
+        'hi': ['hi-IN', 'hi'],
+        'bn': ['bn-IN', 'bn-BD', 'bn'],
+        'ta': ['ta-IN', 'ta-LK', 'ta'],
+        'te': ['te-IN', 'te'],
+        'ml': ['ml-IN', 'ml'],
+        'kn': ['kn-IN', 'kn'],
+        'gu': ['gu-IN', 'gu'],
+        'mr': ['mr-IN', 'mr'],
+        'pa': ['pa-IN', 'pa'],
+        'or': ['or-IN', 'or'],
+        'as': ['as-IN', 'as'],
+        'ur': ['ur-IN', 'ur-PK', 'ur'],
+        'ks': ['ks-IN', 'ks'],
+        'en': ['en-US', 'en-GB', 'en-AU', 'en'],
+        'es': ['es-ES', 'es-US', 'es-MX', 'es'],
+        'fr': ['fr-FR', 'fr-CA', 'fr'],
+        'de': ['de-DE', 'de-AT', 'de'],
+        'zh': ['zh-CN', 'zh-TW', 'zh-HK', 'zh'],
+        'ja': ['ja-JP', 'ja'],
+        'ko': ['ko-KR', 'ko'],
+        'ar': ['ar-SA', 'ar-EG', 'ar'],
+        'pt': ['pt-BR', 'pt-PT', 'pt']
+      };
+
+      // Set the language for the utterance
+      const languageCodes = voiceLanguageMap[detectedLanguage] || ['en-US'];
+      utterance.lang = languageCodes[0];
+
+      // Get available voices and log them
       const voices = synthesisRef.current!.getVoices();
-      const languagePrefix = utterance.lang.split('-')[0];
-      
-      // Enhanced voice selection with broader matching
-      let preferredVoice = voices.find(voice => voice.lang === utterance.lang);
-      if (!preferredVoice) {
-        preferredVoice = voices.find(voice => voice.lang.startsWith(languagePrefix));
-      }
-      if (!preferredVoice && detectedLanguage !== 'en') {
-        // Try to find any voice that contains the language name
+      console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
+
+      // Find the best matching voice
+      let preferredVoice = null;
+      for (const langCode of languageCodes) {
         preferredVoice = voices.find(voice => 
-          voice.name.toLowerCase().includes(detectedLanguage) ||
-          voice.lang.toLowerCase().includes(detectedLanguage)
+          voice.lang.toLowerCase().startsWith(langCode.toLowerCase())
         );
+        if (preferredVoice) break;
       }
-      
+
       if (preferredVoice) {
         utterance.voice = preferredVoice;
         console.log(`Using voice: ${preferredVoice.name} (${preferredVoice.lang}) for detected language: ${detectedLanguage}`);
@@ -416,33 +382,23 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
+  useEffect(() => {
+    localStorage.setItem('selectedLanguage', selectedLanguage);
+  }, [selectedLanguage]);
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col pb-16 sm:pb-20 max-w-4xl mx-auto">
-      {/* Enhanced Multilingual Chat Header */}
-      <div className="bg-white dark:bg-gray-950 border-b border-border p-3 sm:p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
-            <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-sm sm:text-base font-medium text-foreground">MindEase Assistant</h3>
-            <div className="flex items-center text-xs text-green-600">
-              <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse-gentle"></span>
-              Multilingual Support Active
-            </div>
-          </div>
-        </div>
-        
+    <div className="max-w-4xl mx-auto p-4 space-y-4">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">AI Chat Assistant</h1>
         <div className="flex items-center space-x-2">
-          {/* Enhanced Language Selector with Grouping */}
           <Select value={selectedLanguage} onValueChange={(newLang) => {
             setSelectedLanguage(newLang);
             toast({
@@ -465,39 +421,9 @@ export default function Chat() {
                 </SelectItem>
               ))}
               
-              {/* Indian Languages by Region */}
-              <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">North India</div>
-              {supportedLanguages.filter(lang => lang.region === 'North India').map((lang) => (
-                <SelectItem key={lang.code} value={lang.code}>
-                  <span className="flex items-center space-x-1">
-                    <span>{lang.flag}</span>
-                    <span className="hidden sm:inline">{lang.name}</span>
-                  </span>
-                </SelectItem>
-              ))}
-              
-              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">East India</div>
-              {supportedLanguages.filter(lang => lang.region === 'East India').map((lang) => (
-                <SelectItem key={lang.code} value={lang.code}>
-                  <span className="flex items-center space-x-1">
-                    <span>{lang.flag}</span>
-                    <span className="hidden sm:inline">{lang.name}</span>
-                  </span>
-                </SelectItem>
-              ))}
-              
-              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">West India</div>
-              {supportedLanguages.filter(lang => lang.region === 'West India').map((lang) => (
-                <SelectItem key={lang.code} value={lang.code}>
-                  <span className="flex items-center space-x-1">
-                    <span>{lang.flag}</span>
-                    <span className="hidden sm:inline">{lang.name}</span>
-                  </span>
-                </SelectItem>
-              ))}
-              
-              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">South India</div>
-              {supportedLanguages.filter(lang => lang.region === 'South India').map((lang) => (
+              {/* Indian Languages */}
+              <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">India</div>
+              {supportedLanguages.filter(lang => lang.region === 'India').map((lang) => (
                 <SelectItem key={lang.code} value={lang.code}>
                   <span className="flex items-center space-x-1">
                     <span>{lang.flag}</span>
@@ -509,162 +435,94 @@ export default function Chat() {
           </Select>
           
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={toggleVoice}
-            className="w-8 h-8 sm:w-10 sm:h-10 p-0"
-            title={voiceEnabled ? "Disable voice" : "Enable voice"}
+            className={voiceEnabled ? "text-blue-600" : "text-gray-400"}
           >
-            {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           </Button>
         </div>
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-muted/30 chat-scroll">
-        {messages.length === 0 && (
-          <div className="text-center py-8">
-            <Bot className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-medium text-foreground mb-2">
-              Welcome to MindEase Assistant
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              I'm here to support your mental wellness journey. How can I help you today?
-            </p>
-          </div>
-        )}
-
-        {messages.map((msg: any) => (
-          <div
-            key={msg.id}
-            className={`flex items-start space-x-3 chat-bubble ${
-              msg.isFromUser ? "justify-end" : ""
-            }`}
-          >
-            {!msg.isFromUser && (
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-            )}
-
-            <Card className={`max-w-xs ${msg.isFromUser ? "bg-primary text-primary-foreground" : ""}`}>
-              <CardContent className="p-3">
-                <p className="text-sm">{msg.message}</p>
-                <span className={`text-xs mt-2 block ${msg.isFromUser ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                  {new Date(msg.timestamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </CardContent>
-            </Card>
-
-            {msg.isFromUser && (
-              <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="w-4 h-4 text-white" />
-              </div>
-            )}
-          </div>
-        ))}
-
-        {isTyping && (
-          <div className="flex items-start space-x-3 chat-bubble">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-              <Bot className="w-4 h-4 text-white" />
-            </div>
-            <Card>
-              <CardContent className="p-3">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+      <Card className="h-96 overflow-y-auto">
+        <CardContent className="p-4 space-y-4">
+          {messages && Array.isArray(messages) && messages.length > 0 ? (
+            messages.map((msg: any, index: number) => (
+              <div key={index} className="space-y-2">
+                <div className="flex justify-end">
+                  <div className="bg-blue-500 text-white p-3 rounded-lg max-w-xs">
+                    {msg.message}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg max-w-xs">
+                    {msg.response}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center text-gray-500 mt-8">
+              No messages yet. Start a conversation!
+            </div>
+          )}
+          
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </CardContent>
+      </Card>
 
-        <div ref={messagesEndRef} />
+      {/* Input Area */}
+      <div className="flex space-x-2">
+        <Input
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder={`Type your message in ${supportedLanguages.find(l => l.code === selectedLanguage)?.name}...`}
+          disabled={chatMutation.isPending || isListening}
+          className="flex-1"
+        />
+        
+        <Button
+          onClick={() => isListening ? stopListening() : startListening()}
+          variant={isListening ? "destructive" : "outline"}
+          size="sm"
+          disabled={!recognitionRef.current || isTyping}
+        >
+          {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+        </Button>
+        
+        <Button
+          onClick={() => handleSendMessage()}
+          disabled={!message.trim() || chatMutation.isPending || isListening}
+          size="sm"
+        >
+          {chatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        </Button>
       </div>
 
-      {/* Chat Input */}
-      <div className="bg-white dark:bg-gray-950 border-t border-border p-3 sm:p-4">
-        {/* Voice Status Indicator */}
-        {(isListening || isSpeaking) && (
-          <div className="mb-2 sm:mb-3 text-center">
-            <div className={`inline-flex items-center space-x-2 px-2 sm:px-3 py-1 sm:py-2 rounded-full text-xs sm:text-sm ${
-              isListening ? 'bg-red-50 text-red-700 border border-red-200' :
-              'bg-blue-50 text-blue-700 border border-blue-200'
-            }`}>
-              {isListening ? (
-                <>
-                  <Mic className="w-3 h-3 sm:w-4 sm:h-4 animate-pulse" />
-                  <span>Listening...</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="w-3 h-3 sm:w-4 sm:h-4 animate-pulse" />
-                  <span>Speaking...</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
-          {/* Voice Controls */}
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={isListening ? stopListening : startListening}
-              disabled={chatMutation.isPending || isSpeaking}
-              variant={isListening ? "destructive" : "outline"}
-              size="sm"
-              className={`w-10 h-10 rounded-full p-0 transition-all ${
-                isListening ? 'animate-pulse' : ''
-              }`}
-              title={isListening ? 'Stop listening' : 'Start voice input'}
-            >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </Button>
-            
-            <Button
-              onClick={toggleVoice}
-              variant="ghost"
-              size="sm"
-              className="w-8 h-8 rounded-full p-0"
-              title={voiceEnabled ? 'Disable voice responses' : 'Enable voice responses'}
-            >
-              {voiceEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
-            </Button>
-          </div>
-
-          <div className="flex-1 relative">
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={isListening ? "Listening for your voice..." : "Type or speak your message..."}
-              className="pr-12 rounded-full"
-              disabled={isListening}
-            />
-            <Button
-              onClick={() => handleSendMessage()}
-              disabled={!message.trim() || chatMutation.isPending || isListening}
-              size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 w-8 h-8 rounded-full p-0"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Multilingual Quick Responses */}
-        <div className="flex space-x-2 overflow-x-auto pb-1 scrollbar-hide">
-          {multilingualQuickResponses.map((responseObj, index) => (
+      {/* Quick Response Buttons */}
+      <div className="space-y-2">
+        <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Quick responses:</div>
+        <div className="flex flex-wrap gap-2">
+          {quickResponses.map((responseObj, index) => (
             <Badge
               key={index}
               variant="secondary"
-              className="cursor-pointer hover:bg-secondary/80 transition-colors flex-shrink-0"
+              className="cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
               onClick={() => handleQuickResponse(responseObj[selectedLanguage as keyof typeof responseObj] || responseObj.en)}
             >
               {responseObj[selectedLanguage as keyof typeof responseObj] || responseObj.en}
