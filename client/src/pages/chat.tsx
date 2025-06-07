@@ -8,11 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-const quickResponses = [
-  "I'm feeling anxious",
-  "Need motivation",
-  "Tell me a joke",
-  "Help me relax",
+const multilingualQuickResponses = [
+  { en: "I'm feeling anxious", es: "Me siento ansioso", fr: "Je me sens anxieux", hi: "मैं चिंतित महसूस कर रहा हूं" },
+  { en: "Need motivation", es: "Necesito motivación", fr: "J'ai besoin de motivation", hi: "प्रेरणा चाहिए" },
+  { en: "Tell me a joke", es: "Cuéntame un chiste", fr: "Raconte-moi une blague", hi: "मुझे एक जोक सुनाओ" },
+  { en: "Help me relax", es: "Ayúdame a relajarme", fr: "Aide-moi à me détendre", hi: "आराम करने में मदद करो" },
+];
+
+const supportedLanguages = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'ko', name: '한국어', flag: '🇰🇷' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+  { code: 'pt', name: 'Português', flag: '🇧🇷' },
 ];
 
 export default function Chat() {
@@ -21,6 +34,8 @@ export default function Chat() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const synthesisRef = useRef<SpeechSynthesis | null>(null);
@@ -36,7 +51,10 @@ export default function Chat() {
 
   const chatMutation = useMutation({
     mutationFn: async (userMessage: string) => {
-      const response = await apiRequest("POST", "/api/chat", { message: userMessage });
+      const response = await apiRequest("POST", "/api/chat", { 
+        message: userMessage,
+        preferredLanguage: selectedLanguage 
+      });
       return response.json();
     },
     onMutate: () => {

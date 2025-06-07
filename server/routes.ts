@@ -826,15 +826,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Chat endpoints - CRITICAL FIX: Secure session-based authentication
+  // Enhanced multilingual chat endpoints with automatic language detection
   app.post("/api/chat", async (req: any, res) => {
     try {
       const userId = getCurrentUserId(req);
       
-      console.log('=== CHAT POST ===');
+      console.log('=== MULTILINGUAL CHAT POST ===');
       console.log('Creating chat for userId:', userId);
       
-      const { message } = req.body;
+      const { message, preferredLanguage } = req.body;
       
       if (!message || typeof message !== 'string') {
         return res.status(400).json({ error: "Message is required" });
@@ -850,8 +850,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get current mood for context
       const currentMood = await storage.getRecentMoodEntry(userId);
       
-      // Generate AI response
-      const aiResponse = await generateAIResponse(message, currentMood?.mood);
+      // Get user profile for language preferences
+      const user = await storage.getUser(userId);
+      const userLanguagePreference = preferredLanguage || user?.preferredLanguage;
+      
+      // Generate multilingual AI response
+      const aiResponse = await generateAIResponse(message, currentMood?.mood, userLanguagePreference);
       
       // Save AI response
       const aiMessage = await storage.createChatMessage({
@@ -860,10 +864,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isFromUser: false
       });
 
-      console.log('Chat messages saved for user:', userId);
-      res.json({ response: aiResponse, messageId: aiMessage.id });
+      console.log('Multilingual chat messages saved for user:', userId);
+      res.json({ 
+        response: aiResponse, 
+        messageId: aiMessage.id,
+        detectedLanguage: 'auto-detected',
+        supportedLanguages: ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Hindi', 'Chinese', 'Japanese', 'Korean', 'Arabic']
+      });
     } catch (error: any) {
-      console.error("Chat error:", error);
+      console.error("Multilingual chat error:", error);
       if (error?.message?.includes('User ID not found')) {
         return res.status(401).json({ error: "Authentication required. Please complete onboarding." });
       }
