@@ -476,15 +476,21 @@ export default function Chat() {
               messages.map((msg: any, index: number) => (
                 <div key={`conversation-${index}`} className="space-y-4">
                   {/* User Message */}
-                  <div className="flex justify-end">
+                  <div className="flex justify-end items-end gap-3">
                     <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl rounded-br-md px-5 py-3 max-w-lg shadow-lg transform hover:scale-[1.02] transition-transform duration-200">
                       <p className="text-sm leading-relaxed font-medium">{msg.message}</p>
+                    </div>
+                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
+                      👤
                     </div>
                   </div>
                   
                   {/* AI Response */}
-                  <div className="flex justify-start">
-                    <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-800 dark:text-emerald-100 rounded-2xl rounded-bl-md px-5 py-3 max-w-lg shadow-lg border border-emerald-200/50 dark:border-emerald-700/50 transform hover:scale-[1.02] transition-transform duration-200">
+                  <div className="flex justify-start items-end gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
+                      🤖
+                    </div>
+                    <div className="bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-2xl rounded-bl-md px-5 py-3 max-w-lg shadow-lg border border-gray-200 dark:border-gray-600 transform hover:scale-[1.02] transition-transform duration-200">
                       <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium">{msg.response}</p>
                     </div>
                   </div>
@@ -501,12 +507,15 @@ export default function Chat() {
             )}
             
             {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 rounded-2xl rounded-bl-md px-5 py-3 shadow-lg border border-emerald-200/50 dark:border-emerald-700/50">
+              <div className="flex justify-start items-end gap-3">
+                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
+                  🤖
+                </div>
+                <div className="bg-white dark:bg-gray-700 rounded-2xl rounded-bl-md px-5 py-3 shadow-lg border border-gray-200 dark:border-gray-600">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </div>
