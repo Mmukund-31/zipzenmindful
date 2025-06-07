@@ -95,6 +95,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return userId;
   };
 
+  // User session verification and recovery endpoint
+  app.post('/api/user/verify-session', async (req: any, res) => {
+    try {
+      const { userId } = req.body;
+      
+      console.log('=== VERIFYING USER SESSION ===');
+      console.log('User ID:', userId);
+      
+      if (!userId || userId === 'undefined') {
+        return res.status(400).json({ error: 'Valid user ID is required' });
+      }
+      
+      // Check if user exists in database
+      const existingUser = await storage.getUser(userId);
+      
+      if (existingUser) {
+        // Restore session for existing user
+        req.session.userId = userId;
+        console.log('SESSION RESTORED FOR EXISTING USER:', userId);
+        res.json({ success: true, userId, userExists: true, user: existingUser });
+      } else {
+        // Create new user entry to preserve data structure
+        const newUser = await storage.upsertUser({
+          id: userId,
+          firstName: 'New User',
+          lastName: ''
+        });
+        req.session.userId = userId;
+        console.log('NEW USER CREATED AND SESSION ESTABLISHED:', userId);
+        res.json({ success: true, userId, userExists: false, user: newUser });
+      }
+    } catch (error) {
+      console.error('Session verification error:', error);
+      res.status(500).json({ error: 'Failed to verify session' });
+    }
+  });
+
   // Onboarding data endpoint
   app.post('/api/onboarding/complete', async (req: any, res) => {
     try {
