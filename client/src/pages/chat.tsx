@@ -163,7 +163,11 @@ export default function Chat() {
         const speechToText = event.results[0][0].transcript;
         setMessage(speechToText);
         // Auto-send voice messages
-        handleSendMessage(speechToText);
+        setTimeout(() => {
+          if (speechToText.trim()) {
+            chatMutation.mutate(speechToText);
+          }
+        }, 500);
       };
 
       recognitionRef.current.onerror = (event: any) => {
@@ -183,6 +187,19 @@ export default function Chat() {
 
     if ('speechSynthesis' in window) {
       synthesisRef.current = window.speechSynthesis;
+      
+      // Load voices when they become available
+      const loadVoices = () => {
+        const voices = synthesisRef.current?.getVoices() || [];
+        console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
+      };
+      
+      // Voices may load asynchronously
+      if (synthesisRef.current.getVoices().length > 0) {
+        loadVoices();
+      } else {
+        synthesisRef.current.addEventListener('voiceschanged', loadVoices);
+      }
     }
 
     return () => {
@@ -195,82 +212,155 @@ export default function Chat() {
     };
   }, []);
 
+  const detectLanguageFromText = (text: string): string => {
+    // Enhanced language detection patterns for Indian languages
+    const languagePatterns = {
+      'hi': /[\u0900-\u097F]/, // Hindi (Devanagari)
+      'bn': /[\u0980-\u09FF]/, // Bengali
+      'ta': /[\u0B80-\u0BFF]/, // Tamil
+      'te': /[\u0C00-\u0C7F]/, // Telugu
+      'ml': /[\u0D00-\u0D7F]/, // Malayalam
+      'kn': /[\u0C80-\u0CFF]/, // Kannada
+      'gu': /[\u0A80-\u0AFF]/, // Gujarati
+      'mr': /[\u0900-\u097F]/, // Marathi (Devanagari, same as Hindi)
+      'pa': /[\u0A00-\u0A7F]/, // Punjabi (Gurmukhi)
+      'or': /[\u0B00-\u0B7F]/, // Odia
+      'as': /[\u0980-\u09FF]/, // Assamese (same as Bengali)
+      'ur': /[\u0600-\u06FF]/, // Urdu (Arabic script)
+      'ar': /[\u0600-\u06FF]/, // Arabic
+      'zh': /[\u4e00-\u9fff]/, // Chinese
+      'ja': /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff]/, // Japanese
+      'ko': /[\uac00-\ud7af]/, // Korean
+    };
+
+    // Check for specific language patterns in the text
+    for (const [lang, pattern] of Object.entries(languagePatterns)) {
+      if (pattern.test(text)) {
+        return lang;
+      }
+    }
+
+    // Fallback to selected language or English
+    return selectedLanguage || 'en';
+  };
+
   const speakResponse = (text: string) => {
     if (!synthesisRef.current || !voiceEnabled) return;
 
     // Cancel any ongoing speech
     synthesisRef.current.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Set language for speech synthesis based on selected language
-    const speechLanguageMap: { [key: string]: string } = {
-      'en': 'en-US',
-      'hi': 'hi-IN',
-      'bn': 'bn-IN',
-      'ta': 'ta-IN',
-      'te': 'te-IN',
-      'ml': 'ml-IN',
-      'kn': 'kn-IN',
-      'gu': 'gu-IN',
-      'mr': 'mr-IN',
-      'pa': 'pa-Guru-IN',
-      'or': 'or-IN',
-      'as': 'as-IN',
-      'ur': 'ur-IN',
-      'es': 'es-ES',
-      'fr': 'fr-FR',
-      'de': 'de-DE',
-      'zh': 'zh-CN',
-      'ja': 'ja-JP',
-      'ko': 'ko-KR',
-      'ar': 'ar-SA',
-      'pt': 'pt-BR'
-    };
-    
-    utterance.lang = speechLanguageMap[selectedLanguage] || 'en-US';
-    
-    // Try to find a voice that matches the selected language
-    const voices = synthesisRef.current.getVoices();
-    const preferredVoice = voices.find(voice => 
-      voice.lang.startsWith(utterance.lang.split('-')[0]) || 
-      voice.lang === utterance.lang
-    );
-    
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-    }
-    
-    // Adjust voice based on current mood and language
-    const currentMood = (recentMood as any)?.mood;
-    if (currentMood) {
-      switch (currentMood.toLowerCase()) {
-        case 'anxious':
-        case 'stressed':
-          utterance.rate = 0.8; // Slower, calming pace
-          utterance.pitch = 0.8; // Lower, soothing pitch
-          break;
-        case 'excited':
-        case 'happy':
-          utterance.rate = 1.1; // Slightly faster
-          utterance.pitch = 1.1; // Higher, more energetic
-          break;
-        case 'sad':
-        case 'lonely':
-          utterance.rate = 0.9; // Gentle pace
-          utterance.pitch = 0.9; // Warm, comforting tone
-          break;
-        default:
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
+    const speak = () => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Detect the actual language of the AI response
+      const detectedLanguage = detectLanguageFromText(text);
+      
+      // Set language for speech synthesis based on detected language
+      const speechLanguageMap: { [key: string]: string } = {
+        'en': 'en-US',
+        'hi': 'hi-IN',
+        'bn': 'bn-IN',
+        'ta': 'ta-IN',
+        'te': 'te-IN',
+        'ml': 'ml-IN',
+        'kn': 'kn-IN',
+        'gu': 'gu-IN',
+        'mr': 'mr-IN',
+        'pa': 'pa-IN',
+        'or': 'or-IN',
+        'as': 'as-IN',
+        'ur': 'ur-IN',
+        'es': 'es-ES',
+        'fr': 'fr-FR',
+        'de': 'de-DE',
+        'zh': 'zh-CN',
+        'ja': 'ja-JP',
+        'ko': 'ko-KR',
+        'ar': 'ar-SA',
+        'pt': 'pt-BR'
+      };
+      
+      utterance.lang = speechLanguageMap[detectedLanguage] || 'en-US';
+      
+      // Get fresh voices list and find the best match
+      const voices = synthesisRef.current!.getVoices();
+      const languagePrefix = utterance.lang.split('-')[0];
+      
+      // Enhanced voice selection with broader matching
+      let preferredVoice = voices.find(voice => voice.lang === utterance.lang);
+      if (!preferredVoice) {
+        preferredVoice = voices.find(voice => voice.lang.startsWith(languagePrefix));
       }
+      if (!preferredVoice && detectedLanguage !== 'en') {
+        // Try to find any voice that contains the language name
+        preferredVoice = voices.find(voice => 
+          voice.name.toLowerCase().includes(detectedLanguage) ||
+          voice.lang.toLowerCase().includes(detectedLanguage)
+        );
+      }
+      
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        console.log(`Using voice: ${preferredVoice.name} (${preferredVoice.lang}) for detected language: ${detectedLanguage}`);
+      } else {
+        console.log(`No suitable voice found for language: ${detectedLanguage}, using default with lang: ${utterance.lang}`);
+      }
+      
+      // Adjust voice based on current mood and language
+      const currentMood = (recentMood as any)?.mood;
+      if (currentMood) {
+        switch (currentMood.toLowerCase()) {
+          case 'anxious':
+          case 'stressed':
+            utterance.rate = 0.8; // Slower, calming pace
+            utterance.pitch = 0.8; // Lower, soothing pitch
+            break;
+          case 'excited':
+          case 'happy':
+            utterance.rate = 1.1; // Slightly faster
+            utterance.pitch = 1.1; // Higher, more energetic
+            break;
+          case 'sad':
+          case 'lonely':
+            utterance.rate = 0.9; // Gentle pace
+            utterance.pitch = 0.9; // Warm, comforting tone
+            break;
+          default:
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+        }
+      } else {
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+      }
+
+      utterance.volume = 0.8;
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
+      synthesisRef.current!.speak(utterance);
+    };
+
+    // Wait for voices to load if necessary
+    const voices = synthesisRef.current.getVoices();
+    if (voices.length === 0) {
+      // Voices haven't loaded yet, wait for them
+      const handleVoicesChanged = () => {
+        synthesisRef.current?.removeEventListener('voiceschanged', handleVoicesChanged);
+        speak();
+      };
+      synthesisRef.current.addEventListener('voiceschanged', handleVoicesChanged);
+      
+      // Fallback timeout in case voiceschanged doesn't fire
+      setTimeout(() => {
+        synthesisRef.current?.removeEventListener('voiceschanged', handleVoicesChanged);
+        speak();
+      }, 1000);
+    } else {
+      speak();
     }
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    synthesisRef.current.speak(utterance);
   };
 
   const startListening = () => {
