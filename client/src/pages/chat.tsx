@@ -465,18 +465,18 @@ export default function Chat() {
           <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
             {messages && Array.isArray(messages) && messages.length > 0 ? (
               messages.map((msg: any, index: number) => (
-                <div key={index} className="space-y-2">
+                <div key={index} className="space-y-4">
                   {/* User Message - Right side, blue bubble, white text */}
-                  <div className="flex justify-end">
-                    <div className="bg-blue-600 text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-xs lg:max-w-md shadow-sm">
-                      <p className="text-sm">{msg.message}</p>
+                  <div className="flex justify-end w-full">
+                    <div className="bg-blue-600 text-white rounded-2xl rounded-br-sm px-4 py-3 max-w-xs lg:max-w-md shadow-sm">
+                      <p className="text-sm font-medium">{msg.message}</p>
                     </div>
                   </div>
                   
-                  {/* AI Response - Left side, gray bubble, black text */}
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white rounded-2xl rounded-bl-sm px-4 py-2 max-w-xs lg:max-w-md shadow-sm">
-                      <p className="text-sm whitespace-pre-wrap">{msg.response}</p>
+                  {/* AI Response - Left side, light gray bubble, dark text */}
+                  <div className="flex justify-start w-full">
+                    <div className="bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl rounded-bl-sm px-4 py-3 max-w-xs lg:max-w-md shadow-sm border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.response}</p>
                     </div>
                   </div>
                 </div>

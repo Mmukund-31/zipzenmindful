@@ -100,18 +100,19 @@ export async function generateAIResponse(userMessage: string, currentMood?: stri
     
     CRITICAL LANGUAGE INSTRUCTIONS:
     - You MUST respond ENTIRELY in the SAME language as the user's message
-    - If user writes in Telugu, respond ONLY in Telugu
-    - If user writes in Hindi, respond ONLY in Hindi
-    - If user writes in Tamil, respond ONLY in Tamil
-    - Never mix languages in your response
-    - Use proper script rendering for each language
-    - Incorporate culturally appropriate expressions for each Indian language
-    - Use respectful forms (आप, आपका, नीजे, आपणि, आपन्, etc.) in Indian languages
+    - If user writes in Telugu (తెలుగు), respond ONLY in Telugu using Telugu script
+    - If user writes in Hindi (हिंदी), respond ONLY in Hindi using Devanagari script
+    - If user writes in Tamil (தமிழ்), respond ONLY in Tamil using Tamil script
+    - If user writes in Bengali (বাংলা), respond ONLY in Bengali using Bengali script
+    - NEVER mix languages or use English words in your response
+    - Use proper Unicode script rendering for each language
+    - Use respectful forms: Telugu (మీరు), Hindi (आप), Tamil (நீங்கள்), Bengali (আপনি), etc.
+    - Incorporate culturally appropriate expressions and greetings for each Indian language
     - For Indian languages, reference appropriate cultural context (family values, festivals, traditions)
     - Maintain emotional warmth and empathy in all languages
     
     ${currentMood ? `The user's current mood is: ${currentMood}. Tailor your response to be supportive and appropriate for their emotional state.` : ''}
-    ${preferredLanguage ? `IMPORTANT: User's preferred language is ${preferredLanguage}. If the user message is in ${preferredLanguage}, respond ENTIRELY in ${preferredLanguage}.` : ''}
+    ${preferredLanguage ? `CRITICAL: User's preferred language is ${preferredLanguage}. You MUST respond ENTIRELY in ${preferredLanguage} script and language.` : ''}
     
     Guidelines:
     - Be empathetic, warm, and supportive in their native language
