@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -384,12 +384,10 @@ export default function Chat() {
   };
 
   useEffect(() => {
-    if (messagesEndRef.current && messages) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
     }
-  }, [messages, isTyping]);
+  }, [messages]);
 
   useEffect(() => {
     localStorage.setItem('selectedLanguage', selectedLanguage);
@@ -462,34 +460,36 @@ export default function Chat() {
         {/* Chat Container */}
         <div className="flex-1 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col">
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
-            {messages && Array.isArray(messages) && messages.length > 0 ? (
-              messages.map((msg: any, index: number) => (
-                <div key={index} className="space-y-4">
-                  {/* User Message - Right side, blue bubble, white text */}
-                  <div className="flex justify-end w-full">
-                    <div className="bg-blue-600 text-white rounded-2xl rounded-br-sm px-4 py-3 max-w-xs lg:max-w-md shadow-sm">
-                      <p className="text-sm font-medium">{msg.message}</p>
+          <div className="flex-1 overflow-y-auto p-4 min-h-0">
+            <div className="space-y-4">
+              {messages && Array.isArray(messages) && messages.length > 0 ? (
+                messages.map((msg: any, index: number) => (
+                  <div key={`conversation-${index}`} className="mb-6">
+                    {/* User Message - Right side, blue bubble, white text */}
+                    <div className="flex justify-end mb-3">
+                      <div className="bg-blue-600 text-white rounded-2xl rounded-br-sm px-4 py-3 max-w-xs lg:max-w-md shadow-sm">
+                        <p className="text-sm">{msg.message}</p>
+                      </div>
+                    </div>
+                    
+                    {/* AI Response - Left side, light gray bubble, dark text */}
+                    <div className="flex justify-start">
+                      <div className="bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl rounded-bl-sm px-4 py-3 max-w-xs lg:max-w-md shadow-sm border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.response}</p>
+                      </div>
                     </div>
                   </div>
-                  
-                  {/* AI Response - Left side, light gray bubble, dark text */}
-                  <div className="flex justify-start w-full">
-                    <div className="bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl rounded-bl-sm px-4 py-3 max-w-xs lg:max-w-md shadow-sm border border-gray-200 dark:border-gray-700">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.response}</p>
-                    </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-gray-500 dark:text-gray-400">
+                    <div className="text-4xl mb-4">💬</div>
+                    <p className="text-lg font-medium">Start a conversation</p>
+                    <p className="text-sm">Choose a language and begin chatting</p>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center text-gray-500 dark:text-gray-400">
-                  <div className="text-4xl mb-4">💬</div>
-                  <p className="text-lg font-medium">Start a conversation</p>
-                  <p className="text-sm">Choose a language and begin chatting</p>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
             
             {isTyping && (
               <div className="flex justify-start">
