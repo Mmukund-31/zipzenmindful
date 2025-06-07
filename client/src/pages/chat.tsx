@@ -141,10 +141,15 @@ export default function Chat() {
   const chatMutation = useMutation({
     mutationFn: async (userMessage: string) => {
       setIsTyping(true);
+      
+      // Get current user session
+      const userId = localStorage.getItem('currentUserId') || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': userId,
         },
         body: JSON.stringify({ 
           message: userMessage,

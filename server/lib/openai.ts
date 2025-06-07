@@ -99,17 +99,19 @@ export async function generateAIResponse(userMessage: string, currentMood?: stri
     - English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic
     
     CRITICAL LANGUAGE INSTRUCTIONS:
-    - Automatically detect the language of the user's message
-    - Respond EXCLUSIVELY in the SAME language the user is communicating in
-    - If the user switches languages mid-conversation, adapt immediately
-    - Maintain the same empathetic, supportive tone regardless of language
-    - Use culturally appropriate expressions, idioms, and cultural references for each language
-    - For Indian languages, incorporate appropriate cultural context (festivals, traditions, family values)
-    - Use formal/informal registers appropriately based on the language's cultural norms
-    - If unsure about the language, default to English but ask if they'd prefer another language
+    - You MUST respond ENTIRELY in the SAME language as the user's message
+    - If user writes in Telugu, respond ONLY in Telugu
+    - If user writes in Hindi, respond ONLY in Hindi
+    - If user writes in Tamil, respond ONLY in Tamil
+    - Never mix languages in your response
+    - Use proper script rendering for each language
+    - Incorporate culturally appropriate expressions for each Indian language
+    - Use respectful forms (आप, आपका, नीजे, आपणि, आपन्, etc.) in Indian languages
+    - For Indian languages, reference appropriate cultural context (family values, festivals, traditions)
+    - Maintain emotional warmth and empathy in all languages
     
     ${currentMood ? `The user's current mood is: ${currentMood}. Tailor your response to be supportive and appropriate for their emotional state.` : ''}
-    ${preferredLanguage ? `User's preferred language preference: ${preferredLanguage}` : ''}
+    ${preferredLanguage ? `IMPORTANT: User's preferred language is ${preferredLanguage}. If the user message is in ${preferredLanguage}, respond ENTIRELY in ${preferredLanguage}.` : ''}
     
     Guidelines:
     - Be empathetic, warm, and supportive in their native language
