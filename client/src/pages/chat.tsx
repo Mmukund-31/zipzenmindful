@@ -402,14 +402,16 @@ export default function Chat() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto p-4 max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto p-4 max-w-5xl">
         {/* Header */}
-        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="mb-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800 dark:text-white">AI Chat Assistant</h1>
-              <p className="text-gray-600 dark:text-gray-300">Your multilingual wellness companion</p>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                AI Chat Assistant
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300 mt-1">Your multilingual wellness companion</p>
             </div>
             
             <div className="flex items-center gap-3">
@@ -420,26 +422,30 @@ export default function Chat() {
                   description: "Voice recognition and AI responses will now use this language",
                 });
               }}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-48 h-11 bg-white/50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 rounded-lg">
                   <SelectValue placeholder="Select language" />
                 </SelectTrigger>
-                <SelectContent className="max-h-64 overflow-y-auto z-50">
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Global Languages</div>
+                <SelectContent className="max-h-64 overflow-y-auto z-50 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-gray-200 dark:border-gray-600">
+                  <div className="px-3 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 border-b border-gray-200 dark:border-gray-600">
+                    Global Languages
+                  </div>
                   {supportedLanguages.filter(lang => lang.region === 'Global').map((lang) => (
-                    <SelectItem key={lang.code} value={lang.code}>
-                      <div className="flex items-center gap-2">
-                        <span>{lang.flag}</span>
-                        <span>{lang.name}</span>
+                    <SelectItem key={lang.code} value={lang.code} className="py-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{lang.flag}</span>
+                        <span className="font-medium">{lang.name}</span>
                       </div>
                     </SelectItem>
                   ))}
                   
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">Indian Languages</div>
+                  <div className="px-3 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 border-b border-t border-gray-200 dark:border-gray-600 mt-1">
+                    Indian Languages
+                  </div>
                   {supportedLanguages.filter(lang => lang.region === 'India').map((lang) => (
-                    <SelectItem key={lang.code} value={lang.code}>
-                      <div className="flex items-center gap-2">
-                        <span>{lang.flag}</span>
-                        <span>{lang.name}</span>
+                    <SelectItem key={lang.code} value={lang.code} className="py-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{lang.flag}</span>
+                        <span className="font-medium">{lang.name}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -449,54 +455,58 @@ export default function Chat() {
               <Button
                 variant="outline"
                 onClick={toggleVoice}
-                className={`${voiceEnabled ? "text-blue-600 border-blue-600" : "text-gray-400"} transition-colors`}
+                className={`h-11 px-4 rounded-lg transition-all duration-200 ${
+                  voiceEnabled 
+                    ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-700" 
+                    : "bg-gray-50 text-gray-400 border-gray-200 dark:bg-gray-700/50 dark:text-gray-500 dark:border-gray-600"
+                }`}
               >
                 {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                <span className="ml-2 hidden sm:inline">Voice</span>
+                <span className="ml-2 hidden sm:inline font-medium">Voice</span>
               </Button>
             </div>
           </div>
         </div>
 
         {/* Chat Container */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 dark:border-gray-700/50 overflow-hidden">
           {/* Messages Area */}
-          <div className="h-96 overflow-y-auto p-4 space-y-4">
+          <div className="h-[500px] overflow-y-auto p-6 space-y-6 scroll-smooth">
             {messages && Array.isArray(messages) && messages.length > 0 ? (
               messages.map((msg: any, index: number) => (
                 <div key={`conversation-${index}`} className="space-y-4">
                   {/* User Message */}
                   <div className="flex justify-end">
-                    <div className="bg-blue-600 text-white rounded-lg px-4 py-2 max-w-md shadow-sm">
-                      <p className="text-sm">{msg.message}</p>
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl rounded-br-md px-5 py-3 max-w-lg shadow-lg transform hover:scale-[1.02] transition-transform duration-200">
+                      <p className="text-sm leading-relaxed font-medium">{msg.message}</p>
                     </div>
                   </div>
                   
                   {/* AI Response */}
                   <div className="flex justify-start">
-                    <div className="bg-green-50 dark:bg-green-900 text-green-800 dark:text-green-100 rounded-lg px-4 py-2 max-w-md shadow-sm border border-green-200 dark:border-green-700">
-                      <p className="text-sm whitespace-pre-wrap">{msg.response}</p>
+                    <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-800 dark:text-emerald-100 rounded-2xl rounded-bl-md px-5 py-3 max-w-lg shadow-lg border border-emerald-200/50 dark:border-emerald-700/50 transform hover:scale-[1.02] transition-transform duration-200">
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium">{msg.response}</p>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
               <div className="flex items-center justify-center h-full">
-                <div className="text-center text-gray-500 dark:text-gray-400">
-                  <div className="text-4xl mb-4">💬</div>
-                  <p className="text-lg font-medium">Start a conversation</p>
-                  <p className="text-sm">Choose a language and begin chatting</p>
+                <div className="text-center">
+                  <div className="text-6xl mb-6 animate-bounce">💬</div>
+                  <h3 className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-2">Start a conversation</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Choose a language and begin chatting with your AI assistant</p>
                 </div>
               </div>
             )}
             
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-green-50 dark:bg-green-900 rounded-lg px-4 py-2 shadow-sm border border-green-200 dark:border-green-700">
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 rounded-2xl rounded-bl-md px-5 py-3 shadow-lg border border-emerald-200/50 dark:border-emerald-700/50">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </div>
@@ -507,14 +517,14 @@ export default function Chat() {
 
           {/* Quick Responses */}
           {(!messages || !Array.isArray(messages) || messages.length === 0) && (
-            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Quick starters:</div>
-              <div className="flex flex-wrap gap-2">
+            <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gray-50/50 dark:bg-gray-800/50">
+              <div className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-3">Quick starters:</div>
+              <div className="flex flex-wrap gap-3">
                 {quickResponses.slice(0, 3).map((responseObj, index) => (
                   <Badge
                     key={index}
                     variant="secondary"
-                    className="cursor-pointer hover:bg-blue-100 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-300 transition-colors"
+                    className="cursor-pointer bg-white/70 hover:bg-blue-50 hover:text-blue-700 dark:bg-gray-700/70 dark:hover:bg-blue-900/30 dark:hover:text-blue-300 transition-all duration-200 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transform hover:scale-105"
                     onClick={() => handleQuickResponse(responseObj[selectedLanguage as keyof typeof responseObj] || responseObj.en)}
                   >
                     {responseObj[selectedLanguage as keyof typeof responseObj] || responseObj.en}
@@ -525,21 +535,26 @@ export default function Chat() {
           )}
 
           {/* Input Area */}
-          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex gap-2">
+          <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-white/50 dark:bg-gray-800/50">
+            <div className="flex gap-3">
               <Input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={`Type your message in ${supportedLanguages.find(l => l.code === selectedLanguage)?.name}...`}
                 disabled={chatMutation.isPending || isListening}
-                className="flex-1"
+                className="flex-1 h-12 bg-white/80 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 rounded-xl px-4 text-sm font-medium placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-200"
               />
               
               <Button
                 onClick={() => isListening ? stopListening() : startListening()}
                 variant={isListening ? "destructive" : "outline"}
                 disabled={!recognitionRef.current || isTyping}
+                className={`h-12 px-4 rounded-xl transition-all duration-200 ${
+                  isListening 
+                    ? "bg-red-500 hover:bg-red-600 text-white shadow-lg" 
+                    : "bg-white/80 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
+                }`}
               >
                 {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </Button>
@@ -547,7 +562,7 @@ export default function Chat() {
               <Button
                 onClick={() => handleSendMessage()}
                 disabled={!message.trim() || chatMutation.isPending || isListening}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="h-12 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {chatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
