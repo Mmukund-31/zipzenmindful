@@ -462,16 +462,16 @@ export default function Chat() {
             {messages && Array.isArray(messages) && messages.length > 0 ? (
               messages.map((msg: any, index: number) => (
                 <div key={index} className="space-y-3">
-                  {/* User Message */}
+                  {/* User Message - Right side, blue bubble, white text */}
                   <div className="flex justify-end">
                     <div className="bg-blue-600 text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-xs lg:max-w-md shadow-sm">
                       <p className="text-sm">{msg.message}</p>
                     </div>
                   </div>
                   
-                  {/* AI Response */}
+                  {/* AI Response - Left side, gray bubble, black text */}
                   <div className="flex justify-start">
-                    <div className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-2xl rounded-bl-sm px-4 py-2 max-w-xs lg:max-w-md shadow-sm">
+                    <div className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white rounded-2xl rounded-bl-sm px-4 py-2 max-w-xs lg:max-w-md shadow-sm">
                       <p className="text-sm whitespace-pre-wrap">{msg.response}</p>
                     </div>
                   </div>
