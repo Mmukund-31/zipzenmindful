@@ -106,6 +106,15 @@ export const challengeProgress = pgTable("challenge_progress", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+export const challengeDailyProgress = pgTable("challenge_daily_progress", {
+  id: serial("id").primaryKey(),
+  challengeId: varchar("challenge_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  date: varchar("date").notNull(), // YYYY-MM-DD
+  completed: boolean("completed").default(false),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
 export const insertMoodEntrySchema = createInsertSchema(moodEntries).omit({
   id: true,
   timestamp: true,

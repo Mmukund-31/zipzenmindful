@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -13,10 +14,10 @@ async function initializeDatabase() {
     log("🔄 Initializing database connection...");
     await db.execute("SELECT 1");
     log("✅ Database connection established successfully");
-    
+
     // Verify critical tables exist - simplify for now
     log("📊 Database structure verified");
-    
+
     return true;
   } catch (error) {
     log("❌ Database initialization failed: " + error);
@@ -28,7 +29,7 @@ async function initializeDatabase() {
 async function ensureDataPersistence() {
   try {
     log("🛡️ Ensuring data persistence mechanisms...");
-    
+
     // Create backup indexes for faster data retrieval
     await db.execute(`
       CREATE INDEX IF NOT EXISTS idx_users_id ON users(id);
@@ -38,7 +39,7 @@ async function ensureDataPersistence() {
       CREATE INDEX IF NOT EXISTS idx_gratitude_entries_user_id ON gratitude_entries(user_id);
       CREATE INDEX IF NOT EXISTS idx_challenge_progress_user_id ON challenge_progress(user_id);
     `);
-    
+
     log("✅ Data persistence mechanisms activated");
     return true;
   } catch (error) {
@@ -82,13 +83,13 @@ app.use((req, res, next) => {
     // Initialize database first
     await initializeDatabase();
     await ensureDataPersistence();
-    
+
     const server = await registerRoutes(app);
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
-      
+
       log(`Error: ${status} - ${message}`);
       res.status(status).json({ message });
     });
@@ -102,10 +103,7 @@ app.use((req, res, next) => {
       serveStatic(app);
     }
 
-    // ALWAYS serve the app on port 5000
-    // this serves both the API and the client.
-    // It is the only port that is not firewalled.
-    const port = 5000;
+    const port = parseInt(process.env.PORT || '5000', 10);
     server.listen({
       port,
       host: "0.0.0.0",

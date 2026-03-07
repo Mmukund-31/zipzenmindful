@@ -30,28 +30,28 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByPhone(phoneNumber: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  
+
   createMoodEntry(moodEntry: InsertMoodEntry): Promise<MoodEntry>;
   getMoodEntriesByUser(userId: string): Promise<MoodEntry[]>;
   getRecentMoodEntry(userId: string): Promise<MoodEntry | undefined>;
-  
+
   createMemory(memory: InsertMemory): Promise<Memory>;
   getMemoriesByUser(userId: string): Promise<Memory[]>;
   getMemoriesByCategory(userId: string, category: string): Promise<Memory[]>;
   updateMemoryFavorite(id: number, isFavorite: boolean): Promise<Memory | undefined>;
-  
+
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatMessagesByUser(userId: string): Promise<ChatMessage[]>;
-  
+
   createGratitudeEntry(entry: InsertGratitudeEntry): Promise<GratitudeEntry>;
   getGratitudeEntriesByUser(userId: string): Promise<GratitudeEntry[]>;
-  
+
   getActiveChallengesByUser(userId: string): Promise<Challenge[]>;
   getAvailableChallenges(userId: string): Promise<Challenge[]>;
   getCompletedChallengesByUser(userId: string): Promise<Challenge[]>;
   joinChallenge(userId: string, challengeId: string): Promise<ChallengeProgress>;
   updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<ChallengeProgress>;
-  
+
   updateUserLanguage(userId: string, language: string): Promise<User>;
 }
 
@@ -193,7 +193,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql.raw(`SELECT * FROM challenge_progress WHERE user_id = '${userId}'`)
       );
-      
+
       // Return progress data with predefined challenge info and daily streak count
       const challengesWithProgress = await Promise.all(
         (result.rows || []).map(async (p: any) => {
@@ -205,9 +205,9 @@ export class DatabaseStorage implements IStorage {
               WHERE user_id = '${userId}' AND challenge_id = '${p.challenge_id}' AND completed = true
             `)
           );
-          
+
           const totalDays = (streakResult.rows && streakResult.rows[0]) ? Number((streakResult.rows[0] as any).total_days) : 0;
-          
+
           return {
             challengeId: p.challenge_id,
             progress: { completed: totalDays },
@@ -215,7 +215,7 @@ export class DatabaseStorage implements IStorage {
           };
         })
       );
-      
+
       return challengesWithProgress;
     } catch (error) {
       console.error("Error fetching active challenges:", error);
@@ -229,10 +229,10 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(
         sql.raw(`SELECT challenge_id FROM challenge_progress WHERE user_id = '${userId}'`)
       );
-      
+
       const startedChallengeIds = (result.rows || []).map((row: any) => row.challenge_id);
       const predefinedChallenges = this.getAllPredefinedChallenges();
-      
+
       return predefinedChallenges.filter(c => !startedChallengeIds.includes(c.id));
     } catch (error) {
       console.error("Error fetching available challenges:", error);
@@ -250,7 +250,7 @@ export class DatabaseStorage implements IStorage {
           WHERE user_id = '${userId}' AND completed = true
         `)
       );
-      
+
       // Return completed challenges with proper info
       return (result.rows || []).map((p: any) => ({
         ...this.getPredefinedChallengeInfo(p.challenge_id),
@@ -268,12 +268,12 @@ export class DatabaseStorage implements IStorage {
       // Execute direct SQL insertion to handle the schema properly
       await db.execute(
         sql.raw(`
-          INSERT INTO challenge_progress (challenge_id, user_id, date, completed)
-          VALUES ('${challengeId}', '${userId}', NOW(), false)
+          INSERT INTO challenge_progress (challenge_id, user_id, start_date, completed)
+          VALUES ('${challengeId}', '${userId}', NOW(), 0)
           ON CONFLICT DO NOTHING
         `)
       );
-      
+
       return {
         id: Date.now(),
         challengeId,
@@ -288,7 +288,6 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-
   async updateUserLanguage(userId: string, language: string): Promise<User> {
     const [user] = await db
       .update(users)
@@ -301,28 +300,27 @@ export class DatabaseStorage implements IStorage {
   async updateChallengeProgress(userId: string, challengeId: string, completed: boolean, date?: string): Promise<ChallengeProgress> {
     try {
       const targetDate = date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-      
+
       if (completed) {
         // Record daily progress
         await db.execute(
           sql.raw(`
             INSERT INTO challenge_daily_progress (challenge_id, user_id, date, completed)
             VALUES ('${challengeId}', '${userId}', '${targetDate}', true)
-            ON CONFLICT (challenge_id, user_id, date) 
-            DO UPDATE SET completed = true
+            ON CONFLICT DO NOTHING
           `)
         );
-        
+
         // Update main progress table
         await db.execute(
           sql.raw(`
             UPDATE challenge_progress 
-            SET completed = true, date = NOW() 
+            SET completed = completed + 1, last_activity_date = NOW() 
             WHERE user_id = '${userId}' AND challenge_id = '${challengeId}'
           `)
         );
       }
-      
+
       // Get current streak and completion count
       const streakResult = await db.execute(
         sql.raw(`
@@ -331,9 +329,9 @@ export class DatabaseStorage implements IStorage {
           WHERE user_id = '${userId}' AND challenge_id = '${challengeId}' AND completed = true
         `)
       );
-      
+
       const totalDays = (streakResult.rows && streakResult.rows[0]) ? Number((streakResult.rows[0] as any).total_days) : 0;
-      
+
       return {
         id: Date.now(),
         challengeId,
@@ -351,9 +349,9 @@ export class DatabaseStorage implements IStorage {
 
   private getPredefinedChallengeInfo(challengeId: string) {
     const challenges = this.getAllPredefinedChallenges();
-    return challenges.find(c => c.id === challengeId) || { 
-      id: challengeId, 
-      title: "Unknown Challenge", 
+    return challenges.find(c => c.id === challengeId) || {
+      id: challengeId,
+      title: "Unknown Challenge",
       duration: 7,
       points: 50,
       icon: "🎯"
@@ -373,29 +371,29 @@ export class DatabaseStorage implements IStorage {
         icon: "🧘‍♀️"
       },
       {
-        id: "gratitude-streak", 
+        id: "gratitude-streak",
         title: "14-Day Gratitude Streak",
         description: "Write 3 things you're grateful for every day for 2 weeks",
         duration: 14,
-        type: "gratitude", 
+        type: "gratitude",
         difficulty: "Easy",
         points: 70,
         icon: "🙏"
       },
       {
         id: "mood-tracker",
-        title: "21-Day Mood Awareness", 
+        title: "21-Day Mood Awareness",
         description: "Log your mood twice daily and reflect on patterns",
         duration: 21,
         type: "mood",
-        difficulty: "Easy", 
+        difficulty: "Easy",
         points: 80,
         icon: "😊"
       },
       {
         id: "stress-buster",
         title: "10-Day Stress Relief",
-        description: "Use stress management tools daily when feeling overwhelmed", 
+        description: "Use stress management tools daily when feeling overwhelmed",
         duration: 10,
         type: "wellness",
         difficulty: "Intermediate",
