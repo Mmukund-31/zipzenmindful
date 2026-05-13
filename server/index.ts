@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { db } from "./db";
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -104,11 +105,7 @@ app.use((req, res, next) => {
     }
 
     const port = parseInt(process.env.PORT || '5000', 10);
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
+    server.listen(port, "127.0.0.1", () => {
       log(`🚀 MindEase application serving on port ${port} with data persistence`);
     });
   } catch (error) {

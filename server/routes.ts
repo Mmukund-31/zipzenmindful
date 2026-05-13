@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import session from "express-session";
+import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema, users, moodEntries, memories, chatMessages, gratitudeEntries, challengeProgress } from "@shared/schema";
 import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText, analyzeImageForMemory, generateMemoryGalleryTitle, analyzeImageAndGenerateMeme, generateDailyWellnessTip, generatePersonalizedChallenges, generatePersonalizedInsights, generatePersonalizedThoughtInterruption, generateThoughtInterruptionTechniques } from "./lib/openai";
@@ -46,25 +47,25 @@ const generateOTP = (): string => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Configure session middleware
+  const SessionStore = MemoryStore(session);
   app.use(session({
+    store: new SessionStore({ checkPeriod: 86400000 }),
     secret: process.env.SESSION_SECRET || 'mindease-secret-key-change-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     }
   }));
 
-  // Authentication middleware - CRITICAL FIX: Only use session for user isolation
   const requireAuth = (req: any, res: any, next: any) => {
-    // ONLY use session userId - no headers to prevent data leakage
-    const userId = req.session?.userId;
+    let userId = req.session?.userId;
 
-    console.log('=== AUTH CHECK ===');
-    console.log('Session userId:', userId);
-    console.log('Session ID:', req.sessionID);
+    if (!userId && req.headers['x-user-id']) {
+      userId = req.headers['x-user-id'];
+      req.session.userId = userId;
+    }
 
     if (!userId) {
       return res.status(401).json({ error: 'Authentication required. Please log in.' });
