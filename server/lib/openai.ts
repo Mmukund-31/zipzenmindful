@@ -1,6 +1,14 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+let _genAI: GoogleGenerativeAI | null = null;
+function getGenAI(): GoogleGenerativeAI {
+  if (!_genAI) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY environment variable is not set");
+    _genAI = new GoogleGenerativeAI(apiKey);
+  }
+  return _genAI;
+}
 
 export async function analyzeImageAndGenerateMeme(imageBuffer: Buffer, style: string): Promise<{
   topText: string;
@@ -8,7 +16,7 @@ export async function analyzeImageAndGenerateMeme(imageBuffer: Buffer, style: st
   description: string;
 }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const imagePart = {
       inlineData: {
@@ -84,7 +92,7 @@ Return your response in this exact JSON format:
 // Enhanced multilingual AI response generation with automatic language detection
 export async function generateAIResponse(userMessage: string, currentMood?: string, preferredLanguage?: string): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     // Enhanced multilingual system prompt with comprehensive Indian language support
     const systemPrompt = `You are MindEase Assistant, a compassionate AI companion focused on mental wellness and emotional support. You can communicate fluently in ALL Indian languages and global languages including:
@@ -130,8 +138,8 @@ export async function generateAIResponse(userMessage: string, currentMood?: stri
     const response = await result.response;
     
     return response.text() || "I'm here to support you. Could you tell me more about how you're feeling?";
-  } catch (error) {
-    console.error("Gemini API error:", error);
+  } catch (error: any) {
+    console.error("Gemini API error:", error?.message || error?.status || String(error));
     return "I'm having trouble connecting right now, but I'm here for you. How can I help support your wellness today?";
   }
 }
@@ -143,7 +151,7 @@ export async function analyzeMoodFromText(text: string): Promise<{
   confidence: number;
 }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const prompt = `Analyze the emotional tone of the text and determine the primary mood. 
     Respond with JSON in this exact format: 
@@ -185,7 +193,7 @@ export async function analyzeMoodFromText(text: string): Promise<{
 
 export async function generateMoodInsights(moodEntries: any[]): Promise<string[]> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     if (moodEntries.length === 0) {
       return [
@@ -265,7 +273,7 @@ export async function generateMemeText(memoryTitle: string, memoryCategory: stri
   bottomText: string;
 }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const prompt = `You are a funny meme text generator for a wellness app. Create hilarious, positive, and uplifting meme text based on the memory details.
     
@@ -308,7 +316,7 @@ export async function generateMemeText(memoryTitle: string, memoryCategory: stri
 
 export async function generateDailyWellnessTip(userContext?: any): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
     
@@ -331,7 +339,7 @@ export async function generateDailyWellnessTip(userContext?: any): Promise<strin
     return response.text().trim() || "Take a moment today to practice deep breathing. Even three mindful breaths can help center your thoughts and reduce stress.";
   } catch (error) {
     console.error("Daily tip generation error:", error);
-    throw error;
+    return "Take a moment today to breathe deeply — even three slow breaths can help center your thoughts and reduce stress.";
   }
 }
 
@@ -342,7 +350,7 @@ export async function analyzeImageForMemory(base64Image: string): Promise<{
   emotions: string[];
 }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const prompt = `Analyze this image and extract meaningful information for a mental wellness memory app. 
     Look for emotional context, activities, people, locations, and positive elements that could be used for wellness support.
@@ -395,7 +403,7 @@ export async function analyzeImageForMemory(base64Image: string): Promise<{
 
 export async function generateMemoryGalleryTitle(memories: any[]): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const memoryTitles = memories.map(m => m.title).join(", ");
     const categories = Array.from(new Set(memories.map(m => m.category)));
@@ -427,7 +435,7 @@ export async function generateMemoryGalleryTitle(memories: any[]): Promise<strin
 
 export async function generateThoughtInterruptionTechniques(): Promise<string[]> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const prompt = `Generate 10 unique, effective thought interruption techniques for mental wellness. These should be:
     - Quick and practical (30 seconds to 2 minutes)
@@ -457,7 +465,7 @@ export async function generateThoughtInterruptionTechniques(): Promise<string[]>
 
 export async function generatePersonalizedChallenges(userProfile: any, completedChallenges: string[]): Promise<any[]> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const completedList = completedChallenges.join(', ');
     const goals = userProfile.wellnessGoals || [];
@@ -503,7 +511,7 @@ export async function generatePersonalizedInsights(userActivity: {
   userProfile: any;
 }): Promise<string[]> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const { moodEntries, memories, chatMessages, gratitudeEntries, userProfile } = userActivity;
     
@@ -577,7 +585,7 @@ Respond with JSON: { "insights": ["insight1", "insight2", "insight3", "insight4"
 
 export async function generatePersonalizedThoughtInterruption(userProfile: any, recentMoods: any[]): Promise<string[]> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = getGenAI().getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const moodContext = recentMoods.length > 0 ? 
       `Recent moods: ${recentMoods.slice(-3).map(m => `${m.mood} (${m.rating}/5)`).join(', ')}` : 

@@ -42,6 +42,7 @@ async function ensureDataPersistence() {
     `);
 
     log("✅ Data persistence mechanisms activated");
+    log(`🔑 GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? 'loaded ✅' : 'MISSING ❌'}`);
     return true;
   } catch (error) {
     log("⚠️ Warning: Could not create all indexes: " + error);
