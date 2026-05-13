@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
 import { storage } from "./storage";
 import { insertMoodEntrySchema, insertMemorySchema, insertChatMessageSchema, insertGratitudeEntrySchema, users, moodEntries, memories, chatMessages, gratitudeEntries, challengeProgress } from "@shared/schema";
 import { generateAIResponse, analyzeMoodFromText, generateMoodInsights, generateMemeText, analyzeImageForMemory, generateMemoryGalleryTitle, analyzeImageAndGenerateMeme, generateDailyWellnessTip, generatePersonalizedChallenges, generatePersonalizedInsights, generatePersonalizedThoughtInterruption, generateThoughtInterruptionTechniques } from "./lib/openai";
@@ -47,9 +48,21 @@ const generateOTP = (): string => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  const SessionStore = MemoryStore(session);
+  let sessionStore: session.Store;
+  if (process.env.NODE_ENV === 'production') {
+    const PgSession = connectPgSimple(session);
+    sessionStore = new PgSession({
+      conString: process.env.DATABASE_URL,
+      tableName: 'sessions',
+      createTableIfMissing: true,
+    });
+  } else {
+    const SessionStore = MemoryStore(session);
+    sessionStore = new SessionStore({ checkPeriod: 86400000 });
+  }
+
   app.use(session({
-    store: new SessionStore({ checkPeriod: 86400000 }),
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'mindease-secret-key-change-in-production',
     resave: false,
     saveUninitialized: false,
