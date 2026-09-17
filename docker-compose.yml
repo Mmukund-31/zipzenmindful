@@ -1,12 +1,48 @@
 version: "3.9"
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: zemmindful_postgres
+    environment:
+      POSTGRES_USER: mindease
+      POSTGRES_PASSWORD: mindease
+      POSTGRES_DB: mindease
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  ai-service:
+    build: ./ai-service
+    container_name: zemmindful_ai_service
+    ports:
+      - "8000:8000"
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - ai_chroma_data:/data/chroma_db
+    restart: unless-stopped
+
   app:
     build: .
     container_name: zemmindful_app
+    depends_on:
+      - postgres
+      - ai-service
     ports:
       - "5000:5000"
     environment:
       NODE_ENV: production
       PORT: 5000
+      DATABASE_URL: ${DATABASE_URL:-postgresql://mindease:mindease@postgres:5432/mindease}
+      SESSION_SECRET: ${SESSION_SECRET:-dev_session_secret_change_me}
+      AI_SERVICE_URL: http://ai-service:8000
     restart: unless-stopped
+
+volumes:
+  postgres_data:
+  ai_chroma_data:

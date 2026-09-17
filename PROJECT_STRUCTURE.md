@@ -92,20 +92,44 @@ wellness-app/
 │   ├── db.ts                 # Database connection
 │   ├── replitAuth.ts         # Authentication setup
 │   └── lib/
-│       └── openai.ts         # AI functions and mood analysis
+│       └── openai.ts         # Thin HTTP adapter -> ai-service (see below)
 │
-└── shared/                   # Shared Types and Schemas
-    └── schema.ts             # Database models and validation
+├── shared/                   # Shared Types and Schemas
+│   └── schema.ts             # Database models and validation
+│
+└── ai-service/                # Python FastAPI AI microservice (RAG, LangChain, vector DB)
+    ├── requirements.txt
+    ├── Dockerfile
+    ├── README.md              # AI architecture deep-dive
+    └── app/
+        ├── main.py            # FastAPI app, routers, startup KB ingestion
+        ├── config.py          # Settings (LLM provider, API keys, Chroma dir)
+        ├── llm.py             # Provider-agnostic Gemini/OpenAI chat + embeddings factory
+        ├── vectorstore.py     # Chroma collections: wellness_kb, user_memory
+        ├── memory.py          # Short-term buffer + long-term vector conversational memory
+        ├── ingest.py          # Embeds knowledge_base/*.md into the vector store
+        ├── agent.py           # LangChain tool-calling agent (search KB, recall memory, breathing)
+        ├── knowledge_base/    # 19 curated wellness/CBT documents used for RAG retrieval
+        ├── chains/            # RAG + generation chains (chat, mood, vision, wellness, insights)
+        └── routers/           # /ai/chat, /ai/mood, /ai/memories, /ai/meme, /ai/wellness, /ai/insights
 ```
+
+The Express server no longer calls any LLM directly — `server/lib/openai.ts` forwards every AI
+request over HTTP to `ai-service`, which owns all RAG/agent/vector-DB/LLM logic. See the root
+[README.md](README.md) and [ai-service/README.md](ai-service/README.md) for the full architecture.
 
 ## 🚀 Key Features Implemented
 
-### 🤖 AI-Powered Features
-- **Smart Chat Assistant** - Adapts responses based on user mood
+### 🤖 AI-Powered Features (via the `ai-service` FastAPI/LangChain microservice)
+- **RAG-Grounded Chat Assistant** - LangChain tool-calling agent that retrieves from a Chroma
+  vector knowledge base and the user's own long-term vector memory before replying, adapting to
+  mood and replying in the user's own language (13 Indian + 10 global languages)
 - **Mood Analysis** - Analyzes text to determine emotional state
-- **Daily Wellness Tips** - Personalized advice generated fresh each day
-- **Meme Generation** - Creates funny content from memory photos
+- **Daily Wellness Tips** - RAG-grounded, personalized advice generated fresh each day
+- **Meme Generation** - Creates funny content from memory photos (multimodal LLM vision)
 - **Voice Interaction** - Speech-to-text and AI voice responses
+- **Long-Term Memory** - Conversations are embedded and stored per-user in a vector database, so
+  the agent can recall relevant past context in later sessions
 
 ### 📊 Wellness Tools
 - **Mood Tracking** - Visual mood history with insights
@@ -130,12 +154,17 @@ wellness-app/
 - **Shadcn/ui** component library
 - **Framer Motion** for animations
 
-### Backend
+### App Backend
 - **Express.js** with TypeScript
 - **PostgreSQL** database
 - **Drizzle ORM** for database operations
 - **Replit Auth** for authentication
-- **OpenAI API** for AI features
+
+### AI Backend (`ai-service/`)
+- **Python** + **FastAPI** (fully async)
+- **LangChain** — tool-calling agent, RAG chains, prompt orchestration
+- **Chroma** vector database — RAG knowledge base + long-term conversational memory
+- **Gemini 2.5 Flash** (default) or **OpenAI** — pluggable via one env var
 
 ## 📦 How to Package Your Complete App
 
@@ -156,26 +185,29 @@ All files are already organized perfectly - just copy the entire project folder!
 
 ```env
 DATABASE_URL=your_postgresql_connection_string
-OPENAI_API_KEY=your_openai_api_key
+GEMINI_API_KEY=your_gemini_api_key
 SESSION_SECRET=your_session_secret
+AI_SERVICE_URL=http://localhost:8000
 REPL_ID=automatic_on_replit
 REPLIT_DOMAINS=automatic_on_replit
 ```
 
+`ai-service/.env` additionally needs `GEMINI_API_KEY` (and optionally `OPENAI_API_KEY` /
+`LLM_PROVIDER=openai`) — see [ai-service/README.md](ai-service/README.md).
+
 ## 🚀 Quick Start Commands
 
 ```bash
-# Install dependencies
+# 1. AI service (Python)
+cd ai-service && pip install -r requirements.txt && uvicorn app.main:app --reload
+
+# 2. App (Node) — in a separate terminal, from the repo root
 npm install
-
-# Set up database
 npm run db:push
-
-# Start development server
 npm run dev
 
-# Build for production
-npm run build
+# Or run everything at once:
+docker compose up --build
 ```
 
 ## 🎯 Your App is Complete!

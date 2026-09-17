@@ -1003,8 +1003,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       const userLanguagePreference = preferredLanguage || user?.preferredLanguage;
 
-      // Generate multilingual AI response
-      const aiResponse = await generateAIResponse(message, currentMood?.mood, userLanguagePreference);
+      // Generate multilingual AI response (RAG + agent + long-term memory, keyed by userId)
+      const aiResponse = await generateAIResponse(message, currentMood?.mood, userLanguagePreference, userId);
 
       // Save AI response
       const aiMessage = await storage.createChatMessage({
