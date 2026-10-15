@@ -168,17 +168,12 @@ request over HTTP to `ai-service`, which owns all RAG/agent/vector-DB/LLM logic.
 
 ## 📦 How to Package Your Complete App
 
-### Option 1: Download from Replit
-1. Click the three dots menu in Replit
-2. Select "Download as ZIP"
-3. Extract and you have your complete app!
-
-### Option 2: Clone/Fork
-1. Fork this Repl to your account
+### Option 1: Clone/Fork
+1. Fork this Repo to your account
 2. Connect to GitHub to create a repository
 3. Clone to your local machine
 
-### Option 3: Manual Copy
+### Option 2: Manual Copy
 All files are already organized perfectly - just copy the entire project folder!
 
 ## 🔑 Environment Variables Needed
@@ -188,8 +183,6 @@ DATABASE_URL=your_postgresql_connection_string
 GEMINI_API_KEY=your_gemini_api_key
 SESSION_SECRET=your_session_secret
 AI_SERVICE_URL=http://localhost:8000
-REPL_ID=automatic_on_replit
-REPLIT_DOMAINS=automatic_on_replit
 ```
 
 `ai-service/.env` additionally needs `GEMINI_API_KEY` (and optionally `OPENAI_API_KEY` /
