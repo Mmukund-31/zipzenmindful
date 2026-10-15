@@ -1,4 +1,4 @@
-# MindEase — AI-Powered Mental Wellness Platform
+# ZenMindful — AI-Powered Mental Wellness Platform
 
 MindEase is a full-stack mental wellness app: mood tracking, gratitude journaling, memory/photo
 management, wellness challenges, and an AI companion chat — backed by a dedicated **Python /
